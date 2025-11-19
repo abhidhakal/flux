@@ -1,0 +1,71 @@
+name: flux
+description: A comprehensive financial wellness platform
+publish_to: "none"
+version: 2.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  flutter_bloc: ^9.1.1
+  equatable: ^2.0.5
+
+  # Firebase
+  firebase_core: ^4.1.0
+  firebase_auth: ^6.0.2
+  cloud_firestore: ^6.0.1
+  firebase_storage: ^13.0.1
+
+  # UI & Design
+  cupertino_icons: ^1.0.2
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  lottie: ^3.3.1
+
+  # Utilities
+  uuid: ^4.2.1
+  intl: ^0.20.2
+  shared_preferences: ^2.2.2
+  image_picker: ^1.0.4
+  path_provider: ^2.1.1
+
+  # Notifications
+  flutter_local_notifications: ^19.4.1
+  timezone: ^0.10.1
+
+  # Permissions
+  permission_handler: ^12.0.1
+  # Charts & Analytics
+  fl_chart: ^1.1.0
+
+  # Date & Time
+  table_calendar: ^3.0.9
+  font_awesome_flutter: ^10.10.0
+  connectivity_plus: ^7.0.0
+  
+  # Skeleton Loading
+  shimmer: ^3.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/flux_logo.png"
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
+    - assets/fonts/

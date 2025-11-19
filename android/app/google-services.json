@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "907032241510",
+    "project_id": "flux-budget-tracking",
+    "storage_bucket": "flux-budget-tracking.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:907032241510:android:1b84276dcf5617d93954a7",
+        "android_client_info": {
+          "package_name": "com.klivostudios.flux"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCi9WwlA1eN4Kr23NVCzviLZBK_rvKzrQI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

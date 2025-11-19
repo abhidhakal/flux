@@ -1,0 +1,229 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:equatable/equatable.dart';
+import '../../core/models/budget_model.dart';
+import '../../core/services/budget_service.dart';
+
+// Events
+abstract class BudgetEvent extends Equatable {
+  const BudgetEvent();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class LoadBudgets extends BudgetEvent {
+  final String userId;
+
+  const LoadBudgets(this.userId);
+
+  @override
+  List<Object?> get props => [userId];
+}
+
+class CreateBudget extends BudgetEvent {
+  final Budget budget;
+
+  const CreateBudget(this.budget);
+
+  @override
+  List<Object?> get props => [budget];
+}
+
+class UpdateBudget extends BudgetEvent {
+  final Budget budget;
+
+  const UpdateBudget(this.budget);
+
+  @override
+  List<Object?> get props => [budget];
+}
+
+class DeleteBudget extends BudgetEvent {
+  final String budgetId;
+
+  const DeleteBudget(this.budgetId);
+
+  @override
+  List<Object?> get props => [budgetId];
+}
+
+class ProcessBudgetRollovers extends BudgetEvent {
+  final String userId;
+
+  const ProcessBudgetRollovers(this.userId);
+
+  @override
+  List<Object?> get props => [userId];
+}
+
+class RecalculateBudgetSpent extends BudgetEvent {
+  final String userId;
+
+  const RecalculateBudgetSpent(this.userId);
+
+  @override
+  List<Object?> get props => [userId];
+}
+
+// States
+abstract class BudgetState extends Equatable {
+  const BudgetState();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class BudgetInitial extends BudgetState {}
+
+class BudgetLoading extends BudgetState {}
+
+class BudgetLoaded extends BudgetState {
+  final List<Budget> budgets;
+
+  const BudgetLoaded(this.budgets);
+
+  @override
+  List<Object?> get props => [budgets];
+}
+
+class BudgetError extends BudgetState {
+  final String message;
+
+  const BudgetError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class BudgetSuccess extends BudgetState {
+  final String message;
+
+  const BudgetSuccess(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+// BLoC
+class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
+  final BudgetService _budgetService;
+
+  BudgetBloc({required BudgetService budgetService})
+      : _budgetService = budgetService,
+        super(BudgetInitial()) {
+    on<LoadBudgets>(_onLoadBudgets);
+    on<CreateBudget>(_onCreateBudget);
+    on<UpdateBudget>(_onUpdateBudget);
+    on<DeleteBudget>(_onDeleteBudget);
+    on<ProcessBudgetRollovers>(_onProcessBudgetRollovers);
+    on<RecalculateBudgetSpent>(_onRecalculateBudgetSpent);
+  }
+
+  Future<void> _onLoadBudgets(
+    LoadBudgets event,
+    Emitter<BudgetState> emit,
+  ) async {
+    emit(BudgetLoading());
+    
+    try {
+      final budgets = await _budgetService.getUserBudgets(event.userId);
+      emit(BudgetLoaded(budgets));
+    } catch (e) {
+      emit(BudgetError('Failed to load budgets: $e'));
+    }
+  }
+
+  Future<void> _onCreateBudget(
+    CreateBudget event,
+    Emitter<BudgetState> emit,
+  ) async {
+    emit(BudgetLoading());
+    
+    try {
+      await _budgetService.createBudget(event.budget);
+      emit(BudgetSuccess('Budget created successfully!'));
+      
+      // Reload budgets
+      final budgets = await _budgetService.getUserBudgets(event.budget.userId);
+      emit(BudgetLoaded(budgets));
+    } catch (e) {
+      emit(BudgetError('Failed to create budget: $e'));
+    }
+  }
+
+  Future<void> _onUpdateBudget(
+    UpdateBudget event,
+    Emitter<BudgetState> emit,
+  ) async {
+    emit(BudgetLoading());
+    
+    try {
+      await _budgetService.updateBudget(event.budget);
+      emit(BudgetSuccess('Budget updated successfully!'));
+      
+      // Reload budgets
+      final budgets = await _budgetService.getUserBudgets(event.budget.userId);
+      emit(BudgetLoaded(budgets));
+    } catch (e) {
+      emit(BudgetError('Failed to update budget: $e'));
+    }
+  }
+
+  Future<void> _onDeleteBudget(
+    DeleteBudget event,
+    Emitter<BudgetState> emit,
+  ) async {
+    emit(BudgetLoading());
+    
+    try {
+      await _budgetService.deleteBudget(event.budgetId);
+      emit(BudgetSuccess('Budget deleted successfully!'));
+      
+      // Reload budgets after deletion - we need to get userId from current state
+      final currentState = state;
+      if (currentState is BudgetLoaded && currentState.budgets.isNotEmpty) {
+        final userId = currentState.budgets.first.userId;
+        final budgets = await _budgetService.getUserBudgets(userId);
+        emit(BudgetLoaded(budgets));
+      }
+    } catch (e) {
+      emit(BudgetError('Failed to delete budget: $e'));
+    }
+  }
+
+  Future<void> _onProcessBudgetRollovers(
+    ProcessBudgetRollovers event,
+    Emitter<BudgetState> emit,
+  ) async {
+    emit(BudgetLoading());
+    
+    try {
+      await _budgetService.processBudgetRollovers(event.userId);
+      emit(BudgetSuccess('Budget rollovers processed successfully!'));
+      
+      // Reload budgets
+      final budgets = await _budgetService.getUserBudgets(event.userId);
+      emit(BudgetLoaded(budgets));
+    } catch (e) {
+      emit(BudgetError('Failed to process budget rollovers: $e'));
+    }
+  }
+
+  Future<void> _onRecalculateBudgetSpent(
+    RecalculateBudgetSpent event,
+    Emitter<BudgetState> emit,
+  ) async {
+    emit(BudgetLoading());
+    
+    try {
+      await _budgetService.recalculateBudgetSpent(event.userId);
+      emit(BudgetSuccess('Budget spent amounts recalculated successfully!'));
+      
+      // Reload budgets
+      final budgets = await _budgetService.getUserBudgets(event.userId);
+      emit(BudgetLoaded(budgets));
+    } catch (e) {
+      emit(BudgetError('Failed to recalculate budget spent: $e'));
+    }
+  }
+}
