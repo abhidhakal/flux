@@ -8,6 +8,9 @@ import '../../auth/auth_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
 import '../../transaction/screens/edit_transaction_screen.dart';
 import '../../transaction/screens/add_transaction_screen.dart';
+import '../../income/screens/edit_income_screen.dart';
+import '../../income/income_bloc.dart';
+import '../../../core/models/income_model.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/page_transitions.dart';
 import '../../../shared/widgets/animated_button.dart';
@@ -62,6 +65,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     final user = context.read<AuthBloc>().state;
     if (user is AuthAuthenticated) {
       context.read<TransactionBloc>().add(LoadTransactions(user.user.id));
+      context.read<IncomeBloc>().add(LoadIncome(user.user.id));
     }
   }
 
@@ -103,50 +107,68 @@ class _TransactionsScreenState extends State<TransactionsScreen>
           ),
         ],
       ),
-      body: BlocListener<TransactionBloc, TransactionState>(
-        listener: (context, state) {
-          if (state is TransactionSuccess) {
-            AppSnackbar.showSuccess(context, message: state.message);
-          }
-          
-          if (state is TransactionError) {
-            AppSnackbar.showError(context, message: state.message);
-          }
-        },
-        child: BlocBuilder<TransactionBloc, TransactionState>(
-          builder: (context, state) {
-            if (state is TransactionLoading) {
-              return _buildLoadingState();
-            }
 
-            if (state is TransactionLoaded) {
-              if (state.transactions.isEmpty) {
-                return _buildEmptyState();
-              }
-              
-              // Start animations when data is loaded
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _fadeController.forward();
-                _slideController.forward();
-              });
-              
-              return FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: _buildTransactionsList(state.transactions),
-                ),
-              );
+      body: BlocListener<IncomeBloc, IncomeState>(
+          listener: (context, state) {
+            if (state is IncomeSuccess) {
+              AppSnackbar.showSuccess(context, message: state.message);
             }
-
-            if (state is TransactionError) {
-              return _buildErrorState(state.message);
+            if (state is IncomeError) {
+              AppSnackbar.showError(context, message: state.message);
             }
-
-            return _buildEmptyState();
           },
+          child: Builder(
+            builder: (context) {
+              final transactionState = context.watch<TransactionBloc>().state;
+              final incomeState = context.watch<IncomeBloc>().state;
+
+              if (transactionState is TransactionLoading || incomeState is IncomeLoading) {
+                return _buildLoadingState();
+              }
+
+              final transactions = (transactionState is TransactionLoaded) 
+                  ? transactionState.transactions 
+                  : <Transaction>[];
+                  
+              final incomes = (incomeState is IncomeLoaded)
+                  ? incomeState.incomes
+                  : <Income>[];
+
+              if (transactionState is TransactionLoaded || incomeState is IncomeLoaded) {
+                 final allItems = <dynamic>[...transactions, ...incomes];
+                 
+                 if (allItems.isEmpty) {
+                   return _buildEmptyState();
+                 }
+
+                 // Start animations
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_fadeController.status != AnimationStatus.completed) {
+                    _fadeController.forward();
+                    _slideController.forward();
+                  }
+                });
+
+                 return FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: _buildTransactionsList(allItems),
+                  ),
+                );
+              }
+
+              if (transactionState is TransactionError) {
+                 return _buildErrorState(transactionState.message);
+              }
+               if (incomeState is IncomeError) {
+                 return _buildErrorState(incomeState.message);
+              }
+
+              return _buildEmptyState();
+            },
+          ),
         ),
-      ),
     );
   }
 
@@ -256,20 +278,29 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     );
   }
 
-  Widget _buildTransactionsList(List<Transaction> transactions) {
+  Widget _buildTransactionsList(List<dynamic> items) {
     // Group transactions by date
-    final groupedTransactions = <String, List<Transaction>>{};
-    for (final transaction in transactions) {
-      final dateKey = _formatDateKey(transaction.date);
-      groupedTransactions.putIfAbsent(dateKey, () => []).add(transaction);
+    final groupedItems = <String, List<dynamic>>{};
+    
+    // Sort items by date descending
+    items.sort((a, b) {
+      final dateA = a is Transaction ? a.date : (a as Income).date;
+      final dateB = b is Transaction ? b.date : (b as Income).date;
+      return dateB.compareTo(dateA);
+    });
+
+    for (final item in items) {
+      final date = item is Transaction ? item.date : (item as Income).date;
+      final dateKey = _formatDateKey(date);
+      groupedItems.putIfAbsent(dateKey, () => []).add(item);
     }
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: groupedTransactions.length,
+      itemCount: groupedItems.length,
       itemBuilder: (context, index) {
-        final dateKey = groupedTransactions.keys.elementAt(index);
-        final dayTransactions = groupedTransactions[dateKey]!;
+        final dateKey = groupedItems.keys.elementAt(index);
+        final dayTransactions = groupedItems[dateKey]!;
         return AnimatedBuilder(
           animation: _fadeAnimation,
           builder: (context, child) {
@@ -286,9 +317,13 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     );
   }
 
-  Widget _buildTransactionGroup(String dateKey, List<Transaction> transactions) {
-    final dayTotal = transactions.fold(0.0, (sum, t) => 
-        sum + (t.type == TransactionType.income ? t.amount : -t.amount));
+  Widget _buildTransactionGroup(String dateKey, List<dynamic> items) {
+    final dayTotal = items.fold(0.0, (sum, item) {
+      final isIncome = item is Income;
+      final amount = isIncome ? (item as Income).amount : (item as Transaction).amount;
+      final type = isIncome ? TransactionType.income : (item as Transaction).type;
+      return sum + (type == TransactionType.income ? amount : -amount);
+    });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,14 +352,22 @@ class _TransactionsScreenState extends State<TransactionsScreen>
             ],
           ),
         ),
-        ...transactions.map((transaction) => _buildTransactionCard(transaction)),
+        ...items.map((item) => _buildTransactionCard(item)),
         const SizedBox(height: 16),
       ],
     );
   }
 
-  Widget _buildTransactionCard(Transaction transaction) {
-    final isIncome = transaction.type == TransactionType.income;
+  Widget _buildTransactionCard(dynamic item) {
+    final isIncome = item is Income;
+    final transaction = !isIncome ? item as Transaction : null;
+    final income = isIncome ? item as Income : null;
+
+    final title = isIncome ? income!.category : transaction!.title;
+    final subtitle = isIncome ? (income!.notes ?? '') : transaction!.category;
+    final amount = isIncome ? income!.amount : transaction!.amount;
+    final date = isIncome ? income!.date : transaction!.date;
+    final id = isIncome ? income!.id : transaction!.id;
     
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -347,19 +390,19 @@ class _TransactionsScreenState extends State<TransactionsScreen>
             borderRadius: BorderRadius.circular(20),
           ),
           child: Icon(
-            isIncome ? Icons.add_circle_outline_rounded : Icons.remove_circle_outline_outlined,
+            isIncome ? Icons.add_circle_outline_rounded : Icons.remove_circle_outline_rounded,
             color: isIncome ? AppColors.success : AppColors.error,
           ),
         ),
         title: Text(
-          transaction.title,
+          title,
           style: TextStyle(
             fontWeight: FontWeight.w600,
             color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         subtitle: Text(
-          transaction.category,
+          subtitle,
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
           ),
@@ -372,14 +415,14 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${isIncome ? '+' : '-'}${CurrencyService().formatAmount(transaction.amount)}',
+                  '${isIncome ? '+' : '-'}${CurrencyService().formatAmount(amount)}',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: isIncome ? AppColors.success : AppColors.error,
                   ),
                 ),
                 Text(
-                  _formatTime(transaction.date),
+                  _formatTime(date),
                   style: TextStyle(
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
@@ -389,14 +432,14 @@ class _TransactionsScreenState extends State<TransactionsScreen>
             ),
             const SizedBox(width: 8),
             IconButton(
-              onPressed: () => _showDeleteTransactionDialog(transaction),
+              onPressed: () => _showDeleteDialog(item),
               icon: const Icon(Icons.delete_outline, color: AppColors.error),
               tooltip: 'Delete Transaction',
             ),
           ],
         ),
         onTap: () {
-          _showEditTransactionDialog(transaction);
+          _showEditDialog(item);
         },
       ),
     );
@@ -422,54 +465,46 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   }
 
 
-  void _showEditTransactionDialog(Transaction transaction) {
-    EditTransactionScreen.showEditTransactionPopup(context, transaction);
+  void _showEditDialog(dynamic item) {
+    if (item is Transaction) {
+       EditTransactionScreen.showEditTransactionPopup(context, item);
+    } else if (item is Income) {
+       EditIncomeScreen.show(context, item);
+    }
   }
 
-  void _showDeleteTransactionDialog(Transaction transaction) {
-    final transactionBloc = context.read<TransactionBloc>();
-    final user = context.read<AuthBloc>().state;
+  void _showDeleteDialog(dynamic item) {
+    final isIncome = item is Income;
+    final title = isIncome ? (item as Income).category : (item as Transaction).title;
+    final id = isIncome ? (item as Income).id : (item as Transaction).id;
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          'Delete Transaction',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        content: Text(
-          'Are you sure you want to delete "${transaction.title}"? This action cannot be undone.',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
+        title: Text('Delete ${isIncome ? "Income" : "Transaction"}'),
+        content: Text('Are you sure you want to delete "$title"? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
+              final user = context.read<AuthBloc>().state;
               if (user is AuthAuthenticated) {
-                transactionBloc.add(DeleteTransaction(transaction.id, user.user.id));
+                if (isIncome) {
+                   context.read<IncomeBloc>().add(DeleteIncome(id, user.user.id));
+                } else {
+                   context.read<TransactionBloc>().add(DeleteTransaction(id, user.user.id));
+                }
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: Text(
-              'Delete',
-              style: TextStyle(color: Theme.of(context).colorScheme.onError),
-            ),
+            child: const Text('Delete'),
           ),
         ],
       ),
     );
   }
-}
+    }

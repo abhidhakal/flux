@@ -6,9 +6,12 @@ import '../../../core/models/transaction_model.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../../transaction/transaction_bloc.dart';
-import '../../analytics/analytics_bloc.dart';
+
 import '../../auth/auth_bloc.dart';
 import '../../budget/budget_bloc.dart';
+import '../../income/income_bloc.dart';
+import '../../../core/models/income_model.dart';
+import '../../../core/services/income_service.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -90,15 +93,32 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             });
           }
         },
-        child: BlocListener<TransactionBloc, TransactionState>(
-        listener: (context, state) {
-          if (state is TransactionLoading) {
-            setState(() => _isLoading = true);
-          } else {
-            setState(() => _isLoading = false);
-          }
+        child: BlocListener<IncomeBloc, IncomeState>(
+          listener: (context, state) {
+            if (state is IncomeLoading) {
+              setState(() => _isLoading = true);
+            } else {
+              setState(() => _isLoading = false);
+            }
 
-          if (state is TransactionSuccess) {
+            if (state is IncomeSuccess) {
+              AppSnackbar.showSuccess(context, message: state.message);
+              Navigator.pop(context);
+            }
+
+            if (state is IncomeError) {
+              AppSnackbar.showError(context, message: state.message);
+            }
+          },
+          child: BlocListener<TransactionBloc, TransactionState>(
+            listener: (context, state) {
+              if (state is TransactionLoading) {
+                setState(() => _isLoading = true);
+              } else {
+                setState(() => _isLoading = false);
+              }
+
+              if (state is TransactionSuccess) {
             AppSnackbar.showSuccess(context, message: state.message);
               // Reload budgets to update spent amounts
               final user = context.read<AuthBloc>().state;
@@ -112,19 +132,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             AppSnackbar.showError(context, message: state.message);
           }
         },
-        child: BlocListener<AnalyticsBloc, AnalyticsState>(
-          listener: (context, state) {
-            if (state is TransactionCategorized) {
-              setState(() {
-                _selectedCategory = state.category;
-              });
-              AppSnackbar.showInfo(
-                context, 
-                message: 'AI categorized as: ${state.category}',
-                duration: const Duration(seconds: 2),
-              );
-            }
-          },
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Form(
@@ -148,17 +155,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   ],
                   _buildDateSelector(),
                   const SizedBox(height: 24),
-                  _buildAICategorizationButton(),
-                  const SizedBox(height: 24),
                   _buildSaveButton(),
                 ],
               ),
             ),
           ),
-        ),
       ),
-    )
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildTransactionTypeSelector() {
@@ -439,21 +444,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  Widget _buildAICategorizationButton() {
-    return ElevatedButton.icon(
-      onPressed: _titleController.text.isNotEmpty ? _handleAICategorization : null,
-      icon: const Icon(Icons.psychology),
-      label: const Text('AI Categorize'),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.secondary,
-        foregroundColor: AppColors.textInverse,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    );
-  }
 
   Widget _buildSaveButton() {
     return ElevatedButton(
@@ -632,16 +622,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  void _handleAICategorization() {
-    if (_titleController.text.isNotEmpty) {
-      context.read<AnalyticsBloc>().add(
-        CategorizeTransaction(
-          title: _titleController.text,
-          description: _descriptionController.text,
-        ),
-      );
-    }
-  }
 
   void _handleSave() {
     if (_formKey.currentState!.validate()) {
@@ -718,17 +698,29 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   void _createTransaction() {
-      final user = context.read<AuthBloc>().state;
-      if (user is AuthAuthenticated) {
+    final user = context.read<AuthBloc>().state;
+    if (user is AuthAuthenticated) {
+      if (_selectedType == TransactionType.income) {
+        final income = Income(
+          id: '',
+          userId: user.user.id,
+          amount: double.parse(_amountController.text),
+          date: _selectedDate,
+          notes: _descriptionController.text.trim(),
+          category: _selectedCategory,
+          createdAt: DateTime.now(),
+        );
+        context.read<IncomeBloc>().add(AddIncome(income));
+      } else {
         final transaction = Transaction(
-          id: '', // Will be generated by service
+          id: '', 
           userId: user.user.id,
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
           amount: double.parse(_amountController.text),
-          type: _selectedType,
-          category: _selectedCategory, // Use selected category, not budget category
-          budgetId: _selectedBudget?.id, // Assign selected budget ID
+          type: TransactionType.expense, // Force expense
+          category: _selectedCategory, 
+          budgetId: _selectedBudget?.id, 
           date: _selectedDate,
           createdAt: DateTime.now(),
         );
@@ -736,5 +728,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         context.read<TransactionBloc>().add(AddTransaction(transaction));
       }
     }
+  }
   }
 

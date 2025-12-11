@@ -12,6 +12,7 @@ import 'core/services/enhanced_notification_service.dart';
 import 'core/services/currency_service.dart';
 import 'core/services/network_service.dart';
 import 'core/services/subscription_service.dart';
+import 'core/services/subscription_service.dart';
 import 'features/subscription/subscription_bloc.dart';
 import 'features/auth/auth_bloc.dart';
 import 'core/constants/app_colors.dart';
@@ -24,6 +25,8 @@ import 'features/notifications/notifications_bloc.dart';
 import 'features/theme/theme_bloc.dart';
 import 'shared/widgets/loading_screen.dart';
 import 'features/main/screens/main_screen.dart';
+import 'core/services/income_service.dart';
+import 'features/income/income_bloc.dart';
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -45,6 +48,7 @@ class _AppState extends State<App> {
     try {
       await _notificationService.initialize();
       await CurrencyService().initialize();
+      await NetworkService().initialize();
       await NetworkService().initialize();
       // SubscriptionService is initialized in the Bloc, but we can also do it here if needed
       // or just let the Bloc handle it on creation/event.
@@ -73,6 +77,11 @@ class _AppState extends State<App> {
         BlocProvider<TransactionBloc>(
           create: (context) => TransactionBloc(
             transactionService: TransactionService(),
+          ),
+        ),
+        BlocProvider<IncomeBloc>(
+          create: (context) => IncomeBloc(
+            incomeService: IncomeService(),
           ),
         ),
         BlocProvider<AnalyticsBloc>(

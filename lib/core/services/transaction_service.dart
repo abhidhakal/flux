@@ -134,6 +134,7 @@ class TransactionService {
       final querySnapshot = await _firestore
           .collection('transactions')
           .where('userId', isEqualTo: userId)
+          .where('type', isEqualTo: 'expense')
           .orderBy('date', descending: true)
           .get();
 

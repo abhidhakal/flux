@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:uuid/uuid.dart';
 import '../models/notification_model.dart';
-import '../models/budget_model.dart';
 import '../models/transaction_model.dart';
+import '../models/budget_model.dart';
+import '../models/income_model.dart';
 import '../models/goal_model.dart';
 import 'enhanced_notification_service.dart';
 import 'currency_service.dart';
@@ -21,10 +22,11 @@ class WeeklySummaryService {
       
       final budgets = await _getUserBudgets(userId);
       final transactions = await _getUserTransactions(userId, weekStart);
+      final incomes = await _getUserIncome(userId, weekStart);
       final goals = await _getUserGoals(userId);
 
       // Generate summary data
-      final summaryData = _generateSummaryData(transactions, budgets, goals);
+      final summaryData = _generateSummaryData(transactions, incomes, budgets, goals);
       
       // Create and send notification
       await _sendWeeklySummaryNotification(userId, summaryData);
@@ -91,9 +93,28 @@ class WeeklySummaryService {
     }
   }
 
+  // Get user income for the week
+  Future<List<Income>> _getUserIncome(String userId, DateTime weekStart) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('incomes')
+          .where('userId', isEqualTo: userId)
+          .where('date', isGreaterThanOrEqualTo: weekStart)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => Income.fromJson(doc.data()))
+          .toList();
+    } catch (e) {
+      print('❌ WEEKLY SUMMARY: Error getting income: $e');
+      return [];
+    }
+  }
+
   // Generate summary data
   Map<String, dynamic> _generateSummaryData(
     List<Transaction> transactions,
+    List<Income> incomes,
     List<Budget> budgets,
     List<Goal> goals,
   ) {
@@ -101,9 +122,7 @@ class WeeklySummaryService {
     final weekStart = now.subtract(const Duration(days: 7));
     
     // Calculate income and expenses
-    final weeklyIncome = transactions
-        .where((t) => t.isIncome)
-        .fold(0.0, (sum, t) => sum + t.amount);
+    final weeklyIncome = incomes.fold(0.0, (sum, i) => sum + i.amount);
     
     final weeklyExpenses = transactions
         .where((t) => t.isExpense)
@@ -121,7 +140,7 @@ class WeeklySummaryService {
     final spendingByCategory = _calculateSpendingByCategory(transactions);
     
     // Calculate insights
-    final insights = _generateInsights(transactions, budgets, goals);
+    final insights = _generateInsights(transactions, incomes, budgets, goals);
     
     return {
       'weekStart': weekStart.toIso8601String(),
@@ -230,15 +249,14 @@ class WeeklySummaryService {
   // Generate insights
   List<String> _generateInsights(
     List<Transaction> transactions,
+    List<Income> incomes,
     List<Budget> budgets,
     List<Goal> goals,
   ) {
     final insights = <String>[];
     
     // Income vs Expenses insight
-    final weeklyIncome = transactions
-        .where((t) => t.isIncome)
-        .fold(0.0, (sum, t) => sum + t.amount);
+    final weeklyIncome = incomes.fold(0.0, (sum, i) => sum + i.amount);
     final weeklyExpenses = transactions
         .where((t) => t.isExpense)
         .fold(0.0, (sum, t) => sum + t.amount);

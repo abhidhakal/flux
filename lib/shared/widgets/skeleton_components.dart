@@ -99,6 +99,7 @@ class SkeletonComponents {
     return Container(
       width: width,
       height: height,
+      clipBehavior: Clip.hardEdge,
       padding: padding,
       decoration: BoxDecoration(
         color: colorScheme.surface,

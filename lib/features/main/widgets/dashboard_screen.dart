@@ -15,7 +15,9 @@ import '../../budget/budget_bloc.dart';
 import '../../goals/screens/goals_screen.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../../notifications/notifications_bloc.dart';
-import '../../transaction/screens/add_transaction_screen.dart'; // Add this import
+import '../../transaction/screens/add_transaction_screen.dart';
+import '../../income/income_bloc.dart';
+import '../../../core/models/income_model.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -36,6 +38,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context.read<TransactionBloc>().add(LoadTransactions(user.user.id));
       context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
       context.read<NotificationsBloc>().add(LoadNotifications(user.user.id));
+      context.read<IncomeBloc>().add(LoadIncome(user.user.id));
     }
     _profilePictureService.loadProfileImage();
   }
@@ -139,27 +142,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   AnalyzeSpendingPatterns(transactionState.transactions),
                 );
 
-            return BlocBuilder<AnalyticsBloc, AnalyticsState>(
-              builder: (context, analyticsState) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppTheme.spacing12,
-                    vertical: AppTheme.spacing16,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildWelcomeSection(),
-                      const SizedBox(height: AppTheme.spacing16),
-                      _buildQuickActionButtons(), // Add this new section
-                      const SizedBox(height: AppTheme.spacing24),
-                      _buildQuickStats(transactionState.transactions),
-                      const SizedBox(height: AppTheme.spacing24),
-                      _buildAIInsights(analyticsState),
-                      const SizedBox(height: AppTheme.spacing24),
-                      _buildRecentTransactions(transactionState.transactions),
-                    ],
-                  ),
+            return BlocBuilder<IncomeBloc, IncomeState>(
+              builder: (context, incomeState) {
+                // Determine if we should show loading
+                // If transactions are loaded but income is still loading, maybe just show stats with 0 income or wait?
+                // Let's assume Loaded for simplicity or check both.
+                
+                final incomeList = (incomeState is IncomeLoaded) ? incomeState.incomes : <Income>[];
+
+                return BlocBuilder<AnalyticsBloc, AnalyticsState>(
+                  builder: (context, analyticsState) {
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTheme.spacing12,
+                        vertical: AppTheme.spacing16,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildWelcomeSection(),
+                          const SizedBox(height: AppTheme.spacing16),
+                          _buildQuickActionButtons(),
+                          const SizedBox(height: AppTheme.spacing24),
+                          _buildQuickStats(transactionState.transactions, incomeList),
+                          const SizedBox(height: AppTheme.spacing24),
+                          _buildAIInsights(analyticsState),
+                          const SizedBox(height: AppTheme.spacing24),
+                          _buildRecentTransactions(transactionState.transactions),
+                        ],
+                      ),
+                    );
+                  },
                 );
               },
             );
@@ -466,14 +479,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildQuickStats(List<dynamic> transactions) {
+  Widget _buildQuickStats(List<dynamic> transactions, List<Income> incomes) {
     final expenses =
         transactions.where((t) => t.type == TransactionType.expense).toList();
-    final income =
-        transactions.where((t) => t.type == TransactionType.income).toList();
+    // Income is now separate list
 
     final totalExpenses = expenses.fold(0.0, (sum, t) => sum + t.amount);
-    final totalIncome = income.fold(0.0, (sum, t) => sum + t.amount);
+    final totalIncome = incomes.fold(0.0, (sum, i) => sum + i.amount);
     final balance = totalIncome - totalExpenses;
 
     return Column(

@@ -29,29 +29,7 @@ class BudgetService {
           .doc(budgetId)
           .set(budgetToSave.toJson());
       
-      // Create corresponding income transaction
-      final incomeTransaction = Transaction(
-        id: _uuid.v4(),
-        userId: budget.userId,
-        title: 'Budget Allocation - ${budget.name}',
-        description: 'Income allocated to ${budget.category} budget (${budget.period.name})',
-        amount: budget.amount,
-        type: TransactionType.income,
-        category: 'Salary', // Default income category
-        date: budget.startDate,
-        createdAt: DateTime.now(),
-        metadata: {
-          'budgetId': budgetId,
-          'budgetName': budget.name,
-          'budgetCategory': budget.category,
-          'isSystemGenerated': true,
-        },
-      );
-      
-      await _transactionService.addTransaction(incomeTransaction);
-      
       print('✅ BUDGET SERVICE: Budget created successfully');
-      print('✅ BUDGET SERVICE: Income transaction created for budget allocation');
       
     } catch (e) {
       print('❌ BUDGET SERVICE: Error creating budget: $e');

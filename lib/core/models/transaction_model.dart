@@ -1,7 +1,15 @@
 import 'package:equatable/equatable.dart';
 
-enum TransactionType { income, expense }
+// Note: TransactionType.income is DEPRECATED. Use Income model for incomes.
+// This is kept for backward compatibility during migration.
+enum TransactionType { 
+  @Deprecated('Use Income model instead')
+  income, 
+  expense 
+}
 
+/// Represents an Expense Transaction.
+/// Note: Income has been moved to a separate [Income] entity.
 class Transaction extends Equatable {
   final String id;
   final String userId;
