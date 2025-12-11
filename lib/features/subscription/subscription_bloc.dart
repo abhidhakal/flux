@@ -46,7 +46,15 @@ class SubscriptionInitial extends SubscriptionState {}
 
 class SubscriptionLoading extends SubscriptionState {}
 
-class SubscriptionPremium extends SubscriptionState {}
+class SubscriptionPremium extends SubscriptionState {
+  final bool isNewPurchase;
+
+  const SubscriptionPremium({this.isNewPurchase = false});
+
+  @override
+  List<Object> get props => [isNewPurchase];
+}
+
 
 class SubscriptionFree extends SubscriptionState {
   final List<ProductDetails> products;
@@ -92,7 +100,7 @@ class SubscriptionBloc extends Bloc<SubscriptionEvent, SubscriptionState> {
     try {
       await _subscriptionService.initialize();
       if (_subscriptionService.isPremium) {
-        emit(SubscriptionPremium());
+        emit(const SubscriptionPremium(isNewPurchase: false));
       } else {
         emit(SubscriptionFree(_subscriptionService.products));
       }
@@ -125,7 +133,7 @@ class SubscriptionBloc extends Bloc<SubscriptionEvent, SubscriptionState> {
       // If not, we might want to check status again.
       await Future.delayed(const Duration(seconds: 2)); // Give it some time
       if (_subscriptionService.isPremium) {
-        emit(SubscriptionPremium());
+        emit(const SubscriptionPremium(isNewPurchase: true));
       } else {
         emit(SubscriptionFree(_subscriptionService.products));
       }
@@ -139,7 +147,7 @@ class SubscriptionBloc extends Bloc<SubscriptionEvent, SubscriptionState> {
     Emitter<SubscriptionState> emit,
   ) {
     if (event.isPremium) {
-      emit(SubscriptionPremium());
+      emit(const SubscriptionPremium(isNewPurchase: true));
     } else {
       emit(SubscriptionFree(_subscriptionService.products));
     }

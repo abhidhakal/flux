@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
@@ -16,6 +17,7 @@ class SubscriptionService {
   // Product ID for the monthly subscription
   static const String _kMonthlySubscriptionId = 'premium_monthly';
   static const Set<String> _kProductIds = {_kMonthlySubscriptionId};
+  static const String _kPremiumExpiryKey = 'premium_expiry';
 
   bool _isAvailable = false;
   List<ProductDetails> _products = [];
@@ -91,24 +93,48 @@ class SubscriptionService {
 
   Future<void> _deliverProduct(PurchaseDetails purchaseDetails) async {
     if (purchaseDetails.productID == _kMonthlySubscriptionId) {
-      await _setPremiumStatus(true);
+      await _setPremiumStatus(purchaseDetails);
       _purchaseController.add(true);
     }
   }
 
-  Future<void> _setPremiumStatus(bool status) async {
+  Future<void> _setPremiumStatus(PurchaseDetails purchaseDetails) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('is_premium', status);
-    _isPremium = status;
+    
+    // Calculate expiry (default 30 days from purchase)
+    // In a real app, this should come from detailed receipt validation
+    final expiryDate = DateTime.now().add(const Duration(days: 30));
+    
+    await prefs.setString(_kPremiumExpiryKey, expiryDate.toIso8601String());
+    
+    // Clear legacy key to avoid conflicts
+    await prefs.remove('is_premium');
+    
+    _isPremium = true;
   }
 
   Future<void> _checkPremiumStatus() async {
     final prefs = await SharedPreferences.getInstance();
-    _isPremium = prefs.getBool('is_premium') ?? false;
     
-    // In a real app, you might want to verify the receipt with your backend here
-    // to ensure the subscription is still valid.
-    // For this implementation, we rely on local storage and restore purchases.
+    // Check for legacy key first and clear it if it exists
+    if (prefs.containsKey('is_premium')) {
+       await prefs.remove('is_premium');
+       // Don't carry over legacy status as it might be invalid/stale
+    }
+
+    final expiryString = prefs.getString(_kPremiumExpiryKey);
+    if (expiryString != null) {
+      final expiryDate = DateTime.tryParse(expiryString);
+      if (expiryDate != null && expiryDate.isAfter(DateTime.now())) {
+        _isPremium = true;
+      } else {
+        // Expired
+        _isPremium = false;
+        await prefs.remove(_kPremiumExpiryKey);
+      }
+    } else {
+      _isPremium = false;
+    }
   }
   
   void dispose() {

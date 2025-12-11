@@ -185,7 +185,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   Widget _buildBudgetsList(List<Budget> budgets) {
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(bottom: 120, left: 16, right: 16, top: 16),
       itemCount: budgets.length + 2, // +1 for overview cards, +1 for heading
       itemBuilder: (context, index) {
         if (index == 0) {

@@ -83,9 +83,11 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
             return BlocBuilder<AnalyticsBloc, AnalyticsState>(
               builder: (context, analyticsState) {
                 return SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: screenWidth > 600 ? 24 : 16,
-                    vertical: 16,
+                  padding: EdgeInsets.only(
+                    left: screenWidth > 600 ? 24 : 16,
+                    right: screenWidth > 600 ? 24 : 16,
+                    top: 16,
+                    bottom: 120,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -521,7 +523,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   Widget _buildAnalysisInsights(Map<String, dynamic> analysis, ColorScheme colorScheme, double screenWidth) {
     final insights = analysis['insights'] as List<String>? ?? [];
     final recommendations = analysis['recommendations'] as List<String>? ?? [];
-    final topCategories = analysis['topCategories'] as List<Map<String, dynamic>>? ?? [];
+    final topCategories = (analysis['topCategories'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

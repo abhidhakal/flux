@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/app_snackbar.dart';
 
 class PremiumPaywallScreen extends StatelessWidget {
   const PremiumPaywallScreen({super.key});
@@ -49,9 +50,7 @@ class PremiumPaywallScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 // TODO: Integrate purchase flow; for now show success
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Purchase flow coming soon')),
-                );
+                AppSnackbar.showInfo(context, message: 'Purchase flow coming soon');
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),

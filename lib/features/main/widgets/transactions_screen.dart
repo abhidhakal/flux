@@ -29,6 +29,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  bool _isSelectionMode = false;
+  final Set<String> _selectedIds = {};
 
   @override
   void initState() {
@@ -83,7 +85,28 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     
     return Scaffold(
       backgroundColor: colorScheme.background,
-      appBar: AppBar(
+      appBar: _isSelectionMode 
+          ? AppBar(
+              backgroundColor: colorScheme.background,
+              foregroundColor: colorScheme.onBackground,
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  setState(() {
+                    _isSelectionMode = false;
+                    _selectedIds.clear();
+                  });
+                },
+              ),
+              title: Text('${_selectedIds.length} Selected'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: _selectedIds.isEmpty ? null : _deleteSelectedItems,
+                ),
+              ],
+            )
+          : AppBar(
         title: const Text('Transactions'),
         centerTitle: false,
         backgroundColor: colorScheme.background,
@@ -358,6 +381,68 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     );
   }
 
+  void _toggleSelection(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+        if (_selectedIds.isEmpty) {
+          _isSelectionMode = false;
+        }
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  Future<void> _deleteSelectedItems() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Selected?'),
+        content: Text('Are you sure you want to delete ${_selectedIds.length} items?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final user = context.read<AuthBloc>().state;
+      if (user is AuthAuthenticated) {
+        // Get current data to ID the items
+        final transactionState = context.read<TransactionBloc>().state;
+        final incomeState = context.read<IncomeBloc>().state;
+        
+        final transactions = (transactionState is TransactionLoaded) ? transactionState.transactions : <Transaction>[];
+        final incomes = (incomeState is IncomeLoaded) ? incomeState.incomes : <Income>[];
+        final allItems = <dynamic>[...transactions, ...incomes];
+
+        for (final id in _selectedIds) {
+          final item = allItems.firstWhere((e) => (e is Transaction ? e.id : (e as Income).id) == id, orElse: () => null);
+          if (item != null) {
+            if (item is Income) {
+              context.read<IncomeBloc>().add(DeleteIncome(id, user.user.id));
+            } else if (item is Transaction) {
+              context.read<TransactionBloc>().add(DeleteTransaction(id, user.user.id));
+            }
+          }
+        }
+        
+        setState(() {
+          _isSelectionMode = false;
+          _selectedIds.clear();
+        });
+      }
+    }
+  }
+
   Widget _buildTransactionCard(dynamic item) {
     final isIncome = item is Income;
     final transaction = !isIncome ? item as Transaction : null;
@@ -380,20 +465,26 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         ),
       ),
       child: ListTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: isIncome 
-                ? AppColors.success.withValues(alpha: 0.1)
-                : AppColors.error.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Icon(
-            isIncome ? Icons.add_circle_outline_rounded : Icons.remove_circle_outline_rounded,
-            color: isIncome ? AppColors.success : AppColors.error,
-          ),
-        ),
+        leading: _isSelectionMode 
+            ? Checkbox(
+                value: _selectedIds.contains(id),
+                onChanged: (value) => _toggleSelection(id),
+                shape: const CircleBorder(),
+              )
+            : Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isIncome 
+                      ? AppColors.success.withValues(alpha: 0.1)
+                      : AppColors.error.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  isIncome ? Icons.add_circle_outline_rounded : Icons.remove_circle_outline_rounded,
+                  color: isIncome ? AppColors.success : AppColors.error,
+                ),
+              ),
         title: Text(
           title,
           style: TextStyle(
@@ -407,39 +498,47 @@ class _TransactionsScreenState extends State<TransactionsScreen>
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
           ),
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${isIncome ? '+' : '-'}${CurrencyService().formatAmount(amount)}',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: isIncome ? AppColors.success : AppColors.error,
+        trailing: _isSelectionMode
+            ? null // Hide trailing deleted/amount info in selection mode for cleaner look, or maybe just delete icon
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${isIncome ? '+' : '-'}${CurrencyService().formatAmount(amount)}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isIncome ? AppColors.success : AppColors.error,
+                        ),
+                      ),
+                      Text(
+                        _formatTime(date),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                Text(
-                  _formatTime(date),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              onPressed: () => _showDeleteDialog(item),
-              icon: const Icon(Icons.delete_outline, color: AppColors.error),
-              tooltip: 'Delete Transaction',
-            ),
-          ],
-        ),
+                ],
+              ),
         onTap: () {
-          _showEditDialog(item);
+          if (_isSelectionMode) {
+            _toggleSelection(id);
+          } else {
+            _showEditDialog(item);
+          }
+        },
+        onLongPress: () {
+          if (!_isSelectionMode) {
+            setState(() {
+              _isSelectionMode = true;
+              _selectedIds.add(id);
+            });
+          }
         },
       ),
     );

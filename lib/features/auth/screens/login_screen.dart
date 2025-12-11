@@ -44,10 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
             AppSnackbar.showError(context, message: state.message);
           }
 
-          if (state is AuthAuthenticated) {
-            AppSnackbar.showSuccess(context, message: 'Signed in successfully!');
-            // Navigation is handled automatically by the main app BlocBuilder
-          }
+
         },
         child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),

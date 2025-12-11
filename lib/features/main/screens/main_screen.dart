@@ -35,6 +35,7 @@ class _MainScreenState extends State<MainScreen> {
     
     return Scaffold(
       backgroundColor: colorScheme.background,
+      extendBody: true,
       body: Column(
         children: [
           const OfflineIndicator(),
@@ -45,63 +46,79 @@ class _MainScreenState extends State<MainScreen> {
       ),
       bottomNavigationBar: SafeArea(
         bottom: true,
-        child: Container(
-          height: 90,
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            border: Border(
-              top: BorderSide(
-                color: colorScheme.outline,
-                width: 1,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          child: Container(
+            height: 85,
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(35),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(35),
+              child: BottomNavigationBar(
+                currentIndex: _currentIndex,
+                onTap: (index) {
+                  if (index == 3) {
+                    final subscriptionState = context.read<SubscriptionBloc>().state;
+                    if (subscriptionState is! SubscriptionPremium) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const PaywallScreen(),
+                        ),
+                      );
+                      return;
+                    }
+                  }
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                },
+                type: BottomNavigationBarType.fixed,
+                backgroundColor: Colors.transparent,
+                selectedItemColor: colorScheme.primary,
+                unselectedItemColor: colorScheme.onSurface.withOpacity(0.6),
+                showSelectedLabels: true,
+                showUnselectedLabels: true,
+                selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+                elevation: 0,
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.dashboard_rounded),
+                    activeIcon: Icon(Icons.dashboard_rounded, size: 24),
+                    label: 'Home',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.wallet_rounded),
+                    activeIcon: Icon(Icons.wallet_rounded, size: 24),
+                    label: 'Budgets',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.receipt_long_rounded),
+                    activeIcon: Icon(Icons.receipt_long_rounded, size: 24),
+                    label: 'Transactions',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.bar_chart_rounded),
+                    activeIcon: Icon(Icons.bar_chart_rounded, size: 24),
+                    label: 'Analytics',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.person_outline_rounded),
+                    activeIcon: Icon(Icons.person_outline_rounded, size: 24),
+                    label: 'Profile',
+                  ),
+                ],
               ),
             ),
-            boxShadow: AppTheme.shadowMedium,
-          ),
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (index) {
-              if (index == 3) {
-                final subscriptionState = context.read<SubscriptionBloc>().state;
-                if (subscriptionState is! SubscriptionPremium) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const PaywallScreen(),
-                    ),
-                  );
-                  return;
-                }
-              }
-              setState(() {
-                _currentIndex = index;
-              });
-            },
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.transparent,
-            selectedItemColor: colorScheme.primary,
-            unselectedItemColor: colorScheme.onSurface.withOpacity(0.6),
-            elevation: 0,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard_rounded),
-                label: 'Dashboard',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.wallet_rounded),
-                label: 'Budgets',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.receipt_long_rounded),
-                label: 'Transactions',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.bar_chart_rounded),
-                label: 'Analytics',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline_rounded),
-                label: 'Profile',
-              ),
-            ],
           ),
         ),
       ),

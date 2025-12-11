@@ -210,7 +210,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildProfileContent(BuildContext context, User user) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(bottom: 120, left: 16, right: 16, top: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

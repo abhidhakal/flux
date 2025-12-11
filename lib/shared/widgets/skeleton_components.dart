@@ -110,9 +110,12 @@ class SkeletonComponents {
         ),
       ),
       child: children != null
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: children,
+          ? SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: children,
+              ),
             )
           : null,
     );

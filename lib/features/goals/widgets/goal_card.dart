@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../shared/widgets/app_snackbar.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/goal_model.dart';
 import '../goals_bloc.dart';
@@ -599,9 +600,7 @@ class _GoalCardState extends State<GoalCard>
               final raw = amountController.text.replaceAll(',', '').trim();
               final amount = double.tryParse(raw);
               if (amount == null || amount <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Enter a valid amount > 0')),
-                );
+                AppSnackbar.showError(context, message: 'Enter a valid amount > 0');
                 return;
               }
               final authState = context.read<AuthBloc>().state;
