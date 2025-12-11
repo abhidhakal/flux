@@ -6,6 +6,9 @@ import '../widgets/budgets_screen.dart';
 import '../widgets/transactions_screen.dart';
 import '../widgets/profile_screen.dart';
 import '../../analytics/screens/analytics_dashboard_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../subscription/subscription_bloc.dart';
+import '../../subscription/presentation/pages/paywall_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -57,6 +60,17 @@ class _MainScreenState extends State<MainScreen> {
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
             onTap: (index) {
+              if (index == 3) {
+                final subscriptionState = context.read<SubscriptionBloc>().state;
+                if (subscriptionState is! SubscriptionPremium) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const PaywallScreen(),
+                    ),
+                  );
+                  return;
+                }
+              }
               setState(() {
                 _currentIndex = index;
               });

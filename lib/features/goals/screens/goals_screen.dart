@@ -8,7 +8,9 @@ import '../goals_bloc.dart';
 import '../widgets/goal_card.dart';
 import '../widgets/goal_progress_chart.dart';
 import '../widgets/create_goal_screen.dart';
-import '../../main/screens/premium_paywall_screen.dart';
+
+import '../../subscription/presentation/pages/paywall_screen.dart';
+import '../../subscription/subscription_bloc.dart';
 import 'goal_templates_screen.dart';
 import 'edit_goal_screen.dart';
 import '../../../shared/widgets/page_transitions.dart';
@@ -92,8 +94,8 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
             onSelected: (value) {
               switch (value) {
                 case 'create_manual':
-                  final authState = context.read<AuthBloc>().state;
-                  if (authState is AuthAuthenticated && authState.user.isPremium) {
+                  final subscriptionState = context.read<SubscriptionBloc>().state;
+                  if (subscriptionState is SubscriptionPremium) {
                     context.pushSmooth(
                       const CreateGoalScreen(),
                       transitionType: PageTransitionType.slideFromBottom,
@@ -102,7 +104,7 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const PremiumPaywallScreen(),
+                        builder: (context) => const PaywallScreen(),
                       ),
                     );
                   }

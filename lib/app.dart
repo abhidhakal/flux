@@ -11,6 +11,8 @@ import 'core/services/notification_service.dart';
 import 'core/services/enhanced_notification_service.dart';
 import 'core/services/currency_service.dart';
 import 'core/services/network_service.dart';
+import 'core/services/subscription_service.dart';
+import 'features/subscription/subscription_bloc.dart';
 import 'features/auth/auth_bloc.dart';
 import 'core/constants/app_colors.dart';
 import 'features/auth/screens/login_screen.dart';
@@ -44,6 +46,8 @@ class _AppState extends State<App> {
       await _notificationService.initialize();
       await CurrencyService().initialize();
       await NetworkService().initialize();
+      // SubscriptionService is initialized in the Bloc, but we can also do it here if needed
+      // or just let the Bloc handle it on creation/event.
     } catch (e) {
       print('Failed to initialize services: $e');
     }
@@ -85,6 +89,11 @@ class _AppState extends State<App> {
           create: (context) => NotificationsBloc(
             notificationService: NotificationService(),
           ),
+        ),
+        BlocProvider<SubscriptionBloc>(
+          create: (context) => SubscriptionBloc(
+            subscriptionService: SubscriptionService(),
+          )..add(SubscriptionCheckRequested()),
         ),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(

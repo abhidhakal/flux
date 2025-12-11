@@ -11,7 +11,9 @@ import '../../auth/auth_bloc.dart';
 import '../../goals/goals_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
 import '../screens/about_us_screen.dart';
-import '../screens/premium_paywall_screen.dart';
+
+import '../../subscription/presentation/pages/paywall_screen.dart';
+import '../../subscription/subscription_bloc.dart';
 import '../../theme/theme_bloc.dart';
 import '../../notifications/screens/notification_settings_screen.dart';
 import '../../../shared/widgets/app_snackbar.dart';
@@ -1287,7 +1289,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             _buildActionButton(
               'Export Data',
               Icons.download_outlined,
-              () => _navigateToPaywall(),
+              () => _handleExportData(),
             ),
             _buildActionButton(
               'Privacy Policy',
@@ -1518,11 +1520,21 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  void _handleExportData() {
+    final subscriptionState = context.read<SubscriptionBloc>().state;
+    if (subscriptionState is SubscriptionPremium) {
+      // Mock export functionality
+      AppSnackbar.showSuccess(context, message: 'Data exported successfully! (Mock)');
+    } else {
+      _navigateToPaywall();
+    }
+  }
+
   void _navigateToPaywall() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const PremiumPaywallScreen(),
+        builder: (context) => const PaywallScreen(),
       ),
     );
   }
