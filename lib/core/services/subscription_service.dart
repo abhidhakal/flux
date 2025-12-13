@@ -1,9 +1,5 @@
 import 'dart:async';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:in_app_purchase_android/in_app_purchase_android.dart';
-import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SubscriptionService {
@@ -14,9 +10,17 @@ class SubscriptionService {
   final InAppPurchase _inAppPurchase = InAppPurchase.instance;
   late StreamSubscription<List<PurchaseDetails>> _subscription;
   
-  // Product ID for the monthly subscription
+  // Product IDs
   static const String _kMonthlySubscriptionId = 'premium_monthly';
-  static const Set<String> _kProductIds = {_kMonthlySubscriptionId};
+  static const String _kYearlySubscriptionId = 'premium_yearly';
+  static const String _kLifetimeSubscriptionId = 'premium_lifetime';
+  
+  static const Set<String> _kProductIds = {
+    _kMonthlySubscriptionId,
+    _kYearlySubscriptionId,
+    _kLifetimeSubscriptionId,
+  };
+  
   static const String _kPremiumExpiryKey = 'premium_expiry';
 
   bool _isAvailable = false;
@@ -31,10 +35,7 @@ class SubscriptionService {
 
   Future<void> initialize() async {
     _isAvailable = await _inAppPurchase.isAvailable();
-    if (!_isAvailable) {
-      return;
-    }
-
+    
     final Stream<List<PurchaseDetails>> purchaseUpdated =
         _inAppPurchase.purchaseStream;
     _subscription = purchaseUpdated.listen(
@@ -52,24 +53,74 @@ class SubscriptionService {
   }
 
   Future<void> _loadProducts() async {
+    if (!_isAvailable) {
+      _products = _getMockProducts();
+      return;
+    }
+
     final ProductDetailsResponse response =
         await _inAppPurchase.queryProductDetails(_kProductIds);
+    
     if (response.notFoundIDs.isNotEmpty) {
       // Handle the error.
     }
+    
     _products = response.productDetails;
+    
+    // Fallback for testing/simulator if store returns nothing
+    if (_products.isEmpty) {
+      _products = _getMockProducts();
+    }
+  }
+
+  List<ProductDetails> _getMockProducts() {
+    return [
+      ProductDetails(
+        id: _kMonthlySubscriptionId,
+        title: 'Monthly Premium',
+        description: 'Unlock all features',
+        price: '\$4.99',
+        rawPrice: 4.99,
+        currencyCode: 'USD',
+      ),
+      ProductDetails(
+        id: _kYearlySubscriptionId,
+        title: 'Yearly Premium',
+        description: 'Unlock all features',
+        price: '\$49.99',
+        rawPrice: 49.99,
+        currencyCode: 'USD',
+      ),
+      ProductDetails(
+        id: _kLifetimeSubscriptionId,
+        title: 'Lifetime Access',
+        description: 'Pay once, keep forever',
+        price: '\$149.99',
+        rawPrice: 149.99,
+        currencyCode: 'USD',
+      ),
+    ];
   }
 
   Future<void> buyProduct(ProductDetails productDetails) async {
     final PurchaseParam purchaseParam = PurchaseParam(productDetails: productDetails);
     
     if (_kProductIds.contains(productDetails.id)) {
-      await _inAppPurchase.buyNonConsumable(purchaseParam: purchaseParam);
+      if (_isAvailable && !_products.any((p) => p == productDetails && _getMockProducts().contains(p))) {
+         await _inAppPurchase.buyNonConsumable(purchaseParam: purchaseParam);
+      } else {
+        // Mock purchase for testing
+        await Future.delayed(const Duration(seconds: 1));
+        await _setPremiumStatusForProduct(productDetails.id);
+        _purchaseController.add(true);
+      }
     }
   }
 
   Future<void> restorePurchases() async {
-    await _inAppPurchase.restorePurchases();
+    if (_isAvailable) {
+      await _inAppPurchase.restorePurchases();
+    }
   }
 
   void _listenToPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) {
@@ -92,23 +143,36 @@ class SubscriptionService {
   }
 
   Future<void> _deliverProduct(PurchaseDetails purchaseDetails) async {
-    if (purchaseDetails.productID == _kMonthlySubscriptionId) {
-      await _setPremiumStatus(purchaseDetails);
+    if (_kProductIds.contains(purchaseDetails.productID)) {
+      await _setPremiumStatusForProduct(purchaseDetails.productID);
       _purchaseController.add(true);
     }
   }
 
-  Future<void> _setPremiumStatus(PurchaseDetails purchaseDetails) async {
+  Future<void> _setPremiumStatusForProduct(String productId) async {
     final prefs = await SharedPreferences.getInstance();
-    
-    // Calculate expiry (default 30 days from purchase)
-    // In a real app, this should come from detailed receipt validation
-    final expiryDate = DateTime.now().add(const Duration(days: 30));
+    DateTime expiryDate;
+
+    switch (productId) {
+      case _kMonthlySubscriptionId:
+        expiryDate = DateTime.now().add(const Duration(days: 30));
+        break;
+      case _kYearlySubscriptionId:
+        expiryDate = DateTime.now().add(const Duration(days: 365));
+        break;
+      case _kLifetimeSubscriptionId:
+        expiryDate = DateTime.now().add(const Duration(days: 365 * 100)); // 100 years
+        break;
+      default:
+        expiryDate = DateTime.now().add(const Duration(days: 30));
+    }
     
     await prefs.setString(_kPremiumExpiryKey, expiryDate.toIso8601String());
     
-    // Clear legacy key to avoid conflicts
-    await prefs.remove('is_premium');
+    // Clear legacy key
+    if (prefs.containsKey('is_premium')) {
+      await prefs.remove('is_premium');
+    }
     
     _isPremium = true;
   }
@@ -119,7 +183,6 @@ class SubscriptionService {
     // Check for legacy key first and clear it if it exists
     if (prefs.containsKey('is_premium')) {
        await prefs.remove('is_premium');
-       // Don't carry over legacy status as it might be invalid/stale
     }
 
     final expiryString = prefs.getString(_kPremiumExpiryKey);

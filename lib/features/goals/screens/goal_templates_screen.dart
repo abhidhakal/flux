@@ -5,6 +5,7 @@ import '../../../core/models/goal_template_model.dart';
 import '../../../core/services/enhanced_goal_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../goals_bloc.dart';
 
 class GoalTemplatesScreen extends StatefulWidget {
   const GoalTemplatesScreen({super.key});
@@ -719,6 +720,10 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
       final user = context.read<AuthBloc>().state;
       if (user is AuthAuthenticated) {
         await _goalService.createGoalFromTemplate(template, user.user.id);
+        
+        // Dispatch LoadGoals to refresh the goals list in goalsBloc
+        context.read<GoalsBloc>().add(LoadGoals(user.user.id));
+        
         Navigator.pop(context); // Close template details
         Navigator.pop(context); // Close templates screen
         AppSnackbar.showSuccess(context, message: 'Goal created from template!');

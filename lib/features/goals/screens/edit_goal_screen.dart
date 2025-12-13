@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/goal_model.dart';
+import '../../../core/services/currency_service.dart';
 import '../goals_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 
@@ -22,19 +23,20 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
   
   GoalType _selectedType = GoalType.savings;
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 365));
-  int _selectedColor = 0xFF084879;
+  int _selectedColor = 0xFF0079DC;
   bool _isRecurring = false;
   String? _recurringPeriod;
+  bool _isLoading = false;
 
-  final List<int> _colorOptions = [
-    0xFF084879, // Primary
-    0xFF38A169, // Success
-    0xFFE53E3E, // Error
-    0xFFF56505, // Warning
-    0xFF3182CE, // Blue
-    0xFF805AD5, // Purple
-    0xFFD69E2E, // Yellow
-    0xFF319795, // Teal
+  final List<Map<String, dynamic>> _colorOptions = [
+    {'color': 0xFF0079DC, 'name': 'Blue'},
+    {'color': 0xFF00C851, 'name': 'Green'},
+    {'color': 0xFFFF6B6B, 'name': 'Coral'},
+    {'color': 0xFFFFB300, 'name': 'Amber'},
+    {'color': 0xFF805AD5, 'name': 'Purple'},
+    {'color': 0xFF00B4D8, 'name': 'Teal'},
+    {'color': 0xFFE91E63, 'name': 'Pink'},
+    {'color': 0xFF607D8B, 'name': 'Slate'},
   ];
 
   @override
@@ -47,7 +49,7 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
     final goal = widget.goal;
     _nameController.text = goal.name;
     _descriptionController.text = goal.description;
-    _targetAmountController.text = goal.targetAmount.toString();
+    _targetAmountController.text = goal.targetAmount.toStringAsFixed(0);
     _selectedType = goal.type;
     _selectedDate = goal.targetDate;
     _selectedColor = goal.color;
@@ -73,19 +75,48 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
       appBar: AppBar(
         title: const Text('Edit Goal'),
         centerTitle: false,
-        backgroundColor: colorScheme.background,
-        foregroundColor: colorScheme.onBackground,
-        iconTheme: IconThemeData(color: colorScheme.onBackground),
-        titleTextStyle: TextStyle(
-          color: colorScheme.onBackground,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
+        elevation: 0,
+        actions: [
+          TextButton(
+            onPressed: _isLoading ? null : _handleUpdateGoal,
+            child: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text(
+                    'Save',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+          ),
+        ],
       ),
       body: BlocListener<GoalsBloc, GoalsState>(
         listener: (context, state) {
+          if (state is GoalsLoading) {
+            setState(() => _isLoading = true);
+          } else {
+            setState(() => _isLoading = false);
+          }
+          
           if (state is GoalsSuccess) {
-            AppSnackbar.showSuccess(context, message: state.message);
+            AppSnackbar.showSuccess(context, message: 'Goal updated successfully!');
             Navigator.pop(context);
           }
           
@@ -94,25 +125,125 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
           }
         },
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(),
-                const SizedBox(height: 24),
-                _buildBasicInfoSection(),
-                const SizedBox(height: 24),
-                _buildGoalTypeSection(),
-                const SizedBox(height: 24),
-                _buildTargetSection(),
-                const SizedBox(height: 24),
-                _buildColorSection(),
-                const SizedBox(height: 24),
-                _buildRecurringSection(),
-                const SizedBox(height: 32),
-                _buildActionButtons(),
+                // Goal Preview Header
+                _buildGoalPreview(colorScheme),
+                
+                // Form Content
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Goal Name
+                      _buildSectionLabel('Goal Name'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _nameController,
+                        style: TextStyle(color: colorScheme.onSurface),
+                        decoration: _inputDecoration(
+                          hintText: 'e.g., Emergency Fund',
+                          icon: Icons.flag_rounded,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a goal name';
+                          }
+                          return null;
+                        },
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Target Amount
+                      _buildSectionLabel('Target Amount'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _targetAmountController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: _inputDecoration(
+                          hintText: '10,000',
+                          icon: Icons.attach_money_rounded,
+                          prefixText: CurrencyService().symbol,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter target amount';
+                          }
+                          final amount = double.tryParse(value.replaceAll(',', ''));
+                          if (amount == null || amount <= 0) {
+                            return 'Please enter a valid amount';
+                          }
+                          return null;
+                        },
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Target Date
+                      _buildSectionLabel('Target Date'),
+                      const SizedBox(height: 8),
+                      _buildDateSelector(colorScheme),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Goal Type
+                      _buildSectionLabel('Goal Type'),
+                      const SizedBox(height: 12),
+                      _buildGoalTypeSelector(colorScheme),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Description
+                      _buildSectionLabel('Description (Optional)'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _descriptionController,
+                        maxLines: 3,
+                        style: TextStyle(color: colorScheme.onSurface),
+                        decoration: _inputDecoration(
+                          hintText: 'Why is this goal important to you?',
+                          icon: Icons.notes_rounded,
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Color Selection
+                      _buildSectionLabel('Goal Color'),
+                      const SizedBox(height: 12),
+                      _buildColorSelector(colorScheme),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Recurring Toggle
+                      _buildRecurringToggle(colorScheme),
+                      
+                      const SizedBox(height: 32),
+                      
+                      // Update Button
+                      _buildUpdateButton(colorScheme),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Cancel Button
+                      _buildCancelButton(colorScheme),
+                      
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -121,343 +252,522 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
     );
   }
 
-  Widget _buildHeader() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.edit, color: AppColors.primary, size: 32),
-                const SizedBox(width: 12),
-                const Text(
-                  'Edit Financial Goal',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Update your goal details and track your progress',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textSecondary,
-              ),
-            ),
+  Widget _buildGoalPreview(ColorScheme colorScheme) {
+    final progress = widget.goal.progressPercentage;
+    final currentAmount = widget.goal.currentAmount;
+    final targetAmount = double.tryParse(_targetAmountController.text.replaceAll(',', '')) ?? widget.goal.targetAmount;
+    
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(_selectedColor),
+            Color(_selectedColor).withOpacity(0.7),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildBasicInfoSection() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Basic Information',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Goal Name',
-                hintText: 'e.g., Emergency Fund, Vacation Savings',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.edit),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter a goal name';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _descriptionController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                hintText: 'Describe your goal and why it\'s important to you',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.description),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter a description';
-                }
-                return null;
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGoalTypeSection() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Goal Type',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<GoalType>(
-              value: _selectedType,
-              decoration: const InputDecoration(
-                labelText: 'Select Goal Type',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.category),
-              ),
-              items: GoalType.values.map((type) {
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(type.displayName),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedType = value!;
-                });
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTargetSection() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Target Details',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _targetAmountController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Target Amount',
-                hintText: 'Enter target amount',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.attach_money),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter target amount';
-                }
-                if (double.tryParse(value) == null) {
-                  return 'Please enter a valid amount';
-                }
-                if (double.parse(value) <= 0) {
-                  return 'Amount must be greater than 0';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            InkWell(
-              onTap: _selectDate,
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Target Date',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.calendar_today),
-                ),
-                child: Text(
-                  '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildColorSection() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Goal Color',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: _colorOptions.map((color) {
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedColor = color;
-                    });
-                  },
-                  child: Container(
-                    width: 40,
-                    height: 40,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Goal Icon and Name
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Color(color),
-                      shape: BoxShape.circle,
-                      border: _selectedColor == color
-                          ? Border.all(color: AppColors.textPrimary, width: 3)
-                          : null,
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: _selectedColor == color
-                        ? const Icon(Icons.check, color: Colors.white, size: 20)
-                        : null,
+                    child: Icon(
+                      _getGoalTypeIcon(_selectedType),
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecurringSection() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Recurring Settings',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Make this a recurring goal'),
-              subtitle: const Text('Goal will reset after completion'),
-              value: _isRecurring,
-              onChanged: (value) {
-                setState(() {
-                  _isRecurring = value;
-                  if (!value) {
-                    _recurringPeriod = null;
-                  }
-                });
-              },
-            ),
-            if (_isRecurring) ...[
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _recurringPeriod,
-                decoration: const InputDecoration(
-                  labelText: 'Recurring Period',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.repeat),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
-                  DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _nameController.text.isEmpty ? 'Goal Name' : _nameController.text,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _selectedType.displayName,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
-                onChanged: (value) {
-                  setState(() {
-                    _recurringPeriod = value;
-                  });
-                },
-                validator: (value) {
-                  if (_isRecurring && value == null) {
-                    return 'Please select a recurring period';
-                  }
-                  return null;
-                },
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Progress
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Current Progress',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          CurrencyService().formatAmount(currentAmount),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${progress.toStringAsFixed(0)}%',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Progress Bar
+              Container(
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: (progress / 100).clamp(0.0, 1.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // Target
+              Text(
+                'of ${CurrencyService().formatAmount(targetAmount)} target',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 14,
+                ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(String label) {
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    required String hintText,
+    required IconData icon,
+    String? prefixText,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.4)),
+      prefixIcon: Icon(icon, color: AppColors.primary),
+      prefixText: prefixText,
+      prefixStyle: TextStyle(
+        color: colorScheme.onSurface,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+      filled: true,
+      fillColor: colorScheme.surface,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: colorScheme.error),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    );
+  }
+
+  Widget _buildDateSelector(ColorScheme colorScheme) {
+    final daysRemaining = _selectedDate.difference(DateTime.now()).inDays;
+    
+    return InkWell(
+      onTap: _selectDate,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.calendar_month_rounded, color: AppColors.primary),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _formatDate(_selectedDate),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    daysRemaining > 0 
+                        ? '$daysRemaining days remaining'
+                        : 'Target date passed',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: daysRemaining > 0 
+                          ? colorScheme.onSurface.withOpacity(0.6) 
+                          : AppColors.error,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: colorScheme.onSurface.withOpacity(0.4),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: () => Navigator.pop(context),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+  Widget _buildGoalTypeSelector(ColorScheme colorScheme) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: GoalType.values.map((type) {
+        final isSelected = _selectedType == type;
+        return GestureDetector(
+          onTap: () => setState(() => _selectedType = type),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: isSelected 
+                  ? AppColors.primary.withOpacity(0.1) 
+                  : colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isSelected 
+                    ? AppColors.primary 
+                    : colorScheme.outline.withOpacity(0.3),
+                width: isSelected ? 2 : 1,
+              ),
             ),
-            child: const Text('Cancel'),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: _handleUpdateGoal,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textInverse,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _getGoalTypeIcon(type),
+                  size: 18,
+                  color: isSelected ? AppColors.primary : colorScheme.onSurface.withOpacity(0.6),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  type.displayName,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected ? AppColors.primary : colorScheme.onSurface.withOpacity(0.8),
+                  ),
+                ),
+              ],
             ),
-            child: const Text('Update Goal'),
           ),
-        ),
-      ],
+        );
+      }).toList(),
     );
+  }
+
+  Widget _buildColorSelector(ColorScheme colorScheme) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: _colorOptions.map((option) {
+        final colorValue = option['color'] as int;
+        final isSelected = _selectedColor == colorValue;
+        
+        return GestureDetector(
+          onTap: () => setState(() => _selectedColor = colorValue),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Color(colorValue),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isSelected ? colorScheme.onSurface : Colors.transparent,
+                width: 3,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: Color(colorValue).withOpacity(0.4),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: isSelected
+                ? const Icon(Icons.check_rounded, color: Colors.white, size: 22)
+                : null,
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildRecurringToggle(ColorScheme colorScheme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          SwitchListTile(
+            title: Text(
+              'Recurring Goal',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            subtitle: Text(
+              'Goal will reset after completion',
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+            value: _isRecurring,
+            onChanged: (value) {
+              setState(() {
+                _isRecurring = value;
+                if (!value) _recurringPeriod = null;
+              });
+            },
+            activeColor: AppColors.primary,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          ),
+          if (_isRecurring) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildPeriodOption('monthly', 'Monthly', colorScheme),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildPeriodOption('yearly', 'Yearly', colorScheme),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeriodOption(String value, String label, ColorScheme colorScheme) {
+    final isSelected = _recurringPeriod == value;
+    return GestureDetector(
+      onTap: () => setState(() => _recurringPeriod = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withOpacity(0.1) : colorScheme.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : colorScheme.outline.withOpacity(0.3),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              color: isSelected ? AppColors.primary : colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUpdateButton(ColorScheme colorScheme) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _handleUpdateGoal,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.save_rounded, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Update Goal',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildCancelButton(ColorScheme colorScheme) {
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton(
+        onPressed: () => Navigator.pop(context),
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Text(
+          'Cancel',
+          style: TextStyle(
+            fontSize: 16,
+            color: colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getGoalTypeIcon(GoalType type) {
+    switch (type) {
+      case GoalType.savings:
+        return Icons.savings_rounded;
+      case GoalType.debt:
+        return Icons.credit_card_off_rounded;
+      case GoalType.investment:
+        return Icons.trending_up_rounded;
+      case GoalType.emergency:
+        return Icons.health_and_safety_rounded;
+      case GoalType.vacation:
+        return Icons.flight_rounded;
+      case GoalType.home:
+        return Icons.home_rounded;
+      case GoalType.education:
+        return Icons.school_rounded;
+      case GoalType.other:
+        return Icons.flag_rounded;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
   Future<void> _selectDate() async {
@@ -466,21 +776,34 @@ class _EditGoalScreenState extends State<EditGoalScreen> {
       initialDate: _selectedDate,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: AppColors.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (date != null) {
-      setState(() {
-        _selectedDate = date;
-      });
+      setState(() => _selectedDate = date);
     }
   }
 
   void _handleUpdateGoal() {
     if (_formKey.currentState!.validate()) {
+      if (_isRecurring && _recurringPeriod == null) {
+        AppSnackbar.showError(context, message: 'Please select a recurring period');
+        return;
+      }
+      
       final updatedGoal = widget.goal.copyWith(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         type: _selectedType,
-        targetAmount: double.parse(_targetAmountController.text),
+        targetAmount: double.parse(_targetAmountController.text.replaceAll(',', '')),
         targetDate: _selectedDate,
         color: _selectedColor,
         isRecurring: _isRecurring,
@@ -498,15 +821,15 @@ extension GoalTypeExtension on GoalType {
       case GoalType.savings:
         return 'Savings';
       case GoalType.debt:
-        return 'Debt Repayment';
+        return 'Debt';
       case GoalType.investment:
         return 'Investment';
       case GoalType.emergency:
-        return 'Emergency Fund';
+        return 'Emergency';
       case GoalType.vacation:
         return 'Vacation';
       case GoalType.home:
-        return 'Home Purchase';
+        return 'Home';
       case GoalType.education:
         return 'Education';
       case GoalType.other:

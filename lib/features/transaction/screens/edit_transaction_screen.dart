@@ -160,14 +160,15 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       appBar: AppBar(
         title: const Text('Edit Transaction'),
         centerTitle: false,
-        backgroundColor: colorScheme.background,
-        foregroundColor: colorScheme.onBackground,
-        iconTheme: IconThemeData(color: colorScheme.onBackground),
-        titleTextStyle: TextStyle(
-          color: colorScheme.onBackground,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
+        elevation: 0,
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _saveTransaction,
@@ -175,9 +176,9 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   )
-                : const Text('Save'),
+                : const Text('Save', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

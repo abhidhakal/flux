@@ -62,17 +62,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       appBar: AppBar(
         title: const Text('Add Transaction'),
         centerTitle: false,
-        backgroundColor: colorScheme.background,
-        foregroundColor: colorScheme.onBackground,
-        iconTheme: IconThemeData(color: colorScheme.onBackground),
-        titleTextStyle: TextStyle(
-          color: colorScheme.onBackground,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
+        elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(Icons.save, color: colorScheme.onBackground),
+            icon: const Icon(Icons.save, color: Colors.white),
             onPressed: _isLoading ? null : _handleSave,
           ),
         ],

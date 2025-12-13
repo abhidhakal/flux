@@ -73,32 +73,24 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     return Scaffold(
       backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: Text('Create Goal'),
+        title: const Text('Create Goal'),
         centerTitle: false,
-        backgroundColor: colorScheme.background,
-        foregroundColor: colorScheme.onBackground,
-        iconTheme: IconThemeData(color: colorScheme.onBackground),
-        titleTextStyle: TextStyle(
-          color: colorScheme.onBackground,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
+        elevation: 0,
       ),
       body: BlocListener<GoalsBloc, GoalsState>(
         listener: (context, state) {
           if (state is GoalsSuccess) {
             AppSnackbar.showSuccess(context, message: state.message);
             Navigator.pop(context);
-          }
-          // Also close on successful load after creation
-          if (state is GoalsLoaded) {
-            // If we have at least one goal, assume creation succeeded and close
-            if (state.goals.isNotEmpty && Navigator.canPop(context)) {
-              Navigator.pop(context);
-            }
-          }
-          
-          if (state is GoalsError) {
+          } else if (state is GoalsError) {
             AppSnackbar.showError(context, message: state.message);
           }
         },

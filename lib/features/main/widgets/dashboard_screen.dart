@@ -193,27 +193,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final totalExpenses = expenses.fold(0.0, (sum, t) => sum + t.amount);
     final totalIncome = incomes.fold(0.0, (sum, i) => sum + i.amount);
     final balance = totalIncome - totalExpenses;
+    
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary,
-            AppColors.primaryDark,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: colorScheme.primaryContainer.withOpacity(0.4),
         borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -221,7 +210,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Text(
             'Total Balance',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: colorScheme.onSurfaceVariant,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -229,8 +218,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 8),
           Text(
             CurrencyService().formatAmount(balance),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colorScheme.onSurface,
               fontSize: 36,
               fontWeight: FontWeight.w700,
               letterSpacing: -1,
@@ -244,20 +233,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   'Income',
                   CurrencyService().formatAmount(totalIncome),
                   Icons.arrow_upward_rounded,
-                  Colors.white, // White for better contrast on blue
+                  const Color(0xFF22C55E), // Green
+                  colorScheme,
                 ),
               ),
               Container(
                 width: 1,
                 height: 40,
-                color: Colors.white.withOpacity(0.2),
+                color: colorScheme.outline.withOpacity(0.1),
               ),
               Expanded(
                 child: _buildBalanceStat(
                   'Expense',
                   CurrencyService().formatAmount(totalExpenses),
                   Icons.arrow_downward_rounded,
-                  Colors.white,
+                  const Color(0xFFEF4444), // Red
+                  colorScheme,
                 ),
               ),
             ],
@@ -267,7 +258,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildBalanceStat(String label, String value, IconData icon, Color color) {
+  Widget _buildBalanceStat(String label, String value, IconData icon, Color color, ColorScheme colorScheme) {
     return Column(
       children: [
         Row(
@@ -276,7 +267,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2), // Frosted glass effect
+                color: color.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 12),
@@ -285,7 +276,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text(
               label,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
+                color: colorScheme.onSurfaceVariant,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -296,7 +287,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Text(
           value,
           style: TextStyle(
-            color: color,
+            color: colorScheme.onSurface,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -312,7 +303,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: _buildActionButton(
             'Add New',
             Icons.add_rounded,
-            Colors.black,
+            const Color(0xFF2b2b2b), // Softer black
             Colors.white,
             () {
               Navigator.push(

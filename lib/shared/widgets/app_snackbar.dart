@@ -47,93 +47,57 @@ class AppSnackbar {
     final defaultIcon = _getDefaultIconForType(type);
 
     return SnackBar(
-      content: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: colors.backgroundColor,
-              borderRadius: BorderRadius.circular(AppTheme.radius8),
-              boxShadow: [
-                BoxShadow(
-                  color: colorScheme.shadow.withOpacity(0.2),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(
+      content: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
               icon ?? defaultIcon,
               color: colors.iconColor,
-              size: 20,
+              size: 24,
             ),
-          ),
-          const SizedBox(width: AppTheme.spacing12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _getTitleForType(type),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  message,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.normal,
-                    color: colorScheme.onSurface.withOpacity(0.7),
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (onAction != null && actionLabel != null) ...[
-            const SizedBox(width: AppTheme.spacing8),
-            TextButton(
-              onPressed: onAction,
-              style: TextButton.styleFrom(
-                foregroundColor: colors.actionColor,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacing12,
-                  vertical: AppTheme.spacing8,
-                ),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
+            const SizedBox(width: 12),
+            Expanded(
               child: Text(
-                actionLabel,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                message,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onInverseSurface,
                   fontFamily: AppTheme.fontFamily,
                 ),
               ),
             ),
+            if (onAction != null && actionLabel != null) ...[
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: onAction,
+                style: TextButton.styleFrom(
+                  foregroundColor: colors.actionColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  actionLabel,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ],
-        ],
-      ),
-      backgroundColor: colorScheme.surface,
-      duration: duration,
-      behavior: SnackBarBehavior.floating,
-      margin: const EdgeInsets.all(AppTheme.spacing16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radius12),
-        side: BorderSide(
-          color: colors.borderColor,
-          width: 1,
         ),
       ),
-      elevation: 4,
+      backgroundColor: colorScheme.inverseSurface,
+      duration: duration,
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(30),
+      ),
+      elevation: 0,
     );
   }
 

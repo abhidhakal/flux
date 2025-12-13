@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/goal_model.dart';
+import '../../../core/services/currency_service.dart';
 import '../goals_bloc.dart';
 import '../../auth/auth_bloc.dart';
 
@@ -285,214 +286,74 @@ class _GoalCardState extends State<GoalCard>
   }
 
   Widget _buildProgressSection() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-            Color(widget.goal.color).withOpacity(0.08),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Color(widget.goal.color).withOpacity(0.15),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(widget.goal.color).withOpacity(0.05),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Progress',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
-                  letterSpacing: -0.3,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    final colorScheme = Theme.of(context).colorScheme;
+    final goalColor = Color(widget.goal.color);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Progress bar with percentage
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 6,
                 decoration: BoxDecoration(
-                  color: Color(widget.goal.color).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(3),
+                  color: colorScheme.outline.withOpacity(0.15),
                 ),
-                child: Text(
-                  '${widget.goal.progressPercentage.toStringAsFixed(0)}%',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(widget.goal.color),
-                    letterSpacing: -0.2,
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: widget.goal.progress.clamp(0.0, 1.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(3),
+                      color: goalColor,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            height: 8,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4),
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  Theme.of(context).colorScheme.outline.withOpacity(0.1),
-                  Theme.of(context).colorScheme.outline.withOpacity(0.05),
-                ],
               ),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: widget.goal.progress,
-                backgroundColor: Colors.transparent,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(widget.goal.color)),
-                minHeight: 8,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Current',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: -0.1,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '\$${widget.goal.currentAmount.toStringAsFixed(0)}',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.onSurface,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    'Target',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: -0.1,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '\$${widget.goal.targetAmount.toStringAsFixed(0)}',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.onSurface,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          if (widget.goal.status == GoalStatus.active && !widget.goal.isCompleted) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: widget.goal.daysRemaining <= 30 
-                      ? [
-                          const Color(0xFFFF3B30).withOpacity(0.15),
-                          const Color(0xFFFF3B30).withOpacity(0.05),
-                        ]
-                      : [
-                          const Color(0xFF007AFF).withOpacity(0.15),
-                          const Color(0xFF007AFF).withOpacity(0.05),
-                        ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: widget.goal.daysRemaining <= 30 
-                      ? const Color(0xFFFF3B30).withOpacity(0.25)
-                      : const Color(0xFF007AFF).withOpacity(0.25),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (widget.goal.daysRemaining <= 30 
-                        ? const Color(0xFFFF3B30)
-                        : const Color(0xFF007AFF)).withOpacity(0.1),
-                    offset: const Offset(0, 2),
-                    blurRadius: 6,
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Remaining: \$${widget.goal.remaining.toStringAsFixed(0)}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (widget.goal.daysRemaining > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: widget.goal.daysRemaining <= 30 
-                            ? const Color(0xFFFF3B30)
-                            : const Color(0xFF007AFF),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Text(
-                        '${widget.goal.daysRemaining} days left',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.1,
-                        ),
-                      ),
-                    ),
-                ],
+            const SizedBox(width: 12),
+            Text(
+              '${widget.goal.progressPercentage.toStringAsFixed(0)}%',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: goalColor,
               ),
             ),
           ],
-        ],
-      ),
+        ),
+        
+        const SizedBox(height: 10),
+        
+        // Amount row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '${CurrencyService().formatAmount(widget.goal.currentAmount)} of ${CurrencyService().formatAmount(widget.goal.targetAmount)}',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            if (widget.goal.status == GoalStatus.active && widget.goal.daysRemaining > 0)
+              Text(
+                '${widget.goal.daysRemaining}d left',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: widget.goal.daysRemaining <= 30 
+                      ? AppColors.error 
+                      : colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -568,11 +429,19 @@ class _GoalCardState extends State<GoalCard>
   }
 
   void _showAddProgressDialog(BuildContext context) {
+    // Capture bloc references BEFORE showing dialog (dialog context can't access providers)
+    final goalsBloc = context.read<GoalsBloc>();
+    final authState = context.read<AuthBloc>().state;
+    String userId = widget.goal.userId;
+    if (authState is AuthAuthenticated) {
+      userId = authState.user.id;
+    }
+    
     final amountController = TextEditingController();
     
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Add Progress'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -582,17 +451,17 @@ class _GoalCardState extends State<GoalCard>
             TextField(
               controller: amountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Amount',
-                prefixText: '\$',
-                border: OutlineInputBorder(),
+                prefixText: CurrencyService().symbol,
+                border: const OutlineInputBorder(),
               ),
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
@@ -600,20 +469,15 @@ class _GoalCardState extends State<GoalCard>
               final raw = amountController.text.replaceAll(',', '').trim();
               final amount = double.tryParse(raw);
               if (amount == null || amount <= 0) {
-                AppSnackbar.showError(context, message: 'Enter a valid amount > 0');
+                AppSnackbar.showError(dialogContext, message: 'Enter a valid amount > 0');
                 return;
               }
-              final authState = context.read<AuthBloc>().state;
-              String userId = widget.goal.userId;
-              if (authState is AuthAuthenticated) {
-                userId = authState.user.id;
-              }
-              context.read<GoalsBloc>().add(UpdateGoalProgress(
+              goalsBloc.add(UpdateGoalProgress(
                 goalId: widget.goal.id,
                 amount: amount,
                 userId: userId,
               ));
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
             },
             child: const Text('Add'),
           ),
@@ -734,25 +598,28 @@ class _GoalCardState extends State<GoalCard>
   }
 
   void _deleteGoal(BuildContext context) {
+    // Capture bloc references BEFORE showing dialog (dialog context can't access providers)
+    final goalsBloc = context.read<GoalsBloc>();
+    final authState = context.read<AuthBloc>().state;
+    String userId = widget.goal.userId;
+    if (authState is AuthAuthenticated) {
+      userId = authState.user.id;
+    }
+    
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Goal'),
         content: Text('Are you sure you want to delete "${widget.goal.name}"? This action cannot be undone.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
-              final authState = context.read<AuthBloc>().state;
-              String userId = widget.goal.userId;
-              if (authState is AuthAuthenticated) {
-                userId = authState.user.id;
-              }
-              context.read<GoalsBloc>().add(DeleteGoal(widget.goal.id, userId));
-              Navigator.pop(context);
+              goalsBloc.add(DeleteGoal(widget.goal.id, userId));
+              Navigator.pop(dialogContext);
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Delete'),

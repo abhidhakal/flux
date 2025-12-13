@@ -46,9 +46,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
+        elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(Icons.add, color: colorScheme.onBackground),
+            icon: Icon(Icons.add_rounded, color: colorScheme.onBackground),
             onPressed: () {
               _showCreateBudgetDialog();
             },
