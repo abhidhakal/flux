@@ -9,6 +9,7 @@ import '../../../core/models/user_model.dart';
 import '../../../shared/widgets/skeleton_components.dart';
 import '../../auth/auth_bloc.dart';
 import '../../goals/goals_bloc.dart';
+import '../../../core/models/goal_model.dart';
 import '../../transaction/transaction_bloc.dart';
 import '../screens/about_us_screen.dart';
 import '../screens/privacy_policy_screen.dart';
@@ -238,7 +239,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 32),
               // Sign Out Button
               _buildSignOutButton(colorScheme),
-              const SizedBox(height: 100),
+              const SizedBox(height: 150),
             ]),
           ),
         ),
@@ -382,7 +383,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       transactionCount = transactionState.transactions.length;
     }
     if (goalsState is GoalsLoaded) {
-      goalsCount = goalsState.goals.length;
+      goalsCount = goalsState.goals.where((g) => g.status == GoalStatus.active).length;
     }
 
     return Container(

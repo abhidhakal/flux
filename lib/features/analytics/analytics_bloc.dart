@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../core/models/transaction_model.dart';
+import '../../core/models/income_model.dart';
 import '../../core/services/ai_intelligence_service.dart';
 
 // Events
@@ -13,24 +14,27 @@ abstract class AnalyticsEvent extends Equatable {
 
 class AnalyzeSpendingPatterns extends AnalyticsEvent {
   final List<Transaction> transactions;
+  final List<Income> incomes;
 
-  const AnalyzeSpendingPatterns(this.transactions);
+  const AnalyzeSpendingPatterns(this.transactions, this.incomes);
 
   @override
-  List<Object?> get props => [transactions];
+  List<Object?> get props => [transactions, incomes];
 }
 
 class GenerateBudgetRecommendations extends AnalyticsEvent {
   final List<Transaction> transactions;
+  final List<Income> incomes;
   final double monthlyIncome;
 
   const GenerateBudgetRecommendations({
     required this.transactions,
+    required this.incomes,
     required this.monthlyIncome,
   });
 
   @override
-  List<Object?> get props => [transactions, monthlyIncome];
+  List<Object?> get props => [transactions, incomes, monthlyIncome];
 }
 
 class PredictFutureSpending extends AnalyticsEvent {
@@ -132,7 +136,7 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
     emit(AnalyticsLoading());
     
     try {
-      final analysis = _aiService.analyzeSpendingPatterns(event.transactions);
+      final analysis = _aiService.analyzeSpendingPatterns(event.transactions, event.incomes);
       emit(SpendingAnalysisLoaded(analysis));
     } catch (e) {
       emit(AnalyticsError('Failed to analyze spending patterns: $e'));
@@ -148,6 +152,7 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
     try {
       final recommendations = _aiService.generateBudgetRecommendations(
         event.transactions,
+        event.incomes,
         event.monthlyIncome,
       );
       emit(BudgetRecommendationsLoaded(recommendations));

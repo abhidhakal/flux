@@ -3,22 +3,28 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
+import '../../../core/models/income_model.dart';
 import '../../../core/services/currency_service.dart';
 
 class TrendAnalysisChart extends StatelessWidget {
   final List<Transaction> transactions;
+  final List<Income> incomes;
 
-  const TrendAnalysisChart({super.key, required this.transactions});
+  const TrendAnalysisChart({
+    super.key, 
+    required this.transactions,
+    required this.incomes,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (transactions.isEmpty) {
+    if (transactions.isEmpty && incomes.isEmpty) {
       return Container(
         height: 200,
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(AppTheme.radius12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
         ),
         child: const Center(
           child: Column(
@@ -40,7 +46,7 @@ class TrendAnalysisChart extends StatelessWidget {
               ),
               SizedBox(height: AppTheme.spacing4),
               Text(
-                'Add some transactions to see income vs expense trends',
+                'Add some records to see income vs expense trends',
                 style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 12,
@@ -59,9 +65,9 @@ class TrendAnalysisChart extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radius12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
       ),
       child: Column(
         children: [
@@ -73,7 +79,8 @@ class TrendAnalysisChart extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppTheme.spacing16),
-          Expanded(
+          SizedBox(
+            height: 200,
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
@@ -81,7 +88,6 @@ class TrendAnalysisChart extends StatelessWidget {
                 barTouchData: BarTouchData(
                   enabled: true,
                   touchTooltipData: BarTouchTooltipData(
-                    tooltipBorder: BorderSide(color: AppColors.border),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final monthData = monthlyData[group.x.toInt()];
                       final isIncome = rodIndex == 0;
@@ -90,8 +96,8 @@ class TrendAnalysisChart extends StatelessWidget {
                       
                       return BarTooltipItem(
                         '$label\n${CurrencyService().formatAmount(amount).replaceAll('.00', '')}',
-                        const TextStyle(
-                          color: AppColors.textPrimary,
+                        TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.w600,
                         ),
                       );
@@ -154,7 +160,7 @@ class TrendAnalysisChart extends StatelessWidget {
                   horizontalInterval: interval,
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
-                      color: AppColors.border,
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.05),
                       strokeWidth: 1,
                     );
                   },
@@ -170,22 +176,31 @@ class TrendAnalysisChart extends StatelessWidget {
   List<Map<String, dynamic>> _getMonthlyData() {
     final Map<String, Map<String, double>> monthlyData = {};
     
+    // Add expenses
     for (final transaction in transactions) {
-      final monthKey = '${transaction.date.year}-${transaction.date.month.toString().padLeft(2, '0')}';
-      
-      if (!monthlyData.containsKey(monthKey)) {
-        monthlyData[monthKey] = {'income': 0, 'expense': 0};
-      }
-      
-      if (transaction.isIncome) {
-        monthlyData[monthKey]!['income'] = monthlyData[monthKey]!['income']! + transaction.amount;
-      } else {
+      if (transaction.isExpense) {
+        final monthKey = '${transaction.date.year}-${transaction.date.month.toString().padLeft(2, '0')}';
+        if (!monthlyData.containsKey(monthKey)) {
+          monthlyData[monthKey] = {'income': 0, 'expense': 0};
+        }
         monthlyData[monthKey]!['expense'] = monthlyData[monthKey]!['expense']! + transaction.amount;
       }
     }
 
+    // Add incomes
+    for (final income in incomes) {
+      final monthKey = '${income.date.year}-${income.date.month.toString().padLeft(2, '0')}';
+      if (!monthlyData.containsKey(monthKey)) {
+        monthlyData[monthKey] = {'income': 0, 'expense': 0};
+      }
+      monthlyData[monthKey]!['income'] = monthlyData[monthKey]!['income']! + income.amount;
+    }
+
     final sortedMonths = monthlyData.keys.toList()..sort();
-    return sortedMonths.map((month) {
+    // Limit to last 6 months
+    final displayMonths = sortedMonths.length > 6 ? sortedMonths.sublist(sortedMonths.length - 6) : sortedMonths;
+
+    return displayMonths.map((month) {
       final parts = month.split('-');
       final monthName = _getMonthName(int.parse(parts[1]));
       return {
@@ -269,14 +284,7 @@ class TrendAnalysisChart extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppTheme.spacing4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-          ),
-        ),
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
       ],
     );
   }

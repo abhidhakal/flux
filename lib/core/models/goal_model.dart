@@ -206,3 +206,26 @@ class Goal extends Equatable {
         recurringPeriod,
       ];
 }
+
+extension GoalTypeX on GoalType {
+  String get typeDisplayName {
+    switch (this) {
+      case GoalType.savings:
+        return 'Savings';
+      case GoalType.debt:
+        return 'Debt Repayment';
+      case GoalType.investment:
+        return 'Investment';
+      case GoalType.emergency:
+        return 'Emergency Fund';
+      case GoalType.vacation:
+        return 'Vacation';
+      case GoalType.home:
+        return 'Home Purchase';
+      case GoalType.education:
+        return 'Education';
+      case GoalType.other:
+        return 'Other';
+    }
+  }
+}

@@ -59,100 +59,102 @@ class WeeklySpendingChart extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radius12),
-        border: Border.all(color: AppColors.border),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radius24),
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
       ),
-      child: BarChart(
-        BarChartData(
-          alignment: BarChartAlignment.spaceAround,
-          maxY: maxAmount,
-          barTouchData: BarTouchData(
-            enabled: true,
-            touchTooltipData: BarTouchTooltipData(
-              tooltipBorder: BorderSide(color: AppColors.border),
-              getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                final dayData = weeklyData[group.x.toInt()];
-                final date = dayData['date'] as DateTime;
-                final dateString = '${date.day}/${date.month}';
-                return BarTooltipItem(
-                  '$dateString (${dayData['dayName']})\n${CurrencyService().formatAmount(dayData['amount']).replaceAll('.00', '')}',
-                  const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                );
-              },
-            ),
-          ),
-          titlesData: FlTitlesData(
-            show: true,
-            rightTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            topTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (double value, TitleMeta meta) {
-                  if (value.toInt() >= 0 && value.toInt() < weeklyData.length) {
-                    final dayData = weeklyData[value.toInt()];
-                    final date = dayData['date'] as DateTime;
-                    final dayName = dayData['dayName'];
-                    return Padding(
-                      padding: const EdgeInsets.only(top: AppTheme.spacing8),
-                      child: Text(
-                        '${date.day}\n$dayName',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
+      child: Column(
+        children: [
+          SizedBox(
+            height: 200,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: maxAmount,
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final dayData = weeklyData[group.x.toInt()];
+                      final date = dayData['date'] as DateTime;
+                      final dateString = '${date.day}/${date.month}';
+                      return BarTooltipItem(
+                        '$dateString (${dayData['dayName']})\n${CurrencyService().formatAmount(dayData['amount']).replaceAll('.00', '')}',
+                        TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.w600,
-                          fontSize: 10,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                    );
-                  }
-                  return const Text('');
-                },
-                reservedSize: 50,
-              ),
-            ),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 60,
-                interval: interval,
-                getTitlesWidget: (double value, TitleMeta meta) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: AppTheme.spacing8),
-                    child: Text(
-                      CurrencyService().formatAmount(value).replaceAll('.00', ''),
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
+                      );
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        if (value.toInt() >= 0 && value.toInt() < weeklyData.length) {
+                          final dayData = weeklyData[value.toInt()];
+                          final dayName = dayData['dayName'];
+                          return Padding(
+                            padding: const EdgeInsets.only(top: AppTheme.spacing8),
+                            child: Text(
+                              dayName,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 10,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                      reservedSize: 30,
                     ),
-                  );
-                },
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 50,
+                      interval: interval,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        return Text(
+                          CurrencyService().formatAmount(value).replaceAll('.00', ''),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 10,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                barGroups: _getBarGroups(weeklyData),
+                gridData: FlGridData(
+                  show: true,
+                  horizontalInterval: interval,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.05),
+                      strokeWidth: 1,
+                    );
+                  },
+                ),
               ),
             ),
           ),
-          borderData: FlBorderData(show: false),
-          barGroups: _getBarGroups(weeklyData),
-          gridData: FlGridData(
-            show: true,
-            horizontalInterval: interval,
-            getDrawingHorizontalLine: (value) {
-              return FlLine(
-                color: AppColors.border,
-                strokeWidth: 1,
-              );
-            },
-          ),
-        ),
+        ],
       ),
     );
   }

@@ -1,4 +1,5 @@
 import '../models/transaction_model.dart';
+import '../models/income_model.dart';
 import 'currency_service.dart';
 
 class AIIntelligenceService {
@@ -126,23 +127,32 @@ class AIIntelligenceService {
   }
 
   // Analyze spending patterns and provide insights
-  Map<String, dynamic> analyzeSpendingPatterns(List<Transaction> transactions) {
-    if (transactions.isEmpty) {
+  Map<String, dynamic> analyzeSpendingPatterns(List<Transaction> transactions, List<Income> incomes) {
+    if (transactions.isEmpty && incomes.isEmpty) {
       return {
+        'healthScore': 0,
         'totalSpent': 0.0,
+        'totalIncome': 0.0,
         'averageSpent': 0.0,
+        'savingsRate': 0.0,
         'topCategories': [],
         'spendingTrend': 'stable',
-        'insights': ['No transactions to analyze'],
-        'recommendations': ['Start tracking your expenses to get insights'],
+        'insights': ['No data to analyze yet.'],
+        'recommendations': ['Start tracking your income and expenses to get AI insights'],
+        'subscriptions': [],
+        'projectedSavings': 0.0,
+        'efficiency': {'needs': 0.0, 'wants': 0.0, 'savings': 0.0},
       };
     }
 
     final expenses = transactions.where((t) => t.isExpense).toList();
     final totalSpent = expenses.fold(0.0, (sum, t) => sum + t.amount);
-    final averageSpent = totalSpent / expenses.length;
+    final totalIncome = incomes.fold<double>(0.0, (sum, i) => sum + i.amount);
+    final averageSpent = expenses.isNotEmpty ? totalSpent / expenses.length : 0.0;
+    
+    final savingsRate = totalIncome > 0 ? ((totalIncome - totalSpent) / totalIncome * 100) : 0.0;
 
-    // Category analysis
+    // 1. Category analysis
     final categoryTotals = <String, double>{};
     for (final transaction in expenses) {
       categoryTotals[transaction.category] = 
@@ -155,71 +165,160 @@ class AIIntelligenceService {
     final topCategories = sortedCategories.take(3).map((e) => {
       'category': e.key,
       'amount': e.value,
-      'percentage': (e.value / totalSpent * 100).toStringAsFixed(1),
+      'percentage': totalSpent > 0 ? (e.value / totalSpent * 100).toStringAsFixed(1) : '0.0',
     }).toList();
 
-    // Spending trend analysis
-    final recentTransactions = expenses.where((t) => 
-        DateTime.now().difference(t.date).inDays <= 30).toList();
-    final olderTransactions = expenses.where((t) => 
-        DateTime.now().difference(t.date).inDays > 30).toList();
+    // 2. Subscription Detection (Crude detection based on recurring titles/amounts)
+    final Map<String, List<Transaction>> merchantHistory = {};
+    for (final t in expenses) {
+      final key = t.title.toLowerCase().trim();
+      merchantHistory.putIfAbsent(key, () => []).add(t);
+    }
 
-    final recentTotal = recentTransactions.fold(0.0, (sum, t) => sum + t.amount);
-    final olderTotal = olderTransactions.fold(0.0, (sum, t) => sum + t.amount);
+    final subscriptions = <Map<String, dynamic>>[];
+    merchantHistory.forEach((title, txs) {
+      if (txs.length >= 2) {
+        // Simple logic: if same amount or same merchant appears frequently
+        final amounts = txs.map((e) => e.amount).toSet();
+        if (amounts.length == 1 || txs.length >= 3) {
+          subscriptions.add({
+            'title': txs.first.title,
+            'amount': txs.first.amount,
+            'frequency': 'Monthly', // Assume monthly for simplicity
+            'category': txs.first.category,
+          });
+        }
+      }
+    });
+
+    // 3. Efficiency Calculation (50/30/20 rule)
+    double needs = 0, wants = 0;
+    for (final t in expenses) {
+      // Prioritize user-defined essential status, fallback to category mapping
+      if (t.isEssential) {
+        needs += t.amount;
+      } else if (['Housing', 'Utilities', 'Healthcare', 'Transportation', 'Education'].contains(t.category)) {
+        // Fallback for transactions where user hasn't toggled it yet
+        needs += t.amount;
+      } else {
+        wants += t.amount;
+      }
+    }
+    final efficiency = {
+      'needs': totalIncome > 0 ? (needs / totalIncome * 100) : 0.0,
+      'wants': totalIncome > 0 ? (wants / totalIncome * 100) : 0.0,
+      'savings': savingsRate > 0 ? savingsRate : 0.0,
+    };
+
+    // 4. Financial Health Score (0-100)
+    int healthScore = 50; // Base score
+    healthScore += (savingsRate / 2).clamp(-20, 25).toInt(); // up to +25 for 50% savings
+    if (efficiency['needs']! < 50) healthScore += 10;
+    if (efficiency['wants']! < 30) healthScore += 10;
+    if (totalIncome > totalSpent) healthScore += 5;
+    
+    // Recent trend impact
+    final now = DateTime.now();
+    final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+    final sixtyDaysAgo = now.subtract(const Duration(days: 60));
+
+    final recentExpenses = expenses.where((t) => t.date.isAfter(thirtyDaysAgo)).toList();
+    final previousExpenses = expenses.where((t) => t.date.isAfter(sixtyDaysAgo) && t.date.isBefore(thirtyDaysAgo)).toList();
+
+    final recentTotal = recentExpenses.fold(0.0, (sum, t) => sum + t.amount);
+    final previousTotal = previousExpenses.fold(0.0, (sum, t) => sum + t.amount);
 
     String spendingTrend = 'stable';
-    if (recentTotal > olderTotal * 1.2) {
-      spendingTrend = 'increasing';
-    } else if (recentTotal < olderTotal * 0.8) {
-      spendingTrend = 'decreasing';
+    if (previousTotal > 0) {
+      final change = (recentTotal - previousTotal) / previousTotal;
+      if (change > 0.1) {
+        spendingTrend = 'increasing';
+        healthScore -= 10;
+      }
+      else if (change < -0.1) {
+        spendingTrend = 'decreasing';
+        healthScore += 10;
+      }
     }
+    healthScore = healthScore.clamp(0, 100);
+
+    // 5. Projected Savings (6 months)
+    final monthlySavings = totalIncome - totalSpent;
+    final projectedSavings = monthlySavings * 6;
 
     // Generate insights
     final insights = <String>[];
-    if (topCategories.isNotEmpty) {
-      final topCategory = topCategories.first;
-      insights.add('Your biggest expense is ${topCategory['category']} (${topCategory['percentage']}% of total)');
-    }
     
-    if (spendingTrend == 'increasing') {
-      insights.add('Your spending has increased recently');
-    } else if (spendingTrend == 'decreasing') {
-      insights.add('Great job! Your spending has decreased recently');
+    // Financial Health Insight
+    if (healthScore > 80) {
+      insights.add('Excellent financial health! You are in the top 5% of savers.');
+    } else if (healthScore > 60) {
+      insights.add('Good financial health. Your habits are sustainable.');
+    } else {
+      insights.add('Your financial health needs attention. Consider reviewing your "wants" spending.');
     }
 
-    if (averageSpent > 100) {
-      insights.add('Your average transaction is ${CurrencyService().formatAmount(averageSpent).replaceAll('.00', '')}');
+    if (subscriptions.isNotEmpty) {
+      final subTotal = subscriptions.fold(0.0, (sum, s) => sum + (s['amount'] as double));
+      insights.add('Detected ${subscriptions.length} recurring subscriptions costing you ${CurrencyService().formatAmount(subTotal)} monthly.');
+    }
+
+    if (projectedSavings > 0) {
+      insights.add('At your current rate, you will save ${CurrencyService().formatAmount(projectedSavings)} in the next 6 months.');
+    }
+
+    if (topCategories.isNotEmpty) {
+      final topCategory = topCategories.first;
+      insights.add('Spending focus: ${topCategory['category']} (${topCategory['percentage']}% of total).');
+    }
+    
+    // Efficiency insight
+    if (efficiency['wants']! > 35) {
+      insights.add('Your non-essential spending (Wants) is high at ${efficiency['wants']!.toStringAsFixed(1)}%.');
     }
 
     // Generate recommendations
     final recommendations = <String>[];
-    if (spendingTrend == 'increasing') {
-      recommendations.add('Consider setting spending limits for high-expense categories');
-    }
     
-    if (topCategories.isNotEmpty && double.parse(topCategories.first['percentage'] as String) > 40) {
-      recommendations.add('Try to diversify your spending across different categories');
+    if (savingsRate < 20) {
+      recommendations.add('Optimize your 50/30/20 balance. Your current savings rate is ${savingsRate.toStringAsFixed(1)}%.');
     }
 
-    recommendations.add('Set up budgets for your top spending categories');
-    recommendations.add('Review your transactions weekly to stay on track');
+    if (subscriptions.length > 3) {
+      recommendations.add('Review your ${subscriptions.length} subscriptions. Are you using all of them regularly?');
+    }
 
+    if (efficiency['needs']! > 60) {
+      recommendations.add('Your fixed costs (Needs) are high. Consider downsizing or negotiating bills.');
+    }
+
+    recommendations.add('Set up an automated transfer of ${CurrencyService().formatAmount(totalIncome * 0.2)} to savings.');
+    
     return {
+      'healthScore': healthScore,
       'totalSpent': totalSpent,
+      'totalIncome': totalIncome,
       'averageSpent': averageSpent,
+      'savingsRate': savingsRate,
       'topCategories': topCategories,
       'spendingTrend': spendingTrend,
       'insights': insights,
       'recommendations': recommendations,
+      'recentTotal': recentTotal,
+      'previousTotal': previousTotal,
+      'subscriptions': subscriptions,
+      'projectedSavings': projectedSavings,
+      'efficiency': efficiency,
     };
   }
 
   // Generate smart budget recommendations
   List<BudgetRecommendation> generateBudgetRecommendations(
     List<Transaction> transactions,
+    List<Income> incomes,
     double monthlyIncome,
   ) {
-    final analysis = analyzeSpendingPatterns(transactions);
+    final analysis = analyzeSpendingPatterns(transactions, incomes);
     final recommendations = <BudgetRecommendation>[];
 
     // 50/30/20 rule recommendations

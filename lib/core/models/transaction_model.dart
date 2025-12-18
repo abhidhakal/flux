@@ -18,7 +18,8 @@ class Transaction extends Equatable {
   final double amount;
   final TransactionType type;
   final String category; // Direct category name - no complex mapping
-  final String? budgetId; // Optional budget assignment - NEW FIELD
+  final String? budgetId; // Optional budget assignment
+  final bool isEssential; // User-defined essential status (Needs vs Wants) - NEW FIELD
   final DateTime date;
   final DateTime createdAt;
   final Map<String, dynamic> metadata;
@@ -32,6 +33,7 @@ class Transaction extends Equatable {
     required this.type,
     required this.category,
     this.budgetId,
+    this.isEssential = false,
     required this.date,
     required this.createdAt,
     this.metadata = const {},
@@ -53,6 +55,7 @@ class Transaction extends Equatable {
     TransactionType? type,
     String? category,
     String? budgetId,
+    bool? isEssential,
     DateTime? date,
     DateTime? createdAt,
     Map<String, dynamic>? metadata,
@@ -66,6 +69,7 @@ class Transaction extends Equatable {
       type: type ?? this.type,
       category: category ?? this.category,
       budgetId: budgetId ?? this.budgetId,
+      isEssential: isEssential ?? this.isEssential,
       date: date ?? this.date,
       createdAt: createdAt ?? this.createdAt,
       metadata: metadata ?? this.metadata,
@@ -82,6 +86,7 @@ class Transaction extends Equatable {
       'type': type.name,
       'category': category,
       'budgetId': budgetId,
+      'isEssential': isEssential,
       'date': date.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'metadata': metadata,
@@ -101,6 +106,7 @@ class Transaction extends Equatable {
       ),
       category: json['category'] as String? ?? 'Other',
       budgetId: json['budgetId'] as String?,
+      isEssential: json['isEssential'] as bool? ?? false,
       date: json['date'] != null ? DateTime.parse(json['date'] as String) : DateTime.now(),
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : DateTime.now(),
       metadata: Map<String, dynamic>.from(json['metadata'] ?? {}),
@@ -117,6 +123,7 @@ class Transaction extends Equatable {
         type,
         category,
         budgetId,
+        isEssential,
         date,
         createdAt,
         metadata,

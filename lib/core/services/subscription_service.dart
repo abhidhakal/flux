@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SubscriptionService {
   static final SubscriptionService _instance = SubscriptionService._internal();
@@ -177,7 +178,21 @@ class SubscriptionService {
     _isPremium = true;
   }
 
+  static const List<String> _developerEmails = [
+    'dhakalabhinav4@gmail.com',
+    'subhishrestha08@gmail.com',
+  ];
+
   Future<void> _checkPremiumStatus() async {
+    // Developer Bypass
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && user.email != null) {
+      if (_developerEmails.contains(user.email)) {
+        _isPremium = true;
+        return;
+      }
+    }
+
     final prefs = await SharedPreferences.getInstance();
     
     // Check for legacy key first and clear it if it exists

@@ -31,6 +31,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   String _selectedCategory = 'Food & Dining';
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
+  bool _isEssential = false;
   List<Budget> _availableBudgets = [];
   Budget? _selectedBudget;
 
@@ -62,18 +63,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       appBar: AppBar(
         title: const Text('Add Transaction'),
         centerTitle: false,
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
+        backgroundColor: colorScheme.background,
+        foregroundColor: colorScheme.onBackground,
+        iconTheme: IconThemeData(color: colorScheme.onBackground),
+        titleTextStyle: TextStyle(
+          color: colorScheme.onBackground,
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.save, color: Colors.white),
+            icon: Icon(Icons.save_rounded, color: colorScheme.primary),
             onPressed: _isLoading ? null : _handleSave,
           ),
         ],
@@ -152,6 +153,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   const SizedBox(height: 16),
                   if (_selectedType == TransactionType.expense) ...[
                     _buildBudgetSelector(),
+                    const SizedBox(height: 16),
+                    _buildEssentialToggle(),
                     const SizedBox(height: 16),
                   ],
                   _buildDateSelector(),
@@ -527,62 +530,83 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 ),
               )
             else
-              DropdownButtonFormField<Budget>(
+              DropdownButtonFormField<Budget?>(
                 value: _selectedBudget,
+                isExpanded: true,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  hintText: 'Select a budget',
+                  hintText: 'Select a budget (Optional)',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  suffixIcon: _selectedBudget != null 
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () => setState(() => _selectedBudget = null),
+                      )
+                    : null,
                 ),
-                items: _availableBudgets.map((budget) {
-                  final remainingAmount = budget.remaining;
-                  final isOverBudget = remainingAmount < 0;
-                  
-                  return DropdownMenuItem<Budget>(
-                    value: budget,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            budget.name,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                              color: Theme.of(context).colorScheme.onSurface,
+                items: [
+                  const DropdownMenuItem<Budget?>(
+                    value: null,
+                    child: Text('No Budget'),
+                  ),
+                  ..._availableBudgets.map((budget) {
+                    return DropdownMenuItem<Budget?>(
+                      value: budget,
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              budget.name,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            '${budget.category} • ${CurrencyService().formatAmount(remainingAmount)} remaining',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: isOverBudget ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            Text(
+                              'Total: ${CurrencyService().formatAmount(budget.amount)}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }),
+                ],
+                selectedItemBuilder: (BuildContext context) {
+                  return [
+                    const Text('No Budget'),
+                    ..._availableBudgets.map((budget) {
+                      return Text(
+                        budget.name,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    }),
+                  ];
+                },
                 onChanged: (budget) {
                   setState(() {
                     _selectedBudget = budget;
-                    // Don't auto-change category - let user choose independently
                   });
                 },
-                validator: (value) {
-                  if (_selectedType == TransactionType.expense && value == null) {
-                    return 'Please select a budget for this expense';
-                  }
-                  return null;
-                },
+                validator: (value) => null, // Optional
               ),
             if (_selectedBudget != null) ...[
               const SizedBox(height: 8),
@@ -624,26 +648,35 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
 
+  Widget _buildEssentialToggle() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: SwitchListTile(
+        title: const Text(
+          'Mark as Essential',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: const Text('Is this a "Need" (Housing, Bills) or a "Want"?'),
+        value: _isEssential,
+        activeColor: AppColors.primary,
+        onChanged: (value) {
+          setState(() {
+            _isEssential = value;
+          });
+        },
+        secondary: Icon(
+          _isEssential ? Icons.fact_check_rounded : Icons.shopping_bag_outlined,
+          color: _isEssential ? AppColors.success : AppColors.primary,
+        ),
+      ),
+    );
+  }
+
   void _handleSave() {
     if (_formKey.currentState!.validate()) {
       // Budget validation for expenses
-      if (_selectedType == TransactionType.expense) {
-        if (_availableBudgets.isEmpty) {
-          AppSnackbar.showError(
-            context,
-            message: 'You must create a budget before adding expenses!',
-          );
-          return;
-        }
-
-        if (_selectedBudget == null) {
-          AppSnackbar.showError(
-            context,
-            message: 'Please select a budget for this expense.',
-          );
-          return;
-        }
-
+      if (_selectedType == TransactionType.expense && _selectedBudget != null) {
         // Check if this expense would exceed the budget
         final expenseAmount = double.parse(_amountController.text);
         final remainingBudget = _selectedBudget!.remaining;
@@ -722,6 +755,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           type: TransactionType.expense, // Force expense
           category: _selectedCategory, 
           budgetId: _selectedBudget?.id, 
+          isEssential: _isEssential,
           date: _selectedDate,
           createdAt: DateTime.now(),
         );

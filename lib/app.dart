@@ -152,13 +152,17 @@ class _AppState extends State<App> {
             },
             home: BlocBuilder<AuthBloc, AuthState>(
               builder: (context, state) {
-                if (state is AuthLoading) {
-                  return const LoadingScreen();
-                } else if (state is AuthAuthenticated) {
+                if (state is AuthAuthenticated) {
                   return const MainScreen();
-                } else {
+                }
+                
+                // Show LoginScreen for Unauthenticated, Error, Success, or Loading state
+                // during a transition. Only show initial loading if absolutely necessary.
+                if (state is AuthLoading || state is AuthInitial) {
                   return const LoginScreen();
                 }
+
+                return const LoginScreen();
               },
             ),
           );

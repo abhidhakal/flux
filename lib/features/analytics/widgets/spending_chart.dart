@@ -13,197 +13,195 @@ class SpendingChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (transactions.isEmpty) {
+      return _buildEmptyState(context);
+    }
+
+    final monthlyData = _getMonthlyData();
+    final maxAmount = _getMaxY(monthlyData);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+            Text(
+                'Spending Trend',
+                 style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                  letterSpacing: -0.2,
+                ),
+            ),
+            const SizedBox(height: 24),
+            AspectRatio(
+            aspectRatio: 1.70,
+            child: LineChart(
+                LineChartData(
+                gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: _getYAxisInterval(maxAmount),
+                    getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                        color: colorScheme.outline.withOpacity(0.1),
+                        strokeWidth: 1,
+                        dashArray: [5, 5]
+                    );
+                    },
+                ),
+                titlesData: FlTitlesData(
+                    show: true,
+                    rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 30,
+                        interval: 1,
+                        getTitlesWidget: (double value, TitleMeta meta) {
+                        if (value.toInt() >= 0 && value.toInt() < monthlyData.length) {
+                             return Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                    monthlyData[value.toInt()]['month'],
+                                    style: TextStyle(
+                                    color: colorScheme.onSurface.withOpacity(0.5),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                    ),
+                                ),
+                             );
+                        }
+                        return const Text('');
+                        },
+                    ),
+                    ),
+                    leftTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false), // Clean look, hide left axis values or keep minimal
+                    ),
+                ),
+                borderData: FlBorderData(show: false),
+                minX: 0,
+                maxX: (monthlyData.length - 1).toDouble(),
+                minY: 0,
+                maxY: maxAmount,
+                lineTouchData: LineTouchData(
+                    enabled: true,
+                    touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (touchedSpot) => colorScheme.surface,
+
+                    getTooltipItems: (touchedSpots) {
+                        return touchedSpots.map((spot) {
+                        final index = spot.x.toInt();
+                        if (index >= 0 && index < monthlyData.length) {
+                            final data = monthlyData[index];
+                            return LineTooltipItem(
+                            '${data['month']}\n',
+                            TextStyle(
+                                color: colorScheme.onSurface.withOpacity(0.6),
+                                fontWeight: FontWeight.normal,
+                                fontSize: 12,
+                            ),
+                            children: [
+                                TextSpan(
+                                text: CurrencyService().formatAmount(data['amount']).replaceAll('.00', ''),
+                                style: TextStyle(
+                                    color: colorScheme.onSurface,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                ),
+                                ),
+                            ],
+                            );
+                        }
+                        return null;
+                        }).toList();
+                    },
+                    ),
+                ),
+                lineBarsData: [
+                    LineChartBarData(
+                    spots: _getSpots(monthlyData),
+                    isCurved: true,
+                    curveSmoothness: 0.35,
+                    color: AppColors.primary,
+                    barWidth: 3,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                        colors: [
+                            AppColors.primary.withOpacity(0.15),
+                            AppColors.primary.withOpacity(0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        ),
+                    ),
+                    ),
+                ],
+                ),
+            ),
+            ),
+        ],
+    );
+  }
+
+   Widget _buildEmptyState(BuildContext context) {
       return Container(
         height: 200,
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(AppTheme.radius12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.show_chart,
+                Icons.show_chart_rounded,
                 size: 48,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
               ),
-              SizedBox(height: AppTheme.spacing8),
+              const SizedBox(height: 8),
               Text(
-                'No spending data available',
+                'No spending data',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 16,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                  fontSize: 14,
                   fontWeight: FontWeight.w500,
-                ),
-              ),
-              SizedBox(height: AppTheme.spacing4),
-              Text(
-                'Add some transactions to see your spending trends',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
                 ),
               ),
             ],
           ),
         ),
       );
-    }
-
-    final monthlyData = _getMonthlyData();
-    final maxAmount = _getMaxY(monthlyData);
-    final interval = _getYAxisInterval(maxAmount);
-    
-    return Container(
-      padding: const EdgeInsets.all(AppTheme.spacing16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radius12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: LineChart(
-        LineChartData(
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            horizontalInterval: interval,
-            getDrawingHorizontalLine: (value) {
-              return FlLine(
-                color: AppColors.border,
-                strokeWidth: 1,
-              );
-            },
-          ),
-          titlesData: FlTitlesData(
-            show: true,
-            rightTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            topTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 35,
-                interval: 1,
-                getTitlesWidget: (double value, TitleMeta meta) {
-                  if (value.toInt() >= 0 && value.toInt() < monthlyData.length) {
-                    return Padding(
-                      padding: const EdgeInsets.only(top: AppTheme.spacing8),
-                      child: Text(
-                        monthlyData[value.toInt()]['month'],
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    );
-                  }
-                  return const Text('');
-                },
-              ),
-            ),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: interval,
-                getTitlesWidget: (double value, TitleMeta meta) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: AppTheme.spacing8),
-                    child: Text(
-                      CurrencyService().formatAmount(value).replaceAll('.00', ''),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  );
-                },
-                reservedSize: 60,
-              ),
-            ),
-          ),
-          borderData: FlBorderData(show: false),
-          minX: 0,
-          maxX: (monthlyData.length - 1).toDouble(),
-          minY: 0,
-          maxY: maxAmount,
-          lineTouchData: LineTouchData(
-            enabled: true,
-            touchTooltipData: LineTouchTooltipData(
-              tooltipBorder: BorderSide(color: AppColors.border),
-              getTooltipItems: (touchedSpots) {
-                return touchedSpots.map((spot) {
-                  final index = spot.x.toInt();
-                  if (index >= 0 && index < monthlyData.length) {
-                    final data = monthlyData[index];
-                    return LineTooltipItem(
-                      '${data['month']}\n${CurrencyService().formatAmount(data['amount']).replaceAll('.00', '')}',
-                      const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    );
-                  }
-                  return null;
-                }).toList();
-              },
-            ),
-          ),
-          lineBarsData: [
-            LineChartBarData(
-              spots: _getSpots(monthlyData),
-              isCurved: true,
-              curveSmoothness: 0.35,
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary,
-                  AppColors.primary.withValues(alpha: 0.7),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              barWidth: 4,
-              isStrokeCapRound: true,
-              dotData: FlDotData(
-                show: true,
-                getDotPainter: (spot, percent, barData, index) {
-                  return FlDotCirclePainter(
-                    radius: 6,
-                    color: AppColors.primary,
-                    strokeWidth: 2,
-                    strokeColor: AppColors.surface,
-                  );
-                },
-              ),
-              belowBarData: BarAreaData(
-                show: true,
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.2),
-                    AppColors.primary.withValues(alpha: 0.05),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+   }
 
   List<Map<String, dynamic>> _getMonthlyData() {
     final Map<String, double> monthlyTotals = {};
     
+    // Process last 6 months
+    final now = DateTime.now();
+    for (int i = 5; i >= 0; i--) {
+        final date = DateTime(now.year, now.month - i, 1);
+        final key = '${date.year}-${date.month.toString().padLeft(2, '0')}';
+        monthlyTotals[key] = 0.0;
+    }
+    
     for (final transaction in transactions) {
       if (transaction.isExpense) {
         final monthKey = '${transaction.date.year}-${transaction.date.month.toString().padLeft(2, '0')}';
-        monthlyTotals[monthKey] = (monthlyTotals[monthKey] ?? 0) + transaction.amount;
+        if (monthlyTotals.containsKey(monthKey)) {
+             monthlyTotals[monthKey] = (monthlyTotals[monthKey]!) + transaction.amount;
+        }
       }
     }
 
@@ -235,15 +233,11 @@ class SpendingChart extends StatelessWidget {
   double _getMaxY(List<Map<String, dynamic>> monthlyData) {
     if (monthlyData.isEmpty) return 1000;
     final maxAmount = monthlyData.map((data) => data['amount'] as double).reduce((a, b) => a > b ? a : b);
-    return maxAmount * 1.2; // Add 20% padding
+    return maxAmount * 1.2; 
   }
 
   double _getYAxisInterval(double maxAmount) {
-    if (maxAmount <= 100) return 25;
-    if (maxAmount <= 500) return 100;
-    if (maxAmount <= 1000) return 200;
-    if (maxAmount <= 5000) return 500;
-    if (maxAmount <= 10000) return 1000;
-    return 2000;
+     if (maxAmount == 0) return 100;
+    return maxAmount / 4;
   }
 }

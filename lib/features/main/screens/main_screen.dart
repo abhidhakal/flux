@@ -109,7 +109,7 @@ class _MainScreenState extends State<MainScreen> {
                   BottomNavigationBarItem(
                     icon: Icon(Icons.bar_chart_rounded),
                     activeIcon: Icon(Icons.bar_chart_rounded, size: 24),
-                    label: 'Analytics',
+                    label: 'Insights',
                   ),
                   BottomNavigationBarItem(
                     icon: Icon(Icons.person_outline_rounded),

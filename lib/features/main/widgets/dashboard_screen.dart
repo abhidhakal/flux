@@ -13,6 +13,7 @@ import '../../auth/auth_bloc.dart';
 import '../../analytics/analytics_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
 import '../../budget/budget_bloc.dart';
+import '../../goals/goals_bloc.dart';
 import '../../goals/screens/goals_screen.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../../notifications/notifications_bloc.dart';
@@ -42,6 +43,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
       context.read<NotificationsBloc>().add(LoadNotifications(user.user.id));
       context.read<IncomeBloc>().add(LoadIncome(user.user.id));
+      context.read<GoalsBloc>().add(LoadGoals(user.user.id));
     }
     _profilePictureService.loadProfileImage();
   }
@@ -143,13 +145,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
 
           if (transactionState is TransactionLoaded) {
-            context.read<AnalyticsBloc>().add(
-                  AnalyzeSpendingPatterns(transactionState.transactions),
-                );
-
             return BlocBuilder<IncomeBloc, IncomeState>(
               builder: (context, incomeState) {
                 final incomeList = (incomeState is IncomeLoaded) ? incomeState.incomes : <Income>[];
+
+                // Trigger analytics when both transactions and incomes are ready
+                context.read<AnalyticsBloc>().add(
+                  AnalyzeSpendingPatterns(transactionState.transactions, incomeList),
+                );
 
                 return BlocBuilder<SubscriptionBloc, SubscriptionState>(
                   builder: (context, subscriptionState) {
