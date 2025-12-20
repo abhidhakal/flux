@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_theme.dart';
 import '../../subscription_bloc.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
 

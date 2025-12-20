@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../core/constants/app_colors.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/constants/app_theme.dart';
 import '../../../core/services/enhanced_notification_service.dart';
+import '../../../core/services/subscription_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 
@@ -12,23 +14,22 @@ class NotificationSettingsScreen extends StatefulWidget {
   State<NotificationSettingsScreen> createState() => _NotificationSettingsScreenState();
 }
 
-class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
-    with TickerProviderStateMixin {
+class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
   final EnhancedNotificationService _notificationService = EnhancedNotificationService();
-  
-  late AnimationController _fadeController;
-  late AnimationController _slideController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
   bool _isLoading = true;
   bool _notificationsEnabled = false;
+  bool _isDeveloper = false;
+  
+  // Notification type preferences
   bool _budgetAlerts = true;
   bool _goalMilestones = true;
   bool _spendingAlerts = true;
-  bool _weeklySummaries = true;
+  
+  // Scheduled notifications
+  bool _weeklySummaries = false;
   bool _dailyReminders = false;
-  bool _financialTips = true;
   
   int _weeklySummaryDay = 1; // Monday
   int _weeklySummaryHour = 9;
@@ -36,47 +37,12 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   
   int _dailyReminderHour = 20;
   int _dailyReminderMinute = 0;
-  String _dailyReminderType = 'budget_check';
+  String _dailyReminderType = 'expense_log';
 
   @override
   void initState() {
     super.initState();
-    
-    // Initialize animation controllers
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-    
-    // Initialize animations
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeInOut,
-    ));
-    
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    ));
-    
     _loadSettings();
-  }
-
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    _slideController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadSettings() async {
@@ -84,13 +50,27 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     try {
       final user = context.read<AuthBloc>().state;
       if (user is AuthAuthenticated) {
-        final schedules = await _notificationService.getUserNotificationSchedules(user.user.id);
         final enabled = await _notificationService.areNotificationsEnabled();
+        final isDev = SubscriptionService().isDeveloperUser(); // Sync check since we have user
+        
+        // Load user preferences from Firestore
+        final userDoc = await _firestore.collection('users').doc(user.user.id).get();
+        final data = userDoc.data() ?? {};
+        final prefs = data['notificationPreferences'] as Map<String, dynamic>? ?? {};
+        final schedules = data['notificationSchedules'] as Map<String, dynamic>? ?? {};
         
         setState(() {
           _notificationsEnabled = enabled;
-          _weeklySummaries = schedules['weekly_summary']?['enabled'] ?? true;
-          _dailyReminders = schedules['daily_reminder_budget_check']?['enabled'] ?? false;
+          _isDeveloper = isDev;
+          
+          // Load notification type preferences
+          _budgetAlerts = prefs['budgetAlerts'] ?? true;
+          _goalMilestones = prefs['goalMilestones'] ?? true;
+          _spendingAlerts = prefs['spendingAlerts'] ?? true;
+          
+          // Load schedule preferences
+          _weeklySummaries = schedules['weekly_summary']?['enabled'] ?? false;
+          _dailyReminders = schedules['daily_reminder']?['enabled'] ?? false;
           
           if (schedules['weekly_summary'] != null) {
             _weeklySummaryDay = schedules['weekly_summary']['dayOfWeek'] ?? 1;
@@ -98,493 +78,620 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             _weeklySummaryMinute = schedules['weekly_summary']['minute'] ?? 0;
           }
           
-          if (schedules['daily_reminder_budget_check'] != null) {
-            _dailyReminderHour = schedules['daily_reminder_budget_check']['hour'] ?? 20;
-            _dailyReminderMinute = schedules['daily_reminder_budget_check']['minute'] ?? 0;
+          if (schedules['daily_reminder'] != null) {
+            _dailyReminderHour = schedules['daily_reminder']['hour'] ?? 20;
+            _dailyReminderMinute = schedules['daily_reminder']['minute'] ?? 0;
+            _dailyReminderType = schedules['daily_reminder']['type'] ?? 'expense_log';
           }
         });
       }
       
       setState(() => _isLoading = false);
-      
-      // Start animations after data is loaded
-      _fadeController.forward();
-      _slideController.forward();
     } catch (e) {
       setState(() => _isLoading = false);
-      AppSnackbar.showError(context, message: 'Failed to load notification settings');
+      if (mounted) {
+        AppSnackbar.showError(context, message: 'Failed to load settings');
+      }
+    }
+  }
+
+  Future<void> _savePreferences() async {
+    try {
+      final user = context.read<AuthBloc>().state;
+      if (user is AuthAuthenticated) {
+        await _firestore.collection('users').doc(user.user.id).set({
+          'notificationPreferences': {
+            'budgetAlerts': _budgetAlerts,
+            'goalMilestones': _goalMilestones,
+            'spendingAlerts': _spendingAlerts,
+          },
+          'updatedAt': DateTime.now().toIso8601String(),
+        }, SetOptions(merge: true));
+      }
+    } catch (e) {
+      if (mounted) {
+        AppSnackbar.showError(context, message: 'Failed to save preferences');
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: const Text('Notification Settings'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.lightTextInverse,
+        title: const Text('Notifications'),
+        backgroundColor: colorScheme.background,
+        foregroundColor: colorScheme.onBackground,
         elevation: 0,
       ),
       body: _isLoading
-          ? _buildLoadingState()
-          : FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildNotificationStatusCard(),
-                      const SizedBox(height: 20),
-                      _buildNotificationTypesCard(),
-                      const SizedBox(height: 20),
-                      _buildWeeklySummaryCard(),
-                      const SizedBox(height: 20),
-                      _buildDailyRemindersCard(),
-                      const SizedBox(height: 20),
-                      _buildTestNotificationsCard(),
-                    ],
-                  ),
-                ),
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildPushNotificationCard(colorScheme),
+                  const SizedBox(height: 16),
+                  _buildAutomaticAlertsCard(colorScheme),
+                  const SizedBox(height: 16),
+                  _buildScheduledNotificationsCard(colorScheme),
+                  if (_isDeveloper) ...[
+                    const SizedBox(height: 16),
+                    _buildTestNotificationsCard(colorScheme),
+                  ],
+                ],
               ),
             ),
     );
   }
 
-  Widget _buildLoadingState() {
-    return Center(
+  Widget _buildPushNotificationCard(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Loading Settings...',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Fetching your notification preferences',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary.withOpacity(0.7),
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: (_notificationsEnabled ? AppColors.success : AppColors.error).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _notificationsEnabled ? Icons.notifications_active : Icons.notifications_off,
+                  color: _notificationsEnabled ? AppColors.success : AppColors.error,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Push Notifications',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _notificationsEnabled 
+                          ? 'Notifications are enabled'
+                          : 'Enable to receive alerts',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _notificationsEnabled,
+                onChanged: (value) => _toggleNotifications(),
+                activeColor: AppColors.primary,
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildNotificationStatusCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  _notificationsEnabled ? Icons.notifications_active : Icons.notifications_off,
-                  color: _notificationsEnabled ? AppColors.success : AppColors.error,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Push Notifications',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ],
+  Widget _buildAutomaticAlertsCard(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Automatic Alerts',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
             ),
-            const SizedBox(height: 8),
-            Text(
-              _notificationsEnabled 
-                  ? 'Notifications are enabled. You\'ll receive alerts for important financial events.'
-                  : 'Notifications are disabled. Enable them to stay updated on your financial progress.',
-              style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'These alerts are triggered automatically based on your activity',
+            style: TextStyle(
+              fontSize: 14,
+              color: colorScheme.onSurface.withOpacity(0.6),
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _toggleNotifications,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _notificationsEnabled ? AppColors.error : AppColors.success,
-                ),
-                child: Text(
-                  _notificationsEnabled ? 'Disable Notifications' : 'Enable Notifications',
-                  style: const TextStyle(color: Colors.white),
+          ),
+          const SizedBox(height: 20),
+          _buildAlertToggle(
+            'Budget Alerts',
+            'When you reach 80%, 90%, or exceed your budget',
+            Icons.account_balance_wallet_outlined,
+            _budgetAlerts,
+            (value) {
+              setState(() => _budgetAlerts = value);
+              _savePreferences();
+            },
+            colorScheme,
+          ),
+          const Divider(height: 24),
+          _buildAlertToggle(
+            'Goal Milestones',
+            'When you reach 25%, 50%, 90%, or complete a goal',
+            Icons.flag_outlined,
+            _goalMilestones,
+            (value) {
+              setState(() => _goalMilestones = value);
+              _savePreferences();
+            },
+            colorScheme,
+          ),
+          const Divider(height: 24),
+          _buildAlertToggle(
+            'Spending Alerts',
+            'When unusual spending patterns are detected',
+            Icons.trending_up_outlined,
+            _spendingAlerts,
+            (value) {
+              setState(() => _spendingAlerts = value);
+              _savePreferences();
+            },
+            colorScheme,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAlertToggle(
+    String title,
+    String description,
+    IconData icon,
+    bool value,
+    ValueChanged<bool> onChanged,
+    ColorScheme colorScheme,
+  ) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.primary, size: 24),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNotificationTypesCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Notification Types',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            _buildNotificationSwitch(
-              'Budget Alerts',
-              'Get notified when you\'re approaching or exceeding budget limits',
-              _budgetAlerts,
-              (value) => setState(() => _budgetAlerts = value),
-              Icons.account_balance_wallet,
-            ),
-            _buildNotificationSwitch(
-              'Goal Milestones',
-              'Celebrate when you reach 25%, 50%, 90% of your goals',
-              _goalMilestones,
-              (value) => setState(() => _goalMilestones = value),
-              Icons.flag,
-            ),
-            _buildNotificationSwitch(
-              'Spending Alerts',
-              'Get alerts for unusual spending patterns',
-              _spendingAlerts,
-              (value) => setState(() => _spendingAlerts = value),
-              Icons.trending_up,
-            ),
-            _buildNotificationSwitch(
-              'Financial Tips',
-              'Receive helpful financial advice and tips',
-              _financialTips,
-              (value) => setState(() => _financialTips = value),
-              Icons.lightbulb,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWeeklySummaryCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.calendar_today, color: AppColors.primary),
-                const SizedBox(width: 12),
-                Text(
-                  'Weekly Summary',
-                  style: Theme.of(context).textTheme.titleLarge,
+              const SizedBox(height: 2),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.onSurface.withOpacity(0.6),
                 ),
-              ],
+              ),
+            ],
+          ),
+        ),
+        Switch(
+          value: value,
+          onChanged: _notificationsEnabled ? onChanged : null,
+          activeColor: AppColors.primary,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScheduledNotificationsCard(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Scheduled Reminders',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Get a weekly summary of your financial progress every week',
-              style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Set up recurring reminders to stay on track',
+            style: TextStyle(
+              fontSize: 14,
+              color: colorScheme.onSurface.withOpacity(0.6),
             ),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Enable Weekly Summary'),
-              subtitle: const Text('Receive weekly financial summaries'),
-              value: _weeklySummaries,
-              onChanged: _notificationsEnabled ? (value) {
-                setState(() => _weeklySummaries = value);
-                if (value) _scheduleWeeklySummary();
-              } : null,
-              activeColor: AppColors.primary,
-            ),
-            if (_weeklySummaries) ...[
+          ),
+          const SizedBox(height: 20),
+          
+          // Weekly Summary
+          _buildScheduleItem(
+            'Weekly Summary',
+            'Get a summary of your week every ${_getDayName(_weeklySummaryDay)}',
+            Icons.calendar_today_outlined,
+            _weeklySummaries,
+            (value) async {
+              setState(() => _weeklySummaries = value);
+              if (value) {
+                await _scheduleWeeklySummary();
+              } else {
+                await _cancelWeeklySummary();
+              }
+            },
+            colorScheme,
+            onConfigure: _weeklySummaries ? () => _showWeeklySummaryConfig(colorScheme) : null,
+          ),
+          const Divider(height: 24),
+          
+          // Daily Reminder
+          _buildScheduleItem(
+            'Daily Reminder',
+            'Reminder at ${_formatTime(_dailyReminderHour, _dailyReminderMinute)}',
+            Icons.alarm_outlined,
+            _dailyReminders,
+            (value) async {
+              setState(() => _dailyReminders = value);
+              if (value) {
+                await _scheduleDailyReminder();
+              } else {
+                await _cancelDailyReminder();
+              }
+            },
+            colorScheme,
+            onConfigure: _dailyReminders ? () => _showDailyReminderConfig(colorScheme) : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScheduleItem(
+    String title,
+    String description,
+    IconData icon,
+    bool value,
+    ValueChanged<bool> onChanged,
+    ColorScheme colorScheme, {
+    VoidCallback? onConfigure,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.primary, size: 24),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  if (onConfigure != null) ...[
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: onConfigure,
+                      child: Icon(
+                        Icons.settings_outlined,
+                        size: 18,
+                        color: colorScheme.onSurface.withOpacity(0.5),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Switch(
+          value: value,
+          onChanged: _notificationsEnabled ? onChanged : null,
+          activeColor: AppColors.primary,
+        ),
+      ],
+    );
+  }
+
+  String _getDayName(int day) {
+    const days = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    return days[day];
+  }
+
+  String _formatTime(int hour, int minute) {
+    final h = hour.toString().padLeft(2, '0');
+    final m = minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  void _showWeeklySummaryConfig(ColorScheme colorScheme) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Weekly Summary Schedule',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text('Day', style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<int>(
+                value: _weeklySummaryDay,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                items: List.generate(7, (i) => DropdownMenuItem(
+                  value: i + 1,
+                  child: Text(_getDayName(i + 1)),
+                )),
+                onChanged: (value) {
+                  if (value != null) {
+                    setModalState(() => _weeklySummaryDay = value);
+                    setState(() => _weeklySummaryDay = value);
+                  }
+                },
+              ),
               const SizedBox(height: 16),
+              Text('Time', style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Day of Week'),
-                        const SizedBox(height: 8),
-                        DropdownButtonFormField<int>(
-                          value: _weeklySummaryDay,
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          ),
-                          items: const [
-                            DropdownMenuItem(value: 1, child: Text('Monday')),
-                            DropdownMenuItem(value: 2, child: Text('Tuesday')),
-                            DropdownMenuItem(value: 3, child: Text('Wednesday')),
-                            DropdownMenuItem(value: 4, child: Text('Thursday')),
-                            DropdownMenuItem(value: 5, child: Text('Friday')),
-                            DropdownMenuItem(value: 6, child: Text('Saturday')),
-                            DropdownMenuItem(value: 7, child: Text('Sunday')),
-                          ],
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() => _weeklySummaryDay = value);
-                              _scheduleWeeklySummary();
-                            }
-                          },
-                        ),
-                      ],
+                    child: DropdownButtonFormField<int>(
+                      value: _weeklySummaryHour,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      items: List.generate(24, (i) => DropdownMenuItem(
+                        value: i,
+                        child: Text(i.toString().padLeft(2, '0')),
+                      )),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setModalState(() => _weeklySummaryHour = value);
+                          setState(() => _weeklySummaryHour = value);
+                        }
+                      },
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(':', style: TextStyle(fontSize: 20, color: colorScheme.onSurface)),
+                  ),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Time'),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DropdownButtonFormField<int>(
-                                value: _weeklySummaryHour,
-                                decoration: const InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                ),
-                                items: List.generate(24, (index) => 
-                                  DropdownMenuItem(value: index, child: Text('${index.toString().padLeft(2, '0')}'))
-                                ),
-                                onChanged: (value) {
-                                  if (value != null) {
-                                    setState(() => _weeklySummaryHour = value);
-                                    _scheduleWeeklySummary();
-                                  }
-                                },
-                              ),
-                            ),
-                            const Text(':', style: TextStyle(fontSize: 18)),
-                            Expanded(
-                              child: DropdownButtonFormField<int>(
-                                value: _weeklySummaryMinute,
-                                decoration: const InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                ),
-                                items: List.generate(60, (index) => 
-                                  DropdownMenuItem(value: index, child: Text('${index.toString().padLeft(2, '0')}'))
-                                ),
-                                onChanged: (value) {
-                                  if (value != null) {
-                                    setState(() => _weeklySummaryMinute = value);
-                                    _scheduleWeeklySummary();
-                                  }
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    child: DropdownButtonFormField<int>(
+                      value: _weeklySummaryMinute,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      items: List.generate(12, (i) => DropdownMenuItem(
+                        value: i * 5,
+                        child: Text((i * 5).toString().padLeft(2, '0')),
+                      )),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setModalState(() => _weeklySummaryMinute = value);
+                          setState(() => _weeklySummaryMinute = value);
+                        }
+                      },
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    _scheduleWeeklySummary();
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Save'),
+                ),
+              ),
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildDailyRemindersCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.schedule, color: AppColors.primary),
-                const SizedBox(width: 12),
-                Text(
-                  'Daily Reminders',
-                  style: Theme.of(context).textTheme.titleLarge,
+  void _showDailyReminderConfig(ColorScheme colorScheme) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Daily Reminder Schedule',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Get daily reminders to check your budget and log expenses',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Enable Daily Reminders'),
-              subtitle: const Text('Receive daily financial reminders'),
-              value: _dailyReminders,
-              onChanged: _notificationsEnabled ? (value) {
-                setState(() => _dailyReminders = value);
-                if (value) _scheduleDailyReminder();
-              } : null,
-              activeColor: AppColors.primary,
-            ),
-            if (_dailyReminders) ...[
+              ),
+              const SizedBox(height: 24),
+              Text('Reminder Type', style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _dailyReminderType,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'expense_log', child: Text('Log your expenses')),
+                  DropdownMenuItem(value: 'budget_check', child: Text('Check your budget')),
+                  DropdownMenuItem(value: 'goal_update', child: Text('Update goal progress')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setModalState(() => _dailyReminderType = value);
+                    setState(() => _dailyReminderType = value);
+                  }
+                },
+              ),
               const SizedBox(height: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Text('Time', style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+              const SizedBox(height: 8),
+              Row(
                 children: [
-                  const Text('Reminder Type'),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: _dailyReminderType,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  Expanded(
+                    child: DropdownButtonFormField<int>(
+                      value: _dailyReminderHour,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      items: List.generate(24, (i) => DropdownMenuItem(
+                        value: i,
+                        child: Text(i.toString().padLeft(2, '0')),
+                      )),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setModalState(() => _dailyReminderHour = value);
+                          setState(() => _dailyReminderHour = value);
+                        }
+                      },
                     ),
-                    items: const [
-                      DropdownMenuItem(value: 'budget_check', child: Text('Budget Check')),
-                      DropdownMenuItem(value: 'goal_update', child: Text('Goal Progress Update')),
-                      DropdownMenuItem(value: 'expense_log', child: Text('Log Expenses')),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _dailyReminderType = value);
-                        _scheduleDailyReminder();
-                      }
-                    },
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<int>(
-                          value: _dailyReminderHour,
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                            labelText: 'Hour',
-                          ),
-                          items: List.generate(24, (index) => 
-                            DropdownMenuItem(value: index, child: Text('${index.toString().padLeft(2, '0')}'))
-                          ),
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() => _dailyReminderHour = value);
-                              _scheduleDailyReminder();
-                            }
-                          },
-                        ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(':', style: TextStyle(fontSize: 20, color: colorScheme.onSurface)),
+                  ),
+                  Expanded(
+                    child: DropdownButtonFormField<int>(
+                      value: _dailyReminderMinute,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: DropdownButtonFormField<int>(
-                          value: _dailyReminderMinute,
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                            labelText: 'Minute',
-                          ),
-                          items: List.generate(60, (index) => 
-                            DropdownMenuItem(value: index, child: Text('${index.toString().padLeft(2, '0')}'))
-                          ),
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() => _dailyReminderMinute = value);
-                              _scheduleDailyReminder();
-                            }
-                          },
-                        ),
-                      ),
-                    ],
+                      items: List.generate(12, (i) => DropdownMenuItem(
+                        value: i * 5,
+                        child: Text((i * 5).toString().padLeft(2, '0')),
+                      )),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setModalState(() => _dailyReminderMinute = value);
+                          setState(() => _dailyReminderMinute = value);
+                        }
+                      },
+                    ),
                   ),
                 ],
               ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    _scheduleDailyReminder();
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Save'),
+                ),
+              ),
             ],
-          ],
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildTestNotificationsCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Test Notifications',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Test different types of notifications to see how they look',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ElevatedButton(
-                  onPressed: _notificationsEnabled ? _testBudgetAlert : null,
-                  child: const Text('Budget Alert'),
-                ),
-                ElevatedButton(
-                  onPressed: _notificationsEnabled ? _testGoalMilestone : null,
-                  child: const Text('Goal Milestone'),
-                ),
-                ElevatedButton(
-                  onPressed: _notificationsEnabled ? _testSpendingAlert : null,
-                  child: const Text('Spending Alert'),
-                ),
-                ElevatedButton(
-                  onPressed: _notificationsEnabled ? _testFinancialTip : null,
-                  child: const Text('Financial Tip'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNotificationSwitch(
-    String title,
-    String subtitle,
-    bool value,
-    ValueChanged<bool> onChanged,
-    IconData icon,
-  ) {
-    return SwitchListTile(
-      title: Text(title),
-      subtitle: Text(subtitle),
-      value: value,
-      onChanged: _notificationsEnabled ? onChanged : null,
-      activeColor: AppColors.primary,
-      secondary: Icon(icon, color: AppColors.primary),
     );
   }
 
@@ -593,18 +700,18 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       if (_notificationsEnabled) {
         await _notificationService.cancelAllScheduledNotifications();
         setState(() => _notificationsEnabled = false);
-        AppSnackbar.showInfo(context, message: 'Notifications disabled');
+        if (mounted) AppSnackbar.showInfo(context, message: 'Notifications disabled');
       } else {
         final enabled = await _notificationService.requestPermissions();
         if (enabled) {
           setState(() => _notificationsEnabled = true);
-          AppSnackbar.showSuccess(context, message: 'Notifications enabled');
+          if (mounted) AppSnackbar.showSuccess(context, message: 'Notifications enabled');
         } else {
-          AppSnackbar.showError(context, message: 'Failed to enable notifications. Please check app permissions.');
+          if (mounted) AppSnackbar.showError(context, message: 'Please enable notifications in settings');
         }
       }
     } catch (e) {
-      AppSnackbar.showError(context, message: 'Failed to toggle notifications');
+      if (mounted) AppSnackbar.showError(context, message: 'Failed to toggle notifications');
     }
   }
 
@@ -618,10 +725,25 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           hour: _weeklySummaryHour,
           minute: _weeklySummaryMinute,
         );
-        AppSnackbar.showSuccess(context, message: 'Weekly summary scheduled');
+        if (mounted) AppSnackbar.showSuccess(context, message: 'Weekly summary scheduled');
       }
     } catch (e) {
-      AppSnackbar.showError(context, message: 'Failed to schedule weekly summary');
+      if (mounted) AppSnackbar.showError(context, message: 'Failed to schedule');
+    }
+  }
+
+  Future<void> _cancelWeeklySummary() async {
+    try {
+      final user = context.read<AuthBloc>().state;
+      if (user is AuthAuthenticated) {
+        await _firestore.collection('users').doc(user.user.id).set({
+          'notificationSchedules': {
+            'weekly_summary': {'enabled': false},
+          },
+        }, SetOptions(merge: true));
+      }
+    } catch (e) {
+      // Silently fail
     }
   }
 
@@ -635,11 +757,80 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           minute: _dailyReminderMinute,
           reminderType: _dailyReminderType,
         );
-        AppSnackbar.showSuccess(context, message: 'Daily reminder scheduled');
+        if (mounted) AppSnackbar.showSuccess(context, message: 'Daily reminder scheduled');
       }
     } catch (e) {
-      AppSnackbar.showError(context, message: 'Failed to schedule daily reminder');
+      if (mounted) AppSnackbar.showError(context, message: 'Failed to schedule');
     }
+  }
+
+  Future<void> _cancelDailyReminder() async {
+    try {
+      final user = context.read<AuthBloc>().state;
+      if (user is AuthAuthenticated) {
+        await _firestore.collection('users').doc(user.user.id).set({
+          'notificationSchedules': {
+            'daily_reminder': {'enabled': false},
+          },
+        }, SetOptions(merge: true));
+      }
+    } catch (e) {
+      // Silently fail
+    }
+  }
+
+  Widget _buildTestNotificationsCard(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Developer Tools',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Test notification triggers (Developer Only)',
+            style: TextStyle(
+              fontSize: 14,
+              color: colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _buildTestButton('Budget Alert', _testBudgetAlert),
+              _buildTestButton('Goal Milestone', _testGoalMilestone),
+              _buildTestButton('Spending Alert', _testSpendingAlert),
+              _buildTestButton('Financial Tip', _testFinancialTip),
+              _buildTestButton('Morning Greeting', _testMorningGreeting),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTestButton(String label, VoidCallback onPressed) {
+    return ElevatedButton(
+      onPressed: _notificationsEnabled ? onPressed : null,
+      style: ElevatedButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      child: Text(label),
+    );
   }
 
   Future<void> _testBudgetAlert() async {
@@ -669,6 +860,14 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     await _notificationService.showFinancialTip(
       title: 'Financial Tip',
       message: 'Consider the 50/30/20 rule: 50% needs, 30% wants, 20% savings.',
+    );
+  }
+
+  Future<void> _testMorningGreeting() async {
+    // Shows immediate notification for testing
+    await _notificationService.showFinancialTip(
+      title: 'Good Morning ☀️',
+      message: 'Rise and shine! Take a moment to track your finances today.',
     );
   }
 }

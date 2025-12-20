@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../auth_bloc.dart';
 import 'signup_screen.dart';
 import '../../../shared/widgets/app_snackbar.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_theme.dart';
 import '../../../core/constants/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -274,6 +275,33 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 16),
 
+                        // Google Sign In Button
+                        OutlinedButton.icon(
+                          onPressed: _isLoading ? null : _handleGoogleSignIn,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(color: Colors.grey.shade300),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            backgroundColor: Colors.white,
+                          ),
+                          icon: const FaIcon(
+                            FontAwesomeIcons.google,
+                            color: Color(0xFFDB4437),
+                            size: 20,
+                          ),
+                          label: Text(
+                            'Continue with Google',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: AppColors.lightTextPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
                           // Sign Up Button
                           OutlinedButton(
                             onPressed: _isLoading ? null : _handleSignUp,
@@ -361,6 +389,10 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
     }
+  }
+
+  void _handleGoogleSignIn() {
+    context.read<AuthBloc>().add(GoogleSignInRequested());
   }
 
   void _handleSignUp() {

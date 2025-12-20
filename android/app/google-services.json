@@ -12,7 +12,20 @@
           "package_name": "com.klivostudios.flux"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "907032241510-hfnjvjiau00liqs7rgsqg0e4ljdphdb0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.klivostudios.flux",
+            "certificate_hash": "39feb92ba627f9ecb274587948a1563284d35f6b"
+          }
+        },
+        {
+          "client_id": "907032241510-s8raosf8sslnklbt3mrhf8fb44cub8gm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCi9WwlA1eN4Kr23NVCzviLZBK_rvKzrQI"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "907032241510-s8raosf8sslnklbt3mrhf8fb44cub8gm.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "907032241510-6j7f6te9mmb6lpoqu9hl4jmausm8256l.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.klivostudios.flux"
+              }
+            }
+          ]
         }
       }
     }

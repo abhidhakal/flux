@@ -1,11 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart' as app_models;
 
 class AuthService {
   final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
   final firestore.FirebaseFirestore _firestore =
       firestore.FirebaseFirestore.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   // Get current user
   app_models.User? get currentUser {
@@ -133,6 +135,66 @@ class AuthService {
       }
     } catch (e) {
       throw Exception('Failed to sign in: $e');
+    }
+  }
+
+  // Sign in with Google
+  Future<app_models.User> signInWithGoogle() async {
+    try {
+      // Trigger the authentication flow
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) throw Exception('Google sign in cancelled');
+
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      // Create a new credential
+      final credential = firebase_auth.GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Once signed in, return the UserCredential
+      final userCredential = await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+
+      if (user == null) throw Exception('Failed to sign in with Google');
+
+      // Check if user document exists in Firestore
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+
+      if (!userDoc.exists) {
+        // Create user document if it doesn't exist
+        final userModel = app_models.User(
+          id: user.uid,
+          email: user.email ?? '',
+          displayName: user.displayName ?? googleUser.displayName,
+          photoUrl: user.photoURL ?? googleUser.photoUrl,
+          createdAt: user.metadata.creationTime ?? DateTime.now(),
+          lastLoginAt: DateTime.now(),
+          isEmailVerified: user.emailVerified,
+        );
+
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .set(userModel.toJson());
+
+        return userModel;
+      } else {
+        // Update last login time for existing user
+        await _firestore.collection('users').doc(user.uid).update({
+          'lastLoginAt': DateTime.now().toIso8601String(),
+          if (user.photoURL != null) 'photoUrl': user.photoURL,
+        });
+
+        // Fetch refreshed user data
+        final updatedDoc = await _firestore.collection('users').doc(user.uid).get();
+        return app_models.User.fromJson(updatedDoc.data()!);
+      }
+    } catch (e) {
+      throw Exception('Failed to sign in with Google: $e');
     }
   }
 

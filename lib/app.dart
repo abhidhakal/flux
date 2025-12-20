@@ -9,19 +9,21 @@ import 'core/services/ai_intelligence_service.dart';
 import 'core/services/goal_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/enhanced_notification_service.dart';
+import 'core/services/notification_trigger_service.dart';
 import 'core/services/currency_service.dart';
 import 'core/services/network_service.dart';
 import 'core/services/subscription_service.dart';
 import 'core/services/subscription_service.dart';
 import 'features/subscription/subscription_bloc.dart';
 import 'features/auth/auth_bloc.dart';
-import 'core/constants/app_colors.dart';
+import 'core/constants/app_theme.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/budget/budget_bloc.dart';
 import 'features/transaction/transaction_bloc.dart';
 import 'features/analytics/analytics_bloc.dart';
 import 'features/goals/goals_bloc.dart';
 import 'features/notifications/notifications_bloc.dart';
+import 'features/main/navigation_cubit.dart';
 import 'features/theme/theme_bloc.dart';
 import 'shared/widgets/loading_screen.dart';
 import 'features/main/screens/main_screen.dart';
@@ -37,6 +39,7 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   final EnhancedNotificationService _notificationService = EnhancedNotificationService();
+  final NotificationTriggerService _triggerService = NotificationTriggerService();
 
   @override
   void initState() {
@@ -61,6 +64,9 @@ class _AppState extends State<App> {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        BlocProvider<NavigationCubit>(
+          create: (context) => NavigationCubit(),
+        ),
         BlocProvider<ThemeBloc>(
           create: (context) => ThemeBloc()..add(ThemeLoadRequested()),
         ),
@@ -72,11 +78,15 @@ class _AppState extends State<App> {
         BlocProvider<BudgetBloc>(
           create: (context) => BudgetBloc(
             budgetService: BudgetService(),
+            notificationTriggerService: _triggerService,
           ),
         ),
         BlocProvider<TransactionBloc>(
           create: (context) => TransactionBloc(
             transactionService: TransactionService(),
+            budgetService: BudgetService(),
+            notificationTriggerService: _triggerService,
+            enhancedNotificationService: _notificationService,
           ),
         ),
         BlocProvider<IncomeBloc>(
@@ -92,11 +102,12 @@ class _AppState extends State<App> {
         BlocProvider<GoalsBloc>(
           create: (context) => GoalsBloc(
             goalService: GoalService(),
+            notificationTriggerService: _triggerService,
           ),
         ),
         BlocProvider<NotificationsBloc>(
           create: (context) => NotificationsBloc(
-            notificationService: NotificationService(),
+            notificationService: _notificationService,
           ),
         ),
         BlocProvider<SubscriptionBloc>(

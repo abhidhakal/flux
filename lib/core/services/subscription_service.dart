@@ -214,6 +214,14 @@ class SubscriptionService {
       _isPremium = false;
     }
   }
+
+  bool isDeveloperUser() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && user.email != null) {
+      return _developerEmails.contains(user.email);
+    }
+    return false;
+  }
   
   void dispose() {
     _subscription.cancel();

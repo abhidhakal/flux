@@ -1,10 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../core/models/notification_model.dart';
-import '../../core/services/notification_service.dart';
-import '../../core/models/budget_model.dart';
-import '../../core/models/transaction_model.dart';
-import '../../core/models/goal_model.dart';
+import '../../core/services/enhanced_notification_service.dart';
 
 // Events
 abstract class NotificationsEvent extends Equatable {
@@ -23,10 +20,10 @@ class LoadNotifications extends NotificationsEvent {
   List<Object?> get props => [userId];
 }
 
-class LoadUnreadNotifications extends NotificationsEvent {
+class RefreshNotifications extends NotificationsEvent {
   final String userId;
 
-  const LoadUnreadNotifications(this.userId);
+  const RefreshNotifications(this.userId);
 
   @override
   List<Object?> get props => [userId];
@@ -59,23 +56,6 @@ class DeleteNotification extends NotificationsEvent {
   List<Object?> get props => [notificationId];
 }
 
-class GenerateSmartNotifications extends NotificationsEvent {
-  final String userId;
-  final List<Budget> budgets;
-  final List<Transaction> transactions;
-  final List<Goal> goals;
-
-  const GenerateSmartNotifications({
-    required this.userId,
-    required this.budgets,
-    required this.transactions,
-    required this.goals,
-  });
-
-  @override
-  List<Object?> get props => [userId, budgets, transactions, goals];
-}
-
 class MarkAllAsRead extends NotificationsEvent {
   final String userId;
 
@@ -85,10 +65,10 @@ class MarkAllAsRead extends NotificationsEvent {
   List<Object?> get props => [userId];
 }
 
-class CheckSmartNotificationCooldown extends NotificationsEvent {
+class ClearAllNotifications extends NotificationsEvent {
   final String userId;
 
-  const CheckSmartNotificationCooldown(this.userId);
+  const ClearAllNotifications(this.userId);
 
   @override
   List<Object?> get props => [userId];
@@ -111,17 +91,10 @@ class NotificationsLoaded extends NotificationsState {
 
   const NotificationsLoaded(this.notifications);
 
+  int get unreadCount => notifications.where((n) => n.isUnread).length;
+
   @override
   List<Object?> get props => [notifications];
-}
-
-class UnreadNotificationsLoaded extends NotificationsState {
-  final List<Notification> unreadNotifications;
-
-  const UnreadNotificationsLoaded(this.unreadNotifications);
-
-  @override
-  List<Object?> get props => [unreadNotifications];
 }
 
 class NotificationsError extends NotificationsState {
@@ -142,34 +115,21 @@ class NotificationsSuccess extends NotificationsState {
   List<Object?> get props => [message];
 }
 
-class SmartNotificationCooldownChecked extends NotificationsState {
-  final bool canGenerate;
-  final Duration? timeUntilNextGeneration;
-
-  const SmartNotificationCooldownChecked({
-    required this.canGenerate,
-    this.timeUntilNextGeneration,
-  });
-
-  @override
-  List<Object?> get props => [canGenerate, timeUntilNextGeneration];
-}
-
 // BLoC
 class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
-  final NotificationService _notificationService;
+  final EnhancedNotificationService _notificationService;
+  String? _currentUserId;
 
-  NotificationsBloc({required NotificationService notificationService})
+  NotificationsBloc({required EnhancedNotificationService notificationService})
       : _notificationService = notificationService,
         super(NotificationsInitial()) {
     on<LoadNotifications>(_onLoadNotifications);
-    on<LoadUnreadNotifications>(_onLoadUnreadNotifications);
+    on<RefreshNotifications>(_onRefreshNotifications);
     on<MarkAsRead>(_onMarkAsRead);
     on<DismissNotification>(_onDismissNotification);
     on<DeleteNotification>(_onDeleteNotification);
-    on<GenerateSmartNotifications>(_onGenerateSmartNotifications);
     on<MarkAllAsRead>(_onMarkAllAsRead);
-    on<CheckSmartNotificationCooldown>(_onCheckSmartNotificationCooldown);
+    on<ClearAllNotifications>(_onClearAllNotifications);
   }
 
   Future<void> _onLoadNotifications(
@@ -177,26 +137,25 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     Emitter<NotificationsState> emit,
   ) async {
     emit(NotificationsLoading());
+    _currentUserId = event.userId;
     
     try {
       final notifications = await _notificationService.getUserNotifications(event.userId);
       emit(NotificationsLoaded(notifications));
     } catch (e) {
-      emit(NotificationsError('Failed to load notifications: $e'));
+      emit(NotificationsError('Failed to load notifications'));
     }
   }
 
-  Future<void> _onLoadUnreadNotifications(
-    LoadUnreadNotifications event,
+  Future<void> _onRefreshNotifications(
+    RefreshNotifications event,
     Emitter<NotificationsState> emit,
   ) async {
-    emit(NotificationsLoading());
-    
     try {
-      final unreadNotifications = await _notificationService.getUnreadNotifications(event.userId);
-      emit(UnreadNotificationsLoaded(unreadNotifications));
+      final notifications = await _notificationService.getUserNotifications(event.userId);
+      emit(NotificationsLoaded(notifications));
     } catch (e) {
-      emit(NotificationsError('Failed to load unread notifications: $e'));
+      emit(NotificationsError('Failed to refresh notifications'));
     }
   }
 
@@ -206,9 +165,14 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   ) async {
     try {
       await _notificationService.markAsRead(event.notificationId);
-      emit(NotificationsSuccess('Notification marked as read'));
+      
+      // Reload notifications to update UI
+      if (_currentUserId != null) {
+        final notifications = await _notificationService.getUserNotifications(_currentUserId!);
+        emit(NotificationsLoaded(notifications));
+      }
     } catch (e) {
-      emit(NotificationsError('Failed to mark notification as read: $e'));
+      emit(NotificationsError('Failed to mark as read'));
     }
   }
 
@@ -218,9 +182,14 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   ) async {
     try {
       await _notificationService.dismissNotification(event.notificationId);
-      emit(NotificationsSuccess('Notification dismissed'));
+      
+      // Reload notifications to update UI
+      if (_currentUserId != null) {
+        final notifications = await _notificationService.getUserNotifications(_currentUserId!);
+        emit(NotificationsLoaded(notifications));
+      }
     } catch (e) {
-      emit(NotificationsError('Failed to dismiss notification: $e'));
+      emit(NotificationsError('Failed to dismiss notification'));
     }
   }
 
@@ -230,28 +199,14 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   ) async {
     try {
       await _notificationService.deleteNotification(event.notificationId);
-      emit(NotificationsSuccess('Notification deleted'));
+      
+      // Reload notifications to update UI
+      if (_currentUserId != null) {
+        final notifications = await _notificationService.getUserNotifications(_currentUserId!);
+        emit(NotificationsLoaded(notifications));
+      }
     } catch (e) {
-      emit(NotificationsError('Failed to delete notification: $e'));
-    }
-  }
-
-  Future<void> _onGenerateSmartNotifications(
-    GenerateSmartNotifications event,
-    Emitter<NotificationsState> emit,
-  ) async {
-    emit(NotificationsLoading());
-    
-    try {
-      await _notificationService.generateSmartNotifications(
-        event.userId,
-        event.budgets,
-        event.transactions,
-        event.goals,
-      );
-      emit(NotificationsSuccess('Smart notifications generated successfully'));
-    } catch (e) {
-      emit(NotificationsError('Failed to generate smart notifications: $e'));
+      emit(NotificationsError('Failed to delete notification'));
     }
   }
 
@@ -266,26 +221,30 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
         await _notificationService.markAsRead(notification.id);
       }
       
-      emit(NotificationsSuccess('All notifications marked as read'));
+      // Reload to show updated state
+      final notifications = await _notificationService.getUserNotifications(event.userId);
+      emit(NotificationsLoaded(notifications));
+      emit(const NotificationsSuccess('All marked as read'));
     } catch (e) {
-      emit(NotificationsError('Failed to mark all notifications as read: $e'));
+      emit(NotificationsError('Failed to mark all as read'));
     }
   }
 
-  Future<void> _onCheckSmartNotificationCooldown(
-    CheckSmartNotificationCooldown event,
+  Future<void> _onClearAllNotifications(
+    ClearAllNotifications event,
     Emitter<NotificationsState> emit,
   ) async {
     try {
-      final canGenerate = await _notificationService.canGenerateSmartNotifications(event.userId);
-      final timeUntilNext = await _notificationService.getTimeUntilNextGeneration(event.userId);
+      final notifications = await _notificationService.getUserNotifications(event.userId);
       
-      emit(SmartNotificationCooldownChecked(
-        canGenerate: canGenerate,
-        timeUntilNextGeneration: timeUntilNext,
-      ));
+      for (final notification in notifications) {
+        await _notificationService.deleteNotification(notification.id);
+      }
+      
+      emit(const NotificationsLoaded([]));
+      emit(const NotificationsSuccess('All notifications cleared'));
     } catch (e) {
-      emit(NotificationsError('Failed to check smart notification cooldown: $e'));
+      emit(NotificationsError('Failed to clear notifications'));
     }
   }
 }

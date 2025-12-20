@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_theme.dart';
 import '../../../core/models/notification_model.dart' as app_notification;
 import '../../auth/auth_bloc.dart';
+import '../../goals/screens/goals_screen.dart';
+import '../../main/navigation_cubit.dart';
 import '../notifications_bloc.dart';
 import '../widgets/notification_card.dart';
 import '../../../shared/widgets/app_snackbar.dart';
@@ -24,21 +26,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final notificationsState = context.read<NotificationsBloc>().state;
     final user = context.read<AuthBloc>().state;
     
-    print('🔔 NOTIFICATIONS SCREEN: _loadNotificationsIfNeeded called');
-    print('🔔 NOTIFICATIONS SCREEN: Auth state: ${user.runtimeType}');
-    print('🔔 NOTIFICATIONS SCREEN: Notifications state: ${notificationsState.runtimeType}');
-    
-    // Only load if we don't have notifications loaded and user is authenticated
-    // Also ensure we're not already loading
     if (user is AuthAuthenticated && 
         notificationsState is! NotificationsLoaded && 
         notificationsState is! NotificationsLoading) {
-      print('🔔 NOTIFICATIONS SCREEN: Loading notifications for user: ${user.user.id}');
       context.read<NotificationsBloc>().add(LoadNotifications(user.user.id));
-      // Don't load cooldown check immediately to avoid state conflicts
-      // Cooldown will be checked when needed
-    } else {
-      print('🔔 NOTIFICATIONS SCREEN: Not loading notifications - user: ${user.runtimeType}, notificationsState: ${notificationsState.runtimeType}');
     }
   }
 
@@ -61,34 +52,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           BlocBuilder<NotificationsBloc, NotificationsState>(
             builder: (context, state) {
               if (state is NotificationsLoaded && state.notifications.isNotEmpty) {
-                return PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.onBackground),
-                  onSelected: (value) {
-                    final user = context.read<AuthBloc>().state;
-                    if (user is AuthAuthenticated) {
-                      if (value == 'mark_all_read') {
-                        context.read<NotificationsBloc>().add(MarkAllAsRead(user.user.id));
-                      } else if (value == 'generate_smart') {
-                        _generateSmartNotifications(context, user.user.id);
-                      }
-                    }
-                  },
-                  itemBuilder: (context) {
-                    final notificationsState = context.read<NotificationsBloc>().state;
-                    return [
-                      const PopupMenuItem(
-                        value: 'mark_all_read',
-                        child: Row(
-                          children: [
-                            Icon(Icons.mark_email_read),
-                            SizedBox(width: 8),
-                            Text('Mark All as Read'),
-                          ],
-                        ),
+                final hasUnread = state.notifications.any((n) => n.isUnread);
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (hasUnread)
+                      IconButton(
+                        icon: Icon(Icons.done_all, color: Theme.of(context).colorScheme.onBackground),
+                        tooltip: 'Mark All as Read',
+                        onPressed: () {
+                          final user = context.read<AuthBloc>().state;
+                          if (user is AuthAuthenticated) {
+                            context.read<NotificationsBloc>().add(MarkAllAsRead(user.user.id));
+                          }
+                        },
                       ),
-                      _buildSmartNotificationMenuItem(context, notificationsState),
-                    ];
-                  },
+                  ],
                 );
               }
               return const SizedBox.shrink();
@@ -98,7 +77,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, authState) {
-          // Load notifications when authentication is complete
           if (authState is AuthAuthenticated) {
             _loadNotificationsIfNeeded(context);
           }
@@ -107,14 +85,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           listener: (context, state) {
             if (state is NotificationsSuccess) {
               AppSnackbar.showSuccess(context, message: state.message);
-              
-              // Refresh cooldown state after successful generation
-              if (state.message.contains('Smart notifications generated')) {
-                final user = context.read<AuthBloc>().state;
-                if (user is AuthAuthenticated) {
-                  context.read<NotificationsBloc>().add(CheckSmartNotificationCooldown(user.user.id));
-                }
-              }
             }
             
             if (state is NotificationsError) {
@@ -123,7 +93,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           },
           child: BlocBuilder<NotificationsBloc, NotificationsState>(
             builder: (context, state) {
-              // Handle initial state - show loading while we fetch notifications
               if (state is NotificationsInitial) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   _loadNotificationsIfNeeded(context);
@@ -136,7 +105,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               }
 
               if (state is NotificationsLoaded) {
-                print('🔔 NOTIFICATIONS SCREEN: Found ${state.notifications.length} notifications in NotificationsLoaded state');
                 if (state.notifications.isEmpty) {
                   return _buildEmptyState();
                 }
@@ -148,7 +116,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 return _buildErrorState(state.message);
               }
 
-              print('🔔 NOTIFICATIONS SCREEN: Current state is ${state.runtimeType}, showing empty state');
               return _buildEmptyState();
             },
           ),
@@ -159,48 +126,44 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.notifications_none,
-            size: 64,
-            color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No Notifications',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onBackground,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.notifications_none_rounded,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'You\'re all caught up! We\'ll notify you about important financial updates.',
-            style: TextStyle(
-              fontSize: 16,
-              color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+            const SizedBox(height: 24),
+            Text(
+              'All Caught Up!',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onBackground,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () {
-              final user = context.read<AuthBloc>().state;
-              if (user is AuthAuthenticated) {
-                _generateSmartNotifications(context, user.user.id);
-              }
-            },
-            icon: const Icon(Icons.smart_toy),
-            label: const Text('Generate Smart Alerts'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textInverse,
+            const SizedBox(height: 12),
+            Text(
+              'You\'ll receive notifications when:\n• Your budget reaches 80%, 90%, or is exceeded\n• You hit goal milestones (25%, 50%, 90%)\n• Unusual spending is detected',
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -252,85 +215,61 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final unreadNotifications = notifications.where((n) => n.isUnread).toList();
     final readNotifications = notifications.where((n) => n.isRead).toList();
 
-    return Column(
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
         if (unreadNotifications.isNotEmpty) ...[
-          _buildSectionHeader('Unread', unreadNotifications.length),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: unreadNotifications.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: NotificationCard(
-                    notification: unreadNotifications[index],
-                    onTap: () => _handleNotificationTap(unreadNotifications[index]),
-                    onDismiss: () => _handleDismissNotification(unreadNotifications[index]),
-                  ),
-                );
-              },
+          _buildSectionHeader('New', unreadNotifications.length),
+          ...unreadNotifications.map((notification) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: NotificationCard(
+              notification: notification,
+              onTap: () => _handleNotificationTap(notification),
+              onDismiss: () => _handleDismissNotification(notification),
             ),
-          ),
+          )),
         ],
         if (readNotifications.isNotEmpty) ...[
-          _buildSectionHeader('Read', readNotifications.length),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: readNotifications.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: NotificationCard(
-                    notification: readNotifications[index],
-                    onTap: () => _handleNotificationTap(readNotifications[index]),
-                    onDismiss: () => _handleDismissNotification(readNotifications[index]),
-                  ),
-                );
-              },
+          _buildSectionHeader('Earlier', readNotifications.length),
+          ...readNotifications.map((notification) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: NotificationCard(
+              notification: notification,
+              onTap: () => _handleNotificationTap(notification),
+              onDismiss: () => _handleDismissNotification(notification),
             ),
-          ),
+          )),
         ],
       ],
     );
   }
 
   Widget _buildSectionHeader(String title, int count) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.background,
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-            width: 1,
-          ),
-        ),
-      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             title,
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onBackground,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onBackground.withOpacity(0.6),
             ),
           ),
+          const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(12),
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
               count.toString(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textInverse,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
           ),
@@ -347,96 +286,31 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     // Handle actionable notifications
     if (notification.isActionable && notification.actionRoute != null) {
-      // Navigate to the appropriate screen
+      final navCubit = context.read<NavigationCubit>();
+      
       switch (notification.actionRoute) {
         case '/budgets':
-          // Navigate to budgets tab
+          navCubit.setTab(1);
           break;
         case '/transactions':
-          // Navigate to transactions tab
+          navCubit.setTab(2);
           break;
         case '/goals':
-          // Navigate to goals tab
-          break;
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const GoalsScreen()),
+          );
+          return;
         case '/analytics':
-          // Navigate to analytics tab
+          navCubit.setTab(3);
           break;
       }
+      
+      Navigator.pop(context);
     }
   }
 
   void _handleDismissNotification(app_notification.Notification notification) {
     context.read<NotificationsBloc>().add(DismissNotification(notification.id));
-  }
-
-  PopupMenuEntry<String> _buildSmartNotificationMenuItem(BuildContext context, NotificationsState state) {
-    if (state is SmartNotificationCooldownChecked) {
-      if (state.canGenerate) {
-        return const PopupMenuItem(
-          value: 'generate_smart',
-          child: Row(
-            children: [
-              Icon(Icons.smart_toy, color: AppColors.primary),
-              SizedBox(width: 8),
-              Text('Generate Smart Alerts'),
-            ],
-          ),
-        );
-      } else {
-        final minutes = state.timeUntilNextGeneration?.inMinutes ?? 0;
-        return PopupMenuItem(
-          value: 'generate_smart_disabled',
-          enabled: false,
-          child: Row(
-            children: [
-              Icon(Icons.smart_toy, color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7)),
-              SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Generate Smart Alerts',
-                    style: TextStyle(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7)),
-                  ),
-                  Text(
-                    'Available in ${minutes}m',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      }
-    }
-    
-    // Default state - show as available
-    return const PopupMenuItem(
-      value: 'generate_smart',
-      child: Row(
-        children: [
-          Icon(Icons.smart_toy, color: AppColors.primary),
-          SizedBox(width: 8),
-          Text('Generate Smart Alerts'),
-        ],
-      ),
-    );
-  }
-
-  void _generateSmartNotifications(BuildContext context, String userId) {
-    // This would typically fetch data from other BLoCs
-    // For now, we'll just trigger the generation
-    context.read<NotificationsBloc>().add(
-      GenerateSmartNotifications(
-        userId: userId,
-        budgets: [], // Would be fetched from BudgetBloc
-        transactions: [], // Would be fetched from TransactionBloc
-        goals: [], // Would be fetched from GoalsBloc
-      ),
-    );
   }
 }

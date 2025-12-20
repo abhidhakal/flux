@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../core/models/budget_model.dart';
 import '../../core/services/budget_service.dart';
+import '../../core/services/notification_trigger_service.dart';
 
 // Events
 abstract class BudgetEvent extends Equatable {
@@ -107,9 +108,13 @@ class BudgetSuccess extends BudgetState {
 // BLoC
 class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
   final BudgetService _budgetService;
+  final NotificationTriggerService _notificationTriggerService;
 
-  BudgetBloc({required BudgetService budgetService})
-      : _budgetService = budgetService,
+  BudgetBloc({
+    required BudgetService budgetService,
+    required NotificationTriggerService notificationTriggerService,
+  })  : _budgetService = budgetService,
+        _notificationTriggerService = notificationTriggerService,
         super(BudgetInitial()) {
     on<LoadBudgets>(_onLoadBudgets);
     on<CreateBudget>(_onCreateBudget);
@@ -141,11 +146,14 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
     
     try {
       await _budgetService.createBudget(event.budget);
-      emit(BudgetSuccess('Budget created successfully!'));
       
       // Reload budgets
       final budgets = await _budgetService.getUserBudgets(event.budget.userId);
       emit(BudgetLoaded(budgets));
+      emit(BudgetSuccess('Budget created successfully!'));
+      
+      // Trigger notification check
+      _notificationTriggerService.monitorBudgetChanges(event.budget.userId, budgets);
     } catch (e) {
       emit(BudgetError('Failed to create budget: $e'));
     }
@@ -159,11 +167,14 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
     
     try {
       await _budgetService.updateBudget(event.budget);
-      emit(BudgetSuccess('Budget updated successfully!'));
       
       // Reload budgets
       final budgets = await _budgetService.getUserBudgets(event.budget.userId);
       emit(BudgetLoaded(budgets));
+      emit(BudgetSuccess('Budget updated successfully!'));
+      
+      // Trigger notification check
+      _notificationTriggerService.monitorBudgetChanges(event.budget.userId, budgets);
     } catch (e) {
       emit(BudgetError('Failed to update budget: $e'));
     }

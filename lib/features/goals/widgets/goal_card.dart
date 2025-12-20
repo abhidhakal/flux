@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_theme.dart';
 import '../../../core/models/goal_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../goals_bloc.dart';

@@ -7,6 +7,7 @@ import '../models/transaction_model.dart';
 import '../models/goal_model.dart';
 import 'notification_service.dart';
 import 'push_notification_service.dart';
+import 'transaction_service.dart';
 
 class EnhancedNotificationService {
   final NotificationService _notificationService = NotificationService();
@@ -448,5 +449,97 @@ class EnhancedNotificationService {
       title: title,
       message: message,
     );
+  }
+
+  // --- Smart Daily Log Reminder Logic ---
+
+  // Schedule the smart daily reminder (called on app init)
+  Future<void> scheduleSmartDailyLogReminder(String userId) async {
+    try {
+      // 1. Check if user has already added transactions today
+      final hasTransactions = await TransactionService().hasTransactionsToday(userId);
+      
+      // 2. Determine schedule time
+      final now = DateTime.now();
+      var scheduledDate = DateTime(now.year, now.month, now.day, 17, 0); // Today 5 PM
+      
+      if (hasTransactions || now.isAfter(scheduledDate)) {
+        // If already logged OR it's past 5 PM, schedule for tomorrow
+        scheduledDate = scheduledDate.add(const Duration(days: 1));
+      }
+
+      // 3. Schedule the notification
+      // We use a specific ID for this smart reminder (e.g., 2000)
+      await _pushService.scheduleNotification(
+        id: 2000,
+        title: 'Add your finances',
+        body: 'You haven\'t added any finances today. Take a moment to log your expenses!',
+        scheduledDate: scheduledDate,
+        priority: NotificationPriority.high,
+        payload: 'add_transaction',
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+      
+      print('✅ ENHANCED NOTIFICATION SERVICE: Scheduled smart reminder for $scheduledDate');
+      
+    } catch (e) {
+      print('❌ ENHANCED NOTIFICATION SERVICE: Error scheduling smart reminder: $e');
+    }
+  }
+
+  // Called when a transaction is added
+  Future<void> updateDailyLogReminder(String userId) async {
+    try {
+      print('🔵 ENHANCED NOTIFICATION SERVICE: Transaction added, updating daily reminder...');
+      
+      // Cancel the current reminder for today
+      await _pushService.cancelNotification(2000);
+      
+      // Schedule for tomorrow 5 PM
+      final now = DateTime.now();
+      final tomorrow5pm = DateTime(now.year, now.month, now.day, 17, 0).add(const Duration(days: 1));
+      
+      await _pushService.scheduleNotification(
+        id: 2000,
+        title: 'Add your finances',
+        body: 'You haven\'t added any finances today. Take a moment to log your expenses!',
+        scheduledDate: tomorrow5pm,
+        priority: NotificationPriority.high,
+        payload: 'add_transaction',
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+      
+      print('✅ ENHANCED NOTIFICATION SERVICE: Smart reminder pushed to tomorrow $tomorrow5pm');
+      
+    } catch (e) {
+      print('❌ ENHANCED NOTIFICATION SERVICE: Error updating smart reminder: $e');
+    }
+  }
+
+  // Schedule daily morning greeting (7 AM)
+  Future<void> scheduleMorningGreeting(String userId) async {
+    try {
+      final now = DateTime.now();
+      var scheduledDate = DateTime(now.year, now.month, now.day, 7, 0); // 7 AM
+      
+      // If 7 AM has passed, schedule for tomorrow
+      if (scheduledDate.isBefore(now)) {
+        scheduledDate = scheduledDate.add(const Duration(days: 1));
+      }
+
+      await _pushService.scheduleNotification(
+        id: 7000,
+        title: 'Good Morning ☀️',
+        body: 'Rise and shine! Take a moment to track your finances today.',
+        scheduledDate: scheduledDate,
+        priority: NotificationPriority.low, // Less intrusive than alerts
+        payload: 'morning_greeting',
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+      
+      print('✅ ENHANCED NOTIFICATION SERVICE: Scheduled morning greeting for $scheduledDate');
+    } catch (e) {
+      print('❌ ENHANCED NOTIFICATION SERVICE: Error scheduling morning greeting: $e');
+    }
   }
 }

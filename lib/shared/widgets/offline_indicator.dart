@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/services/network_service.dart';
-import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_theme.dart';
 
 class OfflineIndicator extends StatelessWidget {
   const OfflineIndicator({super.key});

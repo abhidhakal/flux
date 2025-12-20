@@ -47,14 +47,14 @@ class NotificationService {
           .collection('notifications')
           .where('userId', isEqualTo: userId)
           .where('status', isEqualTo: NotificationStatus.unread.name)
-          .orderBy('createdAt', descending: true)
           .get();
 
       return querySnapshot.docs
           .map((doc) => Notification.fromJson(doc.data()))
           .toList();
     } catch (e) {
-      throw Exception('Failed to get unread notifications: $e');
+      print('❌ NOTIFICATION SERVICE: Error getting unread notifications: $e');
+      return [];
     }
   }
 
@@ -372,10 +372,7 @@ class NotificationService {
       title: randomTip['title'] as String,
       message: randomTip['message'] as String,
       type: NotificationType.financialTip,
-      priority: NotificationPriority.values.firstWhere(
-        (e) => e.name == randomTip['priority'],
-        orElse: () => NotificationPriority.low,
-      ),
+      priority: randomTip['priority'] as NotificationPriority,
       status: NotificationStatus.unread,
       createdAt: DateTime.now(),
       isActionable: false,

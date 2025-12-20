@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flux/features/main/widgets/budgets_screen.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_theme.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/services/currency_service.dart';
 import '../../../core/services/profile_picture_service.dart';
@@ -124,14 +124,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
               );
             },
           ),
-          IconButton(
-            icon: Icon(Icons.notifications_outlined, color: colorScheme.onBackground),
-            onPressed: () {
-               Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const NotificationsScreen(),
-                ),
+          BlocBuilder<NotificationsBloc, NotificationsState>(
+            builder: (context, state) {
+              int unreadCount = 0;
+              if (state is NotificationsLoaded) {
+                unreadCount = state.notifications.where((n) => n.status.name == 'unread').length;
+              }
+              
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.notifications_outlined, color: colorScheme.onBackground),
+                    onPressed: () {
+                       Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unreadCount > 9 ? '9+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
               );
             },
           ),

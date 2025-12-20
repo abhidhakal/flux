@@ -21,7 +21,7 @@ class PushNotificationService {
     tz.initializeTimeZones();
 
     // Android initialization settings
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings('@mipmap/launcher_icon');
     
     // iOS initialization settings
     const iosSettings = DarwinInitializationSettings(
@@ -71,7 +71,7 @@ class PushNotificationService {
       channelDescription: 'Notifications from Flux financial app',
       importance: _getAndroidImportance(priority),
       priority: _getAndroidPriority(priority),
-      icon: '@mipmap/ic_launcher',
+      icon: '@mipmap/launcher_icon',
       color: const Color(0xFF0079DC),
       playSound: true,
       enableVibration: true,
@@ -99,6 +99,7 @@ class PushNotificationService {
     required DateTime scheduledDate,
     String? payload,
     NotificationPriority priority = NotificationPriority.medium,
+    DateTimeComponents? matchDateTimeComponents,
   }) async {
     if (!_isInitialized) await initialize();
 
@@ -108,7 +109,7 @@ class PushNotificationService {
       channelDescription: 'Scheduled notifications from Flux',
       importance: _getAndroidImportance(priority),
       priority: _getAndroidPriority(priority),
-      icon: '@mipmap/ic_launcher',
+      icon: '@mipmap/launcher_icon',
       color: const Color(0xFF0079DC),
     );
 
@@ -130,7 +131,8 @@ class PushNotificationService {
       tz.TZDateTime.from(scheduledDate, tz.local),
       details,
       payload: payload,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: matchDateTimeComponents,
     );
   }
 

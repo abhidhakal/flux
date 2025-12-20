@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_theme.dart';
 import '../../../core/models/notification_model.dart' as app_notification;
 
 class NotificationCard extends StatelessWidget {

@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../core/models/goal_model.dart';
 import '../../core/services/goal_service.dart';
+import '../../core/services/notification_trigger_service.dart';
 
 // Events
 abstract class GoalsEvent extends Equatable {
@@ -145,9 +146,13 @@ class GoalsSuccess extends GoalsState {
 // BLoC
 class GoalsBloc extends Bloc<GoalsEvent, GoalsState> {
   final GoalService _goalService;
+  final NotificationTriggerService _notificationTriggerService;
 
-  GoalsBloc({required GoalService goalService})
-      : _goalService = goalService,
+  GoalsBloc({
+    required GoalService goalService,
+    required NotificationTriggerService notificationTriggerService,
+  })  : _goalService = goalService,
+        _notificationTriggerService = notificationTriggerService,
         super(GoalsInitial()) {
     on<LoadGoals>(_onLoadGoals);
     on<CreateGoal>(_onCreateGoal);
@@ -202,7 +207,9 @@ class GoalsBloc extends Bloc<GoalsEvent, GoalsState> {
       // Reload goals immediately after update
       final goals = await _goalService.getUserGoals(event.goal.userId);
       emit(GoalsLoaded(goals));
-      // Don't emit GoalsSuccess here - let the UI handle the success message
+      
+      // Trigger notification check
+      _notificationTriggerService.monitorGoalProgress(event.goal.userId, goals);
     } catch (e) {
       emit(GoalsError('Failed to update goal: $e'));
     }
@@ -233,11 +240,14 @@ class GoalsBloc extends Bloc<GoalsEvent, GoalsState> {
     
     try {
       await _goalService.updateGoalProgress(event.goalId, event.amount);
-      // Notify success, then reload goals for provided userId
-      emit(const GoalsSuccess('Progress added successfully'));
+      
       // Reload goals
       final goals = await _goalService.getUserGoals(event.userId);
       emit(GoalsLoaded(goals));
+      emit(const GoalsSuccess('Progress added successfully'));
+      
+      // Trigger notification check
+      _notificationTriggerService.monitorGoalProgress(event.userId, goals);
     } catch (e) {
       emit(GoalsError('Failed to update goal progress: $e'));
     }

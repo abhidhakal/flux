@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/loading_screen.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_theme.dart';
 import '../../../core/constants/app_theme.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -267,6 +268,52 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     ),
                                   ),
                           ),
+                          const SizedBox(height: 16),
+ 
+                          // Divider
+                          Row(
+                            children: [
+                              Expanded(child: Divider(color: AppColors.lightBorder)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  'OR',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: AppColors.lightTextTertiary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              Expanded(child: Divider(color: AppColors.lightBorder)),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Google Sign In Button
+                          OutlinedButton.icon(
+                            onPressed: _isLoading ? null : _handleGoogleSignIn,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              side: BorderSide(color: Colors.grey.shade300),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              backgroundColor: Colors.white,
+                            ),
+                            icon: const FaIcon(
+                              FontAwesomeIcons.google,
+                              color: Color(0xFFDB4437),
+                              size: 20,
+                            ),
+                            label: Text(
+                              'Continue with Google',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: AppColors.lightTextPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
                           const SizedBox(height: 12),
  
                           // Back to Login
@@ -391,6 +438,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
           );
     }
+  }
+
+  void _handleGoogleSignIn() {
+    context.read<AuthBloc>().add(GoogleSignInRequested());
   }
 }
 

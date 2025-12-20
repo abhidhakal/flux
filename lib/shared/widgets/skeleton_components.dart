@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_theme.dart';
 
 class SkeletonComponents {
   // Theme-aware shimmer configuration

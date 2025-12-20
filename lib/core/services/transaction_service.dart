@@ -151,6 +151,27 @@ class TransactionService {
     }
   }
 
+  // Check if user has transactions for today
+  Future<bool> hasTransactionsToday(String userId) async {
+    try {
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+      
+      final querySnapshot = await _firestore
+          .collection('transactions')
+          .where('userId', isEqualTo: userId)
+          .where('date', isGreaterThanOrEqualTo: startOfDay.toIso8601String())
+          .where('date', isLessThanOrEqualTo: endOfDay.toIso8601String())
+          .get();
+
+      return querySnapshot.docs.isNotEmpty;
+    } catch (e) {
+      print('❌ TRANSACTION SERVICE: Error checking today transactions: $e');
+      return false;
+    }
+  }
+
   // Private method to update budget for new transaction
   Future<void> _updateBudgetForTransaction(Transaction transaction, firestore.WriteBatch batch) async {
     try {

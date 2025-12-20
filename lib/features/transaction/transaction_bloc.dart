@@ -2,6 +2,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../core/models/transaction_model.dart';
 import '../../core/services/transaction_service.dart';
+import '../../core/services/budget_service.dart';
+import '../../core/services/notification_trigger_service.dart';
+import '../../core/services/enhanced_notification_service.dart';
 
 // Events
 abstract class TransactionEvent extends Equatable {
@@ -90,9 +93,19 @@ class TransactionSuccess extends TransactionState {
 // BLoC
 class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   final TransactionService _transactionService;
+  final BudgetService _budgetService;
+  final NotificationTriggerService _notificationTriggerService;
+  final EnhancedNotificationService? _enhancedNotificationService;
 
-  TransactionBloc({required TransactionService transactionService})
-      : _transactionService = transactionService,
+  TransactionBloc({
+    required TransactionService transactionService,
+    required BudgetService budgetService,
+    required NotificationTriggerService notificationTriggerService,
+    EnhancedNotificationService? enhancedNotificationService,
+  })  : _transactionService = transactionService,
+        _budgetService = budgetService,
+        _notificationTriggerService = notificationTriggerService,
+        _enhancedNotificationService = enhancedNotificationService,
         super(TransactionInitial()) {
     on<LoadTransactions>(_onLoadTransactions);
     on<AddTransaction>(_onAddTransaction);
@@ -109,6 +122,10 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     try {
       final transactions = await _transactionService.getUserTransactions(event.userId);
       emit(TransactionLoaded(transactions));
+      
+      // Schedule/Check smart daily reminder
+      _enhancedNotificationService?.scheduleSmartDailyLogReminder(event.userId);
+      _enhancedNotificationService?.scheduleMorningGreeting(event.userId);
     } catch (e) {
       emit(TransactionError('Failed to load transactions: $e'));
     }
@@ -122,11 +139,21 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     
     try {
       await _transactionService.addTransaction(event.transaction);
-      emit(TransactionSuccess('Transaction added successfully!'));
       
       // Reload transactions
       final transactions = await _transactionService.getUserTransactions(event.transaction.userId);
       emit(TransactionLoaded(transactions));
+      emit(TransactionSuccess('Transaction added successfully!'));
+      
+      // Trigger notification checks
+      _notificationTriggerService.monitorSpendingPatterns(event.transaction.userId, transactions);
+      
+      // Update smart daily reminder since user just added a transaction
+      _enhancedNotificationService?.updateDailyLogReminder(event.transaction.userId);
+      
+      // Also check budgets as they are affected by transactions
+      final budgets = await _budgetService.getUserBudgets(event.transaction.userId);
+      _notificationTriggerService.monitorBudgetChanges(event.transaction.userId, budgets);
     } catch (e) {
       emit(TransactionError('Failed to add transaction: $e'));
     }
@@ -140,11 +167,17 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     
     try {
       await _transactionService.updateTransaction(event.transaction);
-      emit(TransactionSuccess('Transaction updated successfully!'));
       
       // Reload transactions
       final transactions = await _transactionService.getUserTransactions(event.transaction.userId);
       emit(TransactionLoaded(transactions));
+      emit(TransactionSuccess('Transaction updated successfully!'));
+      
+      // Trigger notification checks
+      _notificationTriggerService.monitorSpendingPatterns(event.transaction.userId, transactions);
+      
+      final budgets = await _budgetService.getUserBudgets(event.transaction.userId);
+      _notificationTriggerService.monitorBudgetChanges(event.transaction.userId, budgets);
     } catch (e) {
       emit(TransactionError('Failed to update transaction: $e'));
     }
@@ -158,11 +191,15 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     
     try {
       await _transactionService.deleteTransaction(event.transactionId);
-      emit(TransactionSuccess('Transaction deleted successfully!'));
       
       // Reload transactions after deletion using userId from event
       final transactions = await _transactionService.getUserTransactions(event.userId);
       emit(TransactionLoaded(transactions));
+      emit(TransactionSuccess('Transaction deleted successfully!'));
+      
+      // Check budgets after deletion
+      final budgets = await _budgetService.getUserBudgets(event.userId);
+      _notificationTriggerService.monitorBudgetChanges(event.userId, budgets);
     } catch (e) {
       emit(TransactionError('Failed to delete transaction: $e'));
     }
