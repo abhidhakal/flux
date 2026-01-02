@@ -116,68 +116,79 @@ class _AppState extends State<App> {
           )..add(SubscriptionCheckRequested()),
         ),
       ],
-      child: BlocBuilder<ThemeBloc, ThemeState>(
-        builder: (context, themeState) {
-          ThemeMode themeMode = ThemeMode.light;
-          if (themeState is ThemeLoaded) {
-            themeMode = themeState.themeMode;
-          }
-
-          return MaterialApp(
-            title: 'Flux',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeMode,
-            debugShowCheckedModeBanner: false,
-            builder: (context, child) {
-              final Widget safeContent = SafeArea(
-                top: true,
-                bottom: true,
-                left: false,
-                right: false,
-                child: child ?? const SizedBox.shrink(),
-              );
-              final theme = Theme.of(context);
-              final isDark = theme.brightness == Brightness.dark;
-              final overlay = isDark
-                  ? const SystemUiOverlayStyle(
-                      statusBarColor: Colors.transparent,
-                      statusBarIconBrightness: Brightness.light,
-                      statusBarBrightness: Brightness.dark,
-                      systemNavigationBarColor: Colors.transparent,
-                      systemNavigationBarIconBrightness: Brightness.light,
-                      systemNavigationBarDividerColor: Colors.transparent,
-                    )
-                  : const SystemUiOverlayStyle(
-                      statusBarColor: AppColors.primary,
-                      statusBarIconBrightness: Brightness.light,
-                      statusBarBrightness: Brightness.light,
-                      systemNavigationBarColor: AppColors.lightBackground,
-                      systemNavigationBarIconBrightness: Brightness.light,
-                      systemNavigationBarDividerColor: AppColors.lightBackground,
-                    );
-              return AnnotatedRegion<SystemUiOverlayStyle>(
-                value: overlay,
-                child: safeContent,
-              );
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<AuthBloc, AuthState>(
+            listener: (context, state) {
+              if (state is AuthAuthenticated) {
+                context.read<SubscriptionBloc>().add(SubscriptionCheckRequested());
+              }
             },
-            home: BlocBuilder<AuthBloc, AuthState>(
-              builder: (context, state) {
-                if (state is AuthAuthenticated) {
-                  return const MainScreen();
-                }
-                
-                // Show LoginScreen for Unauthenticated, Error, Success, or Loading state
-                // during a transition. Only show initial loading if absolutely necessary.
-                if (state is AuthLoading || state is AuthInitial) {
-                  return const LoginScreen();
-                }
+          ),
+        ],
+        child: BlocBuilder<ThemeBloc, ThemeState>(
+          builder: (context, themeState) {
+            ThemeMode themeMode = ThemeMode.light;
+            if (themeState is ThemeLoaded) {
+              themeMode = themeState.themeMode;
+            }
 
-                return const LoginScreen();
+            return MaterialApp(
+              title: 'Flux',
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: themeMode,
+              debugShowCheckedModeBanner: false,
+              builder: (context, child) {
+                final Widget safeContent = SafeArea(
+                  top: true,
+                  bottom: true,
+                  left: false,
+                  right: false,
+                  child: child ?? const SizedBox.shrink(),
+                );
+                final theme = Theme.of(context);
+                final isDark = theme.brightness == Brightness.dark;
+                final overlay = isDark
+                    ? const SystemUiOverlayStyle(
+                        statusBarColor: Colors.transparent,
+                        statusBarIconBrightness: Brightness.light,
+                        statusBarBrightness: Brightness.dark,
+                        systemNavigationBarColor: Colors.transparent,
+                        systemNavigationBarIconBrightness: Brightness.light,
+                        systemNavigationBarDividerColor: Colors.transparent,
+                      )
+                    : const SystemUiOverlayStyle(
+                        statusBarColor: AppColors.primary,
+                        statusBarIconBrightness: Brightness.light,
+                        statusBarBrightness: Brightness.light,
+                        systemNavigationBarColor: AppColors.lightBackground,
+                        systemNavigationBarIconBrightness: Brightness.light,
+                        systemNavigationBarDividerColor: AppColors.lightBackground,
+                      );
+                return AnnotatedRegion<SystemUiOverlayStyle>(
+                  value: overlay,
+                  child: safeContent,
+                );
               },
-            ),
-          );
-        },
+              home: BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
+                  if (state is AuthAuthenticated) {
+                    return const MainScreen();
+                  }
+                  
+                  // Show LoginScreen for Unauthenticated, Error, Success, or Loading state
+                  // during a transition. Only show initial loading if absolutely necessary.
+                  if (state is AuthLoading || state is AuthInitial) {
+                    return const LoginScreen();
+                  }
+
+                  return const LoginScreen();
+                },
+              ),
+            );
+          },
+        ),
       ),
     );
   }

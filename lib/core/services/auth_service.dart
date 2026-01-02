@@ -142,6 +142,8 @@ class AuthService {
   Future<app_models.User> signInWithGoogle() async {
     try {
       // Trigger the authentication flow
+      // Ensure we sign out first to force account selection
+      await _googleSignIn.signOut();
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) throw Exception('Google sign in cancelled');
 
@@ -201,6 +203,7 @@ class AuthService {
   // Sign out
   Future<void> signOut() async {
     try {
+      await _googleSignIn.signOut();
       await _auth.signOut();
     } catch (e) {
       throw Exception('Failed to sign out: $e');

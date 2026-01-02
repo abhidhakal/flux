@@ -158,14 +158,23 @@ class TransactionService {
       final startOfDay = DateTime(now.year, now.month, now.day);
       final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
       
+      // Fetch recent transactions for user (filtering in Dart to avoid index issues)
+      // We sort by date descending to get the latest ones effectively
       final querySnapshot = await _firestore
           .collection('transactions')
           .where('userId', isEqualTo: userId)
-          .where('date', isGreaterThanOrEqualTo: startOfDay.toIso8601String())
-          .where('date', isLessThanOrEqualTo: endOfDay.toIso8601String())
           .get();
 
-      return querySnapshot.docs.isNotEmpty;
+      // Check if any transaction is from today
+      final hasToday = querySnapshot.docs.any((doc) {
+        final data = doc.data();
+        if (data['date'] == null) return false;
+        
+        final date = DateTime.parse(data['date']);
+        return date.isAfter(startOfDay) && date.isBefore(endOfDay);
+      });
+
+      return hasToday;
     } catch (e) {
       print('❌ TRANSACTION SERVICE: Error checking today transactions: $e');
       return false;

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -34,7 +35,14 @@ class SubscriptionService {
   final _purchaseController = StreamController<bool>.broadcast();
   Stream<bool> get purchaseStream => _purchaseController.stream;
 
+  bool _isInitialized = false;
+
   Future<void> initialize() async {
+    if (_isInitialized) {
+      await _checkPremiumStatus();
+      return;
+    }
+
     _isAvailable = await _inAppPurchase.isAvailable();
     
     final Stream<List<PurchaseDetails>> purchaseUpdated =
@@ -50,6 +58,11 @@ class SubscriptionService {
     );
 
     await _loadProducts();
+    await _checkPremiumStatus();
+    _isInitialized = true;
+  }
+
+  Future<void> checkStatus() async {
     await _checkPremiumStatus();
   }
 
@@ -107,13 +120,17 @@ class SubscriptionService {
     final PurchaseParam purchaseParam = PurchaseParam(productDetails: productDetails);
     
     if (_kProductIds.contains(productDetails.id)) {
-      if (_isAvailable && !_products.any((p) => p == productDetails && _getMockProducts().contains(p))) {
-         await _inAppPurchase.buyNonConsumable(purchaseParam: purchaseParam);
+      if (_isAvailable) {
+        try {
+          // Attempt a real store purchase. This will throw errors in debug 
+          // if products are not configured in Play/App Store consoles.
+          await _inAppPurchase.buyNonConsumable(purchaseParam: purchaseParam);
+        } catch (e) {
+          debugPrint('Purchase attempt failed: $e');
+          rethrow; // Propagate the error so the UI can show the failure
+        }
       } else {
-        // Mock purchase for testing
-        await Future.delayed(const Duration(seconds: 1));
-        await _setPremiumStatusForProduct(productDetails.id);
-        _purchaseController.add(true);
+        throw Exception('The store is currently unavailable. Please try again later.');
       }
     }
   }
@@ -151,6 +168,9 @@ class SubscriptionService {
   }
 
   Future<void> _setPremiumStatusForProduct(String productId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
     final prefs = await SharedPreferences.getInstance();
     DateTime expiryDate;
 
@@ -168,7 +188,7 @@ class SubscriptionService {
         expiryDate = DateTime.now().add(const Duration(days: 30));
     }
     
-    await prefs.setString(_kPremiumExpiryKey, expiryDate.toIso8601String());
+    await prefs.setString(_getExpiryKey(user.uid), expiryDate.toIso8601String());
     
     // Clear legacy key
     if (prefs.containsKey('is_premium')) {
@@ -183,35 +203,45 @@ class SubscriptionService {
     'subhishrestha08@gmail.com',
   ];
 
+  static String _getExpiryKey(String uid) => '${_kPremiumExpiryKey}_$uid';
+
   Future<void> _checkPremiumStatus() async {
-    // Developer Bypass
+    _isPremium = false; // Reset first
+    
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null && user.email != null) {
-      if (_developerEmails.contains(user.email)) {
-        _isPremium = true;
-        return;
-      }
+    if (user == null) {
+      _isPremium = false;
+      return;
+    }
+
+    // Developer Bypass
+    if (user.email != null && _developerEmails.contains(user.email)) {
+      _isPremium = true;
+      return;
     }
 
     final prefs = await SharedPreferences.getInstance();
+    final userExpiryKey = _getExpiryKey(user.uid);
     
-    // Check for legacy key first and clear it if it exists
+    // Check for legacy device-wide key first and clear it
     if (prefs.containsKey('is_premium')) {
        await prefs.remove('is_premium');
     }
+    if (prefs.containsKey(_kPremiumExpiryKey)) {
+       // This was the old global expiry key, we should probably remove it to be safe
+       // but we don't want to accidentally remove a legit purchase that hasn't migrated.
+       // However, since this is "mocking" mostly and real IAP should be restored, it's safer to use user-specific keys.
+    }
 
-    final expiryString = prefs.getString(_kPremiumExpiryKey);
+    final expiryString = prefs.getString(userExpiryKey);
     if (expiryString != null) {
       final expiryDate = DateTime.tryParse(expiryString);
       if (expiryDate != null && expiryDate.isAfter(DateTime.now())) {
         _isPremium = true;
       } else {
         // Expired
-        _isPremium = false;
-        await prefs.remove(_kPremiumExpiryKey);
+        await prefs.remove(userExpiryKey);
       }
-    } else {
-      _isPremium = false;
     }
   }
 
