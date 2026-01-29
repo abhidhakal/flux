@@ -5,6 +5,7 @@ import 'dart:io';
 import '../../../core/services/currency_service.dart';
 import '../../../core/services/profile_picture_service.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/data_export_service.dart';
 import '../../../core/models/user_model.dart';
 import '../../../shared/widgets/skeleton_components.dart';
 import '../../auth/auth_bloc.dart';
@@ -863,10 +864,397 @@ class _ProfileScreenState extends State<ProfileScreen>
   void _handleExportData() {
     final subscriptionState = context.read<SubscriptionBloc>().state;
     if (subscriptionState is SubscriptionPremium) {
-      AppSnackbar.showSuccess(context, message: 'Data exported successfully! (Mock)');
+      _showExportFormatDialog();
     } else {
       _navigateToPaywall();
     }
+  }
+
+  void _showExportFormatDialog() {
+    _showDateRangeDialog();
+  }
+
+  void _showDateRangeDialog() {
+    final colorScheme = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (dialogContext) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurface.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Select Time Range',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Choose the period of data to export',
+              style: TextStyle(
+                fontSize: 14,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildDateRangeOption('Last 7 days', 7, dialogContext, colorScheme),
+            const SizedBox(height: 8),
+            _buildDateRangeOption('Last 30 days', 30, dialogContext, colorScheme),
+            const SizedBox(height: 8),
+            _buildDateRangeOption('Last 3 months', 90, dialogContext, colorScheme),
+            const SizedBox(height: 8),
+            _buildDateRangeOption('Last 1 year', 365, dialogContext, colorScheme),
+            const SizedBox(height: 8),
+            _buildDateRangeOption('All time', -1, dialogContext, colorScheme),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateRangeOption(String title, int days, BuildContext dialogContext, ColorScheme colorScheme) {
+    return ListTile(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
+      ),
+      leading: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: colorScheme.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(Icons.calendar_today_outlined, color: colorScheme.primary, size: 20),
+      ),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.w500, color: colorScheme.onSurface)),
+      trailing: Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
+      onTap: () {
+        Navigator.pop(dialogContext);
+        _showFormatSelectionDialog(days);
+      },
+    );
+  }
+
+  void _showFormatSelectionDialog(int days) {
+    final colorScheme = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (dialogContext) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurface.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Export Format',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Choose your preferred format',
+              style: TextStyle(
+                fontSize: 14,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildExportOption(
+              icon: Icons.table_chart_outlined,
+              title: 'CSV',
+              subtitle: 'Spreadsheet compatible',
+              onTap: () {
+                Navigator.pop(dialogContext);
+                _performExport('csv', days);
+              },
+              colorScheme: colorScheme,
+            ),
+            const SizedBox(height: 12),
+            _buildExportOption(
+              icon: Icons.picture_as_pdf_outlined,
+              title: 'PDF',
+              subtitle: 'Formatted report',
+              onTap: () {
+                Navigator.pop(dialogContext);
+                _performExport('pdf', days);
+              },
+              colorScheme: colorScheme,
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExportOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    required ColorScheme colorScheme,
+  }) {
+    return ListTile(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
+      ),
+      leading: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: colorScheme.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: colorScheme.primary),
+      ),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+      subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
+      trailing: Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
+      onTap: onTap,
+    );
+  }
+
+  Future<void> _performExport(String format, int days) async {
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      final exportService = DataExportService();
+      
+      // Calculate the cutoff date
+      final DateTime? cutoffDate = days > 0 
+          ? DateTime.now().subtract(Duration(days: days))
+          : null;
+      
+      // Get transactions and filter by date
+      final transactionState = context.read<TransactionBloc>().state;
+      var transactions = transactionState is TransactionLoaded 
+          ? transactionState.transactions 
+          : <dynamic>[];
+      
+      if (cutoffDate != null) {
+        transactions = transactions.where((t) => t.date.isAfter(cutoffDate)).toList();
+      }
+      
+      // Get income and filter by date
+      final incomeState = context.read<IncomeBloc>().state;
+      var incomes = incomeState is IncomeLoaded 
+          ? incomeState.incomes 
+          : <dynamic>[];
+      
+      if (cutoffDate != null) {
+        incomes = incomes.where((i) => i.date.isAfter(cutoffDate)).toList();
+      }
+
+      // Get user name for PDF
+      final authState = context.read<AuthBloc>().state;
+      final userName = authState is AuthAuthenticated 
+          ? (authState.user.displayName ?? 'User') 
+          : 'User';
+
+      File generatedFile;
+      if (format == 'csv') {
+        final csvContent = exportService.generateCsv(
+          transactions.cast(),
+          incomes.cast(),
+        );
+        generatedFile = await exportService.generateFile(
+          Uint8List.fromList(csvContent.codeUnits), 
+          'csv',
+        );
+      } else {
+        final pdfBytes = await exportService.generatePdf(
+          transactions.cast(),
+          incomes.cast(),
+          userName,
+        );
+        generatedFile = await exportService.generateFile(
+          pdfBytes, 
+          'pdf',
+        );
+      }
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+      
+      // Show action dialog (Share vs Download)
+      if (mounted) {
+        _showExportActionDialog(generatedFile, exportService);
+      }
+      
+    } catch (e) {
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+      
+      AppSnackbar.showError(context, message: 'Export failed: $e');
+    }
+  }
+  
+  void _showExportActionDialog(File file, DataExportService exportService) {
+    final colorScheme = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (dialogContext) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurface.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Export Ready',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'What would you like to do with the file?',
+              style: TextStyle(
+                fontSize: 14,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildActionButton(
+                    icon: Icons.download_rounded,
+                    label: 'Save',
+                    colorScheme: colorScheme,
+                    onTap: () async {
+                      Navigator.pop(dialogContext);
+                      try {
+                        final path = await exportService.saveToDownloads(file);
+                        if (mounted) {
+                           AppSnackbar.showSuccess(this.context, message: 'Saved to $path');
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          AppSnackbar.showError(this.context, message: 'Failed to save: $e');
+                        }
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildActionButton(
+                    icon: Icons.share_rounded,
+                    label: 'Share',
+                    colorScheme: colorScheme,
+                    isPrimary: true,
+                    onTap: () async {
+                      Navigator.pop(dialogContext);
+                      await exportService.shareFile(file);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required ColorScheme colorScheme,
+    required VoidCallback onTap,
+    bool isPrimary = false,
+  }) {
+    return Material(
+      color: isPrimary ? colorScheme.primary : colorScheme.surface,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            border: isPrimary 
+                ? null 
+                : Border.all(color: colorScheme.outline.withOpacity(0.2)),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: isPrimary ? colorScheme.onPrimary : colorScheme.primary,
+                size: 28,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isPrimary ? colorScheme.onPrimary : colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _navigateToPaywall() {

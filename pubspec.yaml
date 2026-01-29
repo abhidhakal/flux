@@ -53,6 +53,11 @@ dependencies:
   shimmer: ^3.0.0
   in_app_purchase: ^3.2.3
   google_mobile_ads: ^7.0.0
+  
+  # Data Export
+  csv: ^6.0.0
+  pdf: ^3.11.0
+  share_plus: ^11.0.0
 
 dev_dependencies:
   flutter_test:
