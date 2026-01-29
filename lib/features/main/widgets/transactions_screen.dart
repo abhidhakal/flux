@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
-import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../../auth/auth_bloc.dart';
@@ -71,6 +70,16 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     }
   }
 
+  Future<void> _onRefresh() async {
+    final user = context.read<AuthBloc>().state;
+    if (user is AuthAuthenticated) {
+      context.read<TransactionBloc>().add(LoadTransactions(user.user.id));
+      context.read<IncomeBloc>().add(LoadIncome(user.user.id));
+      // Small delay to show the indicator
+      await Future.delayed(const Duration(milliseconds: 800));
+    }
+  }
+
   @override
   void dispose() {
     _fadeController.dispose();
@@ -107,8 +116,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               ],
             )
           : AppBar(
-        title: const Text('Transactions'),
-        centerTitle: false,
+              automaticallyImplyLeading: false,
+              title: const Text('Transactions'),
+              centerTitle: false,
         backgroundColor: colorScheme.background,
         foregroundColor: colorScheme.onBackground,
         iconTheme: IconThemeData(color: colorScheme.onBackground),
@@ -161,7 +171,18 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                  final allItems = <dynamic>[...transactions, ...incomes];
                  
                  if (allItems.isEmpty) {
-                   return _buildEmptyState();
+                   return RefreshIndicator(
+                     onRefresh: _onRefresh,
+                     child: SingleChildScrollView(
+                       physics: const AlwaysScrollableScrollPhysics(),
+                       child: Container(
+                         constraints: BoxConstraints(
+                           minHeight: MediaQuery.of(context).size.height * 0.7,
+                         ),
+                         child: _buildEmptyState(),
+                       ),
+                     ),
+                   );
                  }
 
                  // Start animations
@@ -172,23 +193,59 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   }
                 });
 
-                 return FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: _buildTransactionsList(allItems),
+                 return RefreshIndicator(
+                  onRefresh: _onRefresh,
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: _buildTransactionsList(allItems),
+                    ),
                   ),
                 );
               }
 
               if (transactionState is TransactionError) {
-                 return _buildErrorState(transactionState.message);
+                 return RefreshIndicator(
+                   onRefresh: _onRefresh,
+                   child: SingleChildScrollView(
+                     physics: const AlwaysScrollableScrollPhysics(),
+                     child: Container(
+                       constraints: BoxConstraints(
+                         minHeight: MediaQuery.of(context).size.height * 0.7,
+                       ),
+                       child: _buildErrorState(transactionState.message),
+                     ),
+                   ),
+                 );
               }
                if (incomeState is IncomeError) {
-                 return _buildErrorState(incomeState.message);
+                 return RefreshIndicator(
+                   onRefresh: _onRefresh,
+                   child: SingleChildScrollView(
+                     physics: const AlwaysScrollableScrollPhysics(),
+                     child: Container(
+                       constraints: BoxConstraints(
+                         minHeight: MediaQuery.of(context).size.height * 0.7,
+                       ),
+                       child: _buildErrorState(incomeState.message),
+                     ),
+                   ),
+                 );
               }
 
-              return _buildEmptyState();
+              return RefreshIndicator(
+                onRefresh: _onRefresh,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Container(
+                    constraints: BoxConstraints(
+                      minHeight: MediaQuery.of(context).size.height * 0.7,
+                    ),
+                    child: _buildEmptyState(),
+                  ),
+                ),
+              );
             },
           ),
         ),
@@ -342,9 +399,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   Widget _buildTransactionGroup(String dateKey, List<dynamic> items) {
     final dayTotal = items.fold(0.0, (sum, item) {
-      final isIncome = item is Income;
-      final amount = isIncome ? (item as Income).amount : (item as Transaction).amount;
-      final type = isIncome ? TransactionType.income : (item as Transaction).type;
+      final amount = item is Income ? item.amount : (item as Transaction).amount;
+      final type = item is Income ? TransactionType.income : (item as Transaction).type;
       return sum + (type == TransactionType.income ? amount : -amount);
     });
 
@@ -445,14 +501,11 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   Widget _buildTransactionCard(dynamic item) {
     final isIncome = item is Income;
-    final transaction = !isIncome ? item as Transaction : null;
-    final income = isIncome ? item as Income : null;
-
-    final title = isIncome ? income!.category : transaction!.title;
-    final subtitle = isIncome ? (income!.notes ?? '') : transaction!.category;
-    final amount = isIncome ? income!.amount : transaction!.amount;
-    final date = isIncome ? income!.date : transaction!.date;
-    final id = isIncome ? income!.id : transaction!.id;
+    final title = item is Income ? item.category : (item as Transaction).title;
+    final subtitle = item is Income ? (item.notes ?? '') : (item as Transaction).category;
+    final amount = item is Income ? item.amount : (item as Transaction).amount;
+    final date = item is Income ? item.date : (item as Transaction).date;
+    final id = item is Income ? item.id : (item as Transaction).id;
     
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -571,39 +624,4 @@ class _TransactionsScreenState extends State<TransactionsScreen>
        EditIncomeScreen.show(context, item);
     }
   }
-
-  void _showDeleteDialog(dynamic item) {
-    final isIncome = item is Income;
-    final title = isIncome ? (item as Income).category : (item as Transaction).title;
-    final id = isIncome ? (item as Income).id : (item as Transaction).id;
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Delete ${isIncome ? "Income" : "Transaction"}'),
-        content: Text('Are you sure you want to delete "$title"? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              final user = context.read<AuthBloc>().state;
-              if (user is AuthAuthenticated) {
-                if (isIncome) {
-                   context.read<IncomeBloc>().add(DeleteIncome(id, user.user.id));
-                } else {
-                   context.read<TransactionBloc>().add(DeleteTransaction(id, user.user.id));
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-    }
+}

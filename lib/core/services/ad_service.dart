@@ -8,9 +8,39 @@ class AdService {
   factory AdService() => _instance;
   AdService._internal();
 
-  Future<void> initialize() async {
-    await MobileAds.instance.initialize();
+  bool _isInitialized = false;
+  bool _isInitializing = false;
+
+  /// Lazily initialize the Mobile Ads SDK.
+  /// This is called automatically when ads are first needed.
+  Future<void> ensureInitialized() async {
+    if (_isInitialized) return;
+    if (_isInitializing) {
+      // Wait for ongoing initialization to complete
+      while (_isInitializing) {
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+      return;
+    }
+    
+    _isInitializing = true;
+    try {
+      await MobileAds.instance.initialize();
+      _isInitialized = true;
+      debugPrint('✅ AdService: Mobile Ads SDK initialized successfully');
+    } catch (e) {
+      debugPrint('❌ AdService: Failed to initialize Mobile Ads SDK: $e');
+    } finally {
+      _isInitializing = false;
+    }
   }
+
+  /// Legacy initialize method - now calls ensureInitialized
+  Future<void> initialize() async {
+    await ensureInitialized();
+  }
+
+  bool get isInitialized => _isInitialized;
 
   bool get shouldShowAds {
     // If user is premium, don't show ads

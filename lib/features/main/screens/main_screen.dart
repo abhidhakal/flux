@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_theme.dart';
+import 'package:flutter/services.dart';
 import '../../../shared/widgets/offline_indicator.dart';
+import '../../../shared/widgets/app_snackbar.dart';
 import '../widgets/dashboard_screen.dart';
 import '../widgets/budgets_screen.dart';
 import '../widgets/transactions_screen.dart';
@@ -21,6 +22,7 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  DateTime? _lastPressedAt;
   final List<Widget> _screens = [
     const DashboardScreen(),
     const BudgetsScreen(),
@@ -36,8 +38,29 @@ class _MainScreenState extends State<MainScreen> {
     
     return BlocBuilder<NavigationCubit, NavigationState>(
       builder: (context, navState) {
-        return Scaffold(
-          backgroundColor: colorScheme.background,
+        return PopScope(
+          canPop: false,
+          onPopInvoked: (didPop) {
+            if (didPop) return;
+
+            final now = DateTime.now();
+            final backButtonHasNotBeenPressedOrToastHasExpired =
+                _lastPressedAt == null ||
+                    now.difference(_lastPressedAt!) > const Duration(seconds: 2);
+
+            if (backButtonHasNotBeenPressedOrToastHasExpired) {
+              _lastPressedAt = now;
+              AppSnackbar.show(
+                context,
+                message: 'Swipe again to exit',
+                type: AppSnackbarType.info,
+              );
+            } else {
+              SystemNavigator.pop();
+            }
+          },
+          child: Scaffold(
+            backgroundColor: colorScheme.background,
           extendBody: true,
           body: Column(
             children: [
@@ -129,8 +152,9 @@ class _MainScreenState extends State<MainScreen> {
             ],
           ),
         ),
-      );
-    },
-  );
+      ),
+    );
+  },
+);
 }
 }

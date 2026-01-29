@@ -16,8 +16,10 @@ import '../screens/privacy_policy_screen.dart';
 import '../screens/terms_of_service_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../subscription/presentation/pages/paywall_screen.dart';
 import '../../subscription/subscription_bloc.dart';
+import '../../subscription/presentation/pages/paywall_screen.dart';
+import '../../../core/services/widget_service.dart';
+import '../../income/income_bloc.dart';
 import '../../theme/theme_bloc.dart';
 import '../../notifications/screens/notification_settings_screen.dart';
 import '../../../shared/widgets/app_snackbar.dart';
@@ -151,27 +153,36 @@ class _ProfileScreenState extends State<ProfileScreen>
               ], colorScheme),
               const SizedBox(height: 24),
               _buildSectionHeader('Preferences', colorScheme),
-              _buildSettingsGroup([
-                _SettingsItem(
-                  icon: Icons.palette_outlined,
-                  title: 'Appearance',
-                  subtitle: 'Theme settings',
-                  onTap: () => _showAppearancePopup(),
-                ),
-                _SettingsItem(
-                  icon: Icons.notifications_outlined,
-                  title: 'Notifications',
-                  subtitle: 'Manage alerts',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const NotificationSettingsScreen(),
+                BlocBuilder<ThemeBloc, ThemeState>(
+                  builder: (context, state) {
+                    String mode = 'System';
+                    if (state is ThemeLoaded) {
+                      if (state.themeMode == ThemeMode.light) mode = 'Light';
+                      if (state.themeMode == ThemeMode.dark) mode = 'Dark';
+                    }
+                    return _buildSettingsGroup([
+                      _SettingsItem(
+                        icon: Icons.palette_outlined,
+                        title: 'Appearance',
+                        subtitle: mode,
+                        onTap: () => _showAppearancePopup(),
                       ),
-                    );
+                      _SettingsItem(
+                        icon: Icons.notifications_outlined,
+                        title: 'Notifications',
+                        subtitle: 'Manage alerts',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NotificationSettingsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ], colorScheme);
                   },
                 ),
-              ], colorScheme),
               const SizedBox(height: 24),
               _buildSectionHeader('Subscription', colorScheme),
               BlocBuilder<SubscriptionBloc, SubscriptionState>(
@@ -585,6 +596,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                         _selectedCountry = country['name']!;
                       });
                       await CurrencyService().setCurrency(country['currency']!);
+                      if (context.mounted) {
+                        WidgetService.refreshWidgets(context);
+                      }
                       Navigator.pop(context);
                       AppSnackbar.showSuccess(
                         this.context,

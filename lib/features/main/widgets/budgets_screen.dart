@@ -36,6 +36,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     return Scaffold(
       backgroundColor: colorScheme.background,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Budgets'),
         centerTitle: false,
         backgroundColor: colorScheme.background,

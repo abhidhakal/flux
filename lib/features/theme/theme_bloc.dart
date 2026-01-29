@@ -58,9 +58,9 @@ class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
       final prefs = await SharedPreferences.getInstance();
       final storedIndex = prefs.getInt(_themeKey);
       if (storedIndex == null) {
-        // First run: default to Light and persist it
-        await prefs.setInt(_themeKey, ThemeMode.light.index);
-        emit(const ThemeLoaded(ThemeMode.light));
+        // First run: default to System (phone theme) and persist it
+        await prefs.setInt(_themeKey, ThemeMode.system.index);
+        emit(const ThemeLoaded(ThemeMode.system));
         return;
       }
       final themeMode = ThemeMode.values[storedIndex];

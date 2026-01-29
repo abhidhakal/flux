@@ -5,7 +5,6 @@ import '../auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/loading_screen.dart';
 import '../../../core/constants/app_theme.dart';
-import '../../../core/constants/app_theme.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -122,19 +121,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
             ),
             
-            // Bottom Part - SignUp Form (Forced Light Theme)
             Expanded(
-              child: Theme(
-                data: AppTheme.lightTheme,
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(40),
-                      topRight: Radius.circular(40),
-                    ),
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(40),
+                    topRight: Radius.circular(40),
                   ),
+                ),
                   child: SingleChildScrollView(
                     physics: const ClampingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
@@ -273,32 +269,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           // Divider
                           Row(
                             children: [
-                              Expanded(child: Divider(color: AppColors.lightBorder)),
+                              const Expanded(child: Divider()),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
                                 child: Text(
                                   'OR',
                                   style: theme.textTheme.labelMedium?.copyWith(
-                                    color: AppColors.lightTextTertiary,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
-                              Expanded(child: Divider(color: AppColors.lightBorder)),
+                              const Expanded(child: Divider()),
                             ],
                           ),
                           const SizedBox(height: 16),
 
-                          // Google Sign In Button
                           OutlinedButton.icon(
                             onPressed: _isLoading ? null : _handleGoogleSignIn,
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              side: BorderSide(color: Colors.grey.shade300),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
-                              backgroundColor: Colors.white,
                             ),
                             icon: const FaIcon(
                               FontAwesomeIcons.google,
@@ -308,7 +300,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             label: Text(
                               'Continue with Google',
                               style: theme.textTheme.labelLarge?.copyWith(
-                                color: AppColors.lightTextPrimary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
@@ -316,13 +307,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                           const SizedBox(height: 12),
  
-                          // Back to Login
                           TextButton(
                             onPressed: () => Navigator.pop(context),
                             child: RichText(
                               text: TextSpan(
                                 style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: AppColors.lightTextSecondary,
+                                  color: theme.textTheme.bodySmall?.color,
                                 ),
                                 children: const [
                                   TextSpan(text: 'Already have an account? '),
@@ -343,7 +333,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -361,28 +350,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: AppColors.lightTextSecondary),
       hintText: hint,
       prefixIcon: Icon(icon, color: AppColors.primary),
       suffixIcon: isPassword
           ? IconButton(
               icon: Icon(
                 isVisible ? Icons.visibility_off : Icons.visibility,
-                color: AppColors.lightTextSecondary,
               ),
               onPressed: onToggleVisibility,
             )
           : null,
-      filled: true,
-      fillColor: AppColors.lightBackground,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
     );
   }
 
   void _showLoadingDialog() {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -390,7 +372,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         child: Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -400,10 +382,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
             ],
           ),
-          child: const Column(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(
+              const SizedBox(
                 height: 40,
                 width: 40,
                 child: CircularProgressIndicator(
@@ -411,12 +393,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   strokeWidth: 3,
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               Text(
                 'Creating Account...',
-                style: TextStyle(
-                  color: AppColors.lightTextPrimary,
-                  fontSize: 16,
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   decoration: TextDecoration.none,
                 ),

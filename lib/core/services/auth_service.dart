@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:google_sign_in/google_sign_in.dart';
@@ -196,6 +197,7 @@ class AuthService {
         return app_models.User.fromJson(updatedDoc.data()!);
       }
     } catch (e) {
+      debugPrint('Google Sign-In Error: $e');
       throw Exception('Failed to sign in with Google: $e');
     }
   }

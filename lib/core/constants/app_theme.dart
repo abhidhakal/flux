@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   // Primary colors - Modern Blue (#0079dc)
@@ -128,7 +127,7 @@ class AppColors {
 
 class AppTheme {
   // Typography
-  static String get fontFamily => GoogleFonts.inter().fontFamily ?? 'Inter';
+  static const String fontFamily = 'Inter';
   
   // Light Text Theme
   static const TextTheme lightTextTheme = TextTheme(
@@ -362,7 +361,7 @@ class AppTheme {
         outline: AppColors.lightBorder,
         outlineVariant: AppColors.lightDivider,
       ),
-      textTheme: GoogleFonts.interTextTheme(lightTextTheme),
+      textTheme: lightTextTheme,
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.lightTextInverse,
@@ -578,7 +577,7 @@ class AppTheme {
         outline: AppColors.darkBorder,
         outlineVariant: AppColors.darkDivider,
       ),
-      textTheme: GoogleFonts.interTextTheme(darkTextTheme),
+      textTheme: darkTextTheme,
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.darkSurface,
         foregroundColor: AppColors.darkTextPrimary,

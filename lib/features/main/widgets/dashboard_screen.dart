@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flux/features/main/widgets/budgets_screen.dart';
 import '../../../core/constants/app_theme.dart';
-import '../../../core/constants/app_theme.dart';
 import '../../../core/services/currency_service.dart';
 import '../../../core/services/profile_picture_service.dart';
+import '../../../core/services/widget_service.dart';
 import '../../../shared/widgets/skeleton_components.dart';
 
 import '../../../core/models/transaction_model.dart';
@@ -48,16 +48,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _profilePictureService.loadProfileImage();
   }
 
+  void _updateWidget(BuildContext context) {
+    WidgetService.refreshWidgets(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      backgroundColor: colorScheme.background,
-      appBar: AppBar(
-        title: Row(
-          children: [
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<TransactionBloc, TransactionState>(
+          listener: (context, state) {
+            if (state is TransactionLoaded) {
+              _updateWidget(context);
+            }
+          },
+        ),
+        BlocListener<IncomeBloc, IncomeState>(
+          listener: (context, state) {
+            if (state is IncomeLoaded) {
+              _updateWidget(context);
+            }
+          },
+        ),
+      ],
+      child: Scaffold(
+        backgroundColor: colorScheme.background,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          title: Row(
+            children: [
             BlocBuilder<AuthBloc, AuthState>(
               builder: (context, state) {
                 if (state is AuthAuthenticated) {
@@ -226,8 +248,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return const Center(child: CircularProgressIndicator());
         },
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildBalanceCard(List<Transaction> transactions, List<Income> incomes, bool isPremium) {
     final expenses = transactions.where((t) => t.type == TransactionType.expense).toList();

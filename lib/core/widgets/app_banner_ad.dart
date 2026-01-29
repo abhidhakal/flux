@@ -31,6 +31,9 @@ class _AppBannerAdState extends State<AppBannerAd> {
   Future<void> _loadAd() async {
     if (!AdService().shouldShowAds) return;
 
+    // Ensure the Mobile Ads SDK is initialized before loading ads
+    await AdService().ensureInitialized();
+
     final AnchoredAdaptiveBannerAdSize? size = switch (Platform.isAndroid || Platform.isIOS) {
        true => await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
         MediaQuery.of(context).size.width.truncate(),

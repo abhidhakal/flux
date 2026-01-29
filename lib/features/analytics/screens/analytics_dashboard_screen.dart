@@ -45,6 +45,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     return Scaffold(
       backgroundColor: colorScheme.background,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Insights'),
         centerTitle: false,
         backgroundColor: colorScheme.background,

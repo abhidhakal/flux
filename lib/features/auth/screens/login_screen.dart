@@ -5,7 +5,6 @@ import '../auth_bloc.dart';
 import 'signup_screen.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../core/constants/app_theme.dart';
-import '../../../core/constants/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -105,19 +104,16 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             
-            // Bottom Part (Form) - Forced Light Theme for visibility
             Expanded(
-              child: Theme(
-                data: AppTheme.lightTheme,
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(40),
-                      topRight: Radius.circular(40),
-                    ),
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(40),
+                    topRight: Radius.circular(40),
                   ),
+                ),
                   child: SingleChildScrollView(
                     physics: const ClampingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
@@ -131,14 +127,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             'Welcome Back',
                             style: theme.textTheme.headlineLarge?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: AppColors.lightTextPrimary,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Please sign in to continue',
                             style: theme.textTheme.bodyLarge?.copyWith(
-                              color: AppColors.lightTextSecondary,
+                              color: theme.textTheme.bodySmall?.color,
                             ),
                           ),
                           const SizedBox(height: 32),
@@ -151,12 +146,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               labelText: 'Email',
                               hintText: 'Enter your email',
                               prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primary),
-                              filled: true,
-                              fillColor: AppColors.lightBackground,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide.none,
-                              ),
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -183,19 +172,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                   _isPasswordVisible
                                       ? Icons.visibility_off
                                       : Icons.visibility,
-                                  color: AppColors.lightTextSecondary,
                                 ),
                                 onPressed: () {
                                   setState(() {
                                     _isPasswordVisible = !_isPasswordVisible;
                                   });
                                 },
-                              ),
-                              filled: true,
-                              fillColor: AppColors.lightBackground,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide.none,
                               ),
                             ),
                             validator: (value) {
@@ -259,18 +241,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           // Divider
                           Row(
                             children: [
-                              Expanded(child: Divider(color: AppColors.lightBorder)),
+                              const Expanded(child: Divider()),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
                                 child: Text(
                                   'OR',
                                   style: theme.textTheme.labelMedium?.copyWith(
-                                    color: AppColors.lightTextTertiary,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
-                              Expanded(child: Divider(color: AppColors.lightBorder)),
+                              const Expanded(child: Divider()),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -280,11 +261,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: _isLoading ? null : _handleGoogleSignIn,
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: BorderSide(color: Colors.grey.shade300),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            backgroundColor: Colors.white,
                           ),
                           icon: const FaIcon(
                             FontAwesomeIcons.google,
@@ -294,7 +273,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           label: Text(
                             'Continue with Google',
                             style: theme.textTheme.labelLarge?.copyWith(
-                              color: AppColors.lightTextPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
@@ -327,7 +305,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -335,6 +312,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showLoadingDialog() {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -342,7 +320,7 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -352,10 +330,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ],
           ),
-          child: const Column(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(
+              const SizedBox(
                 height: 40,
                 width: 40,
                 child: CircularProgressIndicator(
@@ -363,12 +341,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   strokeWidth: 3,
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               Text(
                 'Logging in...',
-                style: TextStyle(
-                  color: AppColors.lightTextPrimary,
-                  fontSize: 16,
+                style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   decoration: TextDecoration.none,
                 ),
@@ -409,17 +385,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
     showDialog(
       context: context,
-      builder: (dialogContext) => Theme(
-        data: AppTheme.lightTheme,
-        child: AlertDialog(
-          backgroundColor: Colors.white,
+      builder: (dialogContext) => AlertDialog(
+          backgroundColor: theme.colorScheme.surface,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Text(
             'Reset Password',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.lightTextPrimary,
             ),
           ),
           content: Column(
@@ -428,30 +401,16 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               Text(
                 'Enter your email address and we\'ll send you a link to reset your password.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: AppColors.lightTextSecondary,
-                ),
+                style: theme.textTheme.bodyMedium,
               ),
               const SizedBox(height: 20),
               TextField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(color: AppColors.lightTextPrimary),
                 decoration: InputDecoration(
                   labelText: 'Email Address',
                   hintText: 'name@example.com',
-                  labelStyle: const TextStyle(color: AppColors.lightTextSecondary),
                   prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primary),
-                  filled: true,
-                  fillColor: AppColors.lightBackground,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
-                  ),
                 ),
               ),
             ],
@@ -495,8 +454,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 
