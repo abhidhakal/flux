@@ -141,15 +141,29 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         ],
       ),
 
-      body: BlocListener<IncomeBloc, IncomeState>(
-          listener: (context, state) {
-            if (state is IncomeSuccess) {
-              AppSnackbar.showSuccess(context, message: state.message);
-            }
-            if (state is IncomeError) {
-              AppSnackbar.showError(context, message: state.message);
-            }
-          },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<IncomeBloc, IncomeState>(
+            listener: (context, state) {
+              if (state is IncomeSuccess) {
+                AppSnackbar.showSuccess(context, message: state.message);
+              }
+              if (state is IncomeError) {
+                AppSnackbar.showError(context, message: state.message);
+              }
+            },
+          ),
+          BlocListener<TransactionBloc, TransactionState>(
+            listener: (context, state) {
+              if (state is TransactionLoaded && state.message != null) {
+                AppSnackbar.showSuccess(context, message: state.message!);
+              }
+              if (state is TransactionError) {
+                AppSnackbar.showError(context, message: state.message);
+              }
+            },
+          ),
+        ],
           child: Builder(
             builder: (context) {
               final transactionState = context.watch<TransactionBloc>().state;
@@ -376,7 +390,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), // Added bottom padding
       itemCount: groupedItems.length,
       itemBuilder: (context, index) {
         final dateKey = groupedItems.keys.elementAt(index);

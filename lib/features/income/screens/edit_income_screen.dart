@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/constants/app_theme.dart';
+import '../../../core/constants/categories.dart';
 import '../../../core/models/income_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../income_bloc.dart';
+import '../../../core/models/budget_model.dart';
+import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 
 class EditIncomeScreen extends StatefulWidget {
@@ -45,22 +48,34 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
   String _selectedCategory = 'Salary';
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
-
-  final List<String> _incomeCategories = [
-    'Salary',
-    'Freelance',
-    'Investment',
-    'Gift',
-    'Other',
-  ];
+  List<Budget> _availableBudgets = [];
+  Budget? _selectedBudget;
 
   @override
   void initState() {
     super.initState();
     _amountController.text = widget.income.amount.toString();
     _notesController.text = widget.income.notes ?? '';
+    
+    // Safety check for category
     _selectedCategory = widget.income.category;
+    if (!AppCategories.incomeCategories.contains(_selectedCategory)) {
+      if (_selectedCategory == 'Other' && AppCategories.incomeCategories.contains('Other Income')) {
+        _selectedCategory = 'Other Income';
+      } else if (AppCategories.incomeCategories.contains('Other Income')) {
+        _selectedCategory = 'Other Income';
+      } else {
+        _selectedCategory = AppCategories.incomeCategories.first;
+      }
+    }
+    
     _selectedDate = widget.income.date;
+    
+    // Load budgets
+    final user = context.read<AuthBloc>().state;
+    if (user is AuthAuthenticated) {
+        context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
+    }
   }
 
   @override
@@ -118,21 +133,43 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
           const Divider(),
           // Form
           Expanded(
-            child: BlocListener<IncomeBloc, IncomeState>(
-              listener: (context, state) {
-                if (state is IncomeSuccess) {
-                  // Wait for snackbar or close immediately
-                  Navigator.pop(context);
-                }
-                
-                if (state is IncomeError) {
-                  AppSnackbar.showError(context, message: state.message);
-                }
-                
-                setState(() {
-                  _isLoading = state is IncomeLoading;
-                });
-              },
+            child: MultiBlocListener(
+              listeners: [
+                BlocListener<BudgetBloc, BudgetState>(
+                  listener: (context, state) {
+                    if (state is BudgetLoaded) {
+                      setState(() {
+                        _availableBudgets = state.budgets
+                            .where((budget) => budget.isCurrent)
+                            .toList();
+                        
+                        // Set selected budget if income has budgetId
+                        if (widget.income.budgetId != null && widget.income.budgetId!.isNotEmpty) {
+                          _selectedBudget = _availableBudgets
+                              .where((b) => b.id == widget.income.budgetId)
+                              .firstOrNull;
+                        }
+                      });
+                    }
+                  },
+                ),
+                BlocListener<IncomeBloc, IncomeState>(
+                  listener: (context, state) {
+                    if (state is IncomeSuccess) {
+                      // Wait for snackbar or close immediately
+                      Navigator.pop(context);
+                    }
+                    
+                    if (state is IncomeError) {
+                      AppSnackbar.showError(context, message: state.message);
+                    }
+                    
+                    setState(() {
+                      _isLoading = state is IncomeLoading;
+                    });
+                  },
+                ),
+              ],
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
                 child: Form(
@@ -176,7 +213,7 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
                           ),
                           prefixIcon: const Icon(Icons.category_rounded),
                         ),
-                        items: _incomeCategories.map((category) => DropdownMenuItem(
+                        items: AppCategories.incomeCategories.map((category) => DropdownMenuItem(
                           value: category,
                           child: Text(category),
                         )).toList(),
@@ -210,6 +247,9 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 16),
+
+                      _buildBudgetSelector(),
                       const SizedBox(height: 16),
 
                       _buildSectionTitle('Notes'),
@@ -294,9 +334,58 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
         category: _selectedCategory,
         date: _selectedDate,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        budgetId: _selectedBudget?.id,
       );
       
       context.read<IncomeBloc>().add(UpdateIncome(updatedIncome));
     }
+  }
+
+  Widget _buildBudgetSelector() {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('Budget'),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<Budget>(
+          value: _selectedBudget,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            hintText: 'Select a budget (Optional)',
+            prefixIcon: const Icon(Icons.account_balance_wallet_rounded),
+            suffixIcon: _selectedBudget != null 
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 18),
+                  onPressed: () => setState(() => _selectedBudget = null),
+                )
+              : null,
+          ),
+          items: [
+            if (_availableBudgets.isNotEmpty)
+              ..._availableBudgets.map((budget) {
+                return DropdownMenuItem<Budget>(
+                  value: budget,
+                  child: Text(
+                    budget.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }),
+          ],
+          onChanged: (budget) {
+            setState(() {
+              _selectedBudget = budget;
+            });
+          },
+          // Just simple display, no warning needed for Income (it's good!)
+          validator: (value) => null, 
+        ),
+      ],
+    );
   }
 }

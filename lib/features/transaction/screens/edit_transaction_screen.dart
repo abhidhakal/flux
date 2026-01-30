@@ -200,8 +200,8 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
         },
         child: BlocListener<TransactionBloc, TransactionState>(
           listener: (context, state) {
-            if (state is TransactionSuccess) {
-              AppSnackbar.showSuccess(context, message: state.message);
+            if (state is TransactionLoaded && state.message != null) {
+              AppSnackbar.showSuccess(context, message: state.message!);
               Navigator.pop(context);
             }
             
@@ -732,8 +732,8 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
       },
       child: BlocListener<TransactionBloc, TransactionState>(
         listener: (context, state) {
-          if (state is TransactionSuccess) {
-            AppSnackbar.showSuccess(context, message: state.message);
+          if (state is TransactionLoaded && state.message != null) {
+            AppSnackbar.showSuccess(context, message: state.message!);
             Navigator.pop(context);
           }
           

@@ -9,6 +9,8 @@ class Income extends Equatable {
   final String category; // e.g., 'Salary', 'Freelance', etc.
   final DateTime createdAt;
 
+  final String? budgetId; // Optional budget assignment
+
   const Income({
     required this.id,
     required this.userId,
@@ -16,6 +18,7 @@ class Income extends Equatable {
     required this.date,
     this.notes,
     this.category = 'Salary',
+    this.budgetId,
     required this.createdAt,
   });
 
@@ -26,6 +29,7 @@ class Income extends Equatable {
     DateTime? date,
     String? notes,
     String? category,
+    String? budgetId,
     DateTime? createdAt,
   }) {
     return Income(
@@ -35,6 +39,7 @@ class Income extends Equatable {
       date: date ?? this.date,
       notes: notes ?? this.notes,
       category: category ?? this.category,
+      budgetId: budgetId ?? this.budgetId,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -47,6 +52,7 @@ class Income extends Equatable {
       'date': date.toIso8601String(),
       'notes': notes,
       'category': category,
+      'budgetId': budgetId,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -61,6 +67,7 @@ class Income extends Equatable {
           : DateTime.now(),
       notes: json['notes'] as String?,
       category: json['category'] as String? ?? 'Salary',
+      budgetId: json['budgetId'] as String?,
       createdAt: json['createdAt'] != null 
           ? DateTime.parse(json['createdAt'] as String) 
           : DateTime.now(),
@@ -68,5 +75,5 @@ class Income extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, userId, amount, date, notes, category, createdAt];
+  List<Object?> get props => [id, userId, amount, date, notes, category, budgetId, createdAt];
 }

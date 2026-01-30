@@ -585,13 +585,6 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     color: isOverBudget ? AppColors.error : colorScheme.onSurface.withOpacity(0.8),
                   ),
                 ),
-                Text(
-                  '${CurrencyService().formatAmount(total - spent)} remaining',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 12),

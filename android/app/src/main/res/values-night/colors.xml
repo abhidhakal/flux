@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#0079DC</color>
-    <color name="widget_background">#1A1A1A</color>
+    <color name="widget_background">#171717</color>
     <color name="widget_text_primary">#F5F5F5</color>
-    <color name="widget_text_secondary">#A0A0A0</color>
+    <color name="widget_text_secondary">#A3A3A3</color>
     <color name="widget_accent">#3B82F6</color>
     <color name="widget_income">#4ADE80</color>
     <color name="widget_expense">#F87171</color>
-    <color name="widget_button_bg">#F5F5F5</color>
-    <color name="widget_button_text">#1A1A1A</color>
-    <color name="widget_divider">#1AFFFFFF</color>
+    <color name="widget_button_bg">#262626</color>
+    <color name="widget_button_text">#FFFFFF</color>
+    <color name="widget_divider">#26FFFFFF</color>
 </resources>

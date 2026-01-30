@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:typed_data';
 import '../../../core/services/currency_service.dart';
 import '../../../core/services/profile_picture_service.dart';
 import '../../../core/services/auth_service.dart';
@@ -24,6 +25,10 @@ import '../../income/income_bloc.dart';
 import '../../theme/theme_bloc.dart';
 import '../../notifications/screens/notification_settings_screen.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../budget/budget_bloc.dart';
+import '../../../core/models/budget_model.dart';
+import '../../../core/models/transaction_model.dart';
+import '../../../core/models/income_model.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -70,7 +75,15 @@ class _ProfileScreenState extends State<ProfileScreen>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
     _initializeCurrency();
-    _profilePictureService.loadProfileImage();
+    
+    // Load profile image
+     final authState = context.read<AuthBloc>().state;
+     if (authState is AuthAuthenticated) {
+        _profilePictureService.loadProfileImage(userId: authState.user.id).then((_) {
+          if (mounted) setState(() {});
+        });
+     }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fadeController.forward();
     });
@@ -261,21 +274,40 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildModernHeader(User user, ColorScheme colorScheme, ThemeData theme) {
     return Container(
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 20,
-        left: 24,
-        right: 24,
-        bottom: 24,
+      margin: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 10,
+        left: 20,
+        right: 20,
+        bottom: 20,
       ),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
+        color: theme.brightness == Brightness.dark 
+            ? colorScheme.surface 
+            : colorScheme.surface,
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            colorScheme.primaryContainer.withOpacity(0.4),
-            colorScheme.background,
+            theme.brightness == Brightness.dark 
+                ? colorScheme.surface 
+                : Colors.white,
+            theme.brightness == Brightness.dark 
+                ? colorScheme.primary.withOpacity(0.1) 
+                : colorScheme.primaryContainer.withOpacity(0.3),
           ],
         ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colorScheme.outline.withOpacity(0.08),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -285,20 +317,35 @@ class _ProfileScreenState extends State<ProfileScreen>
             child: Stack(
               children: [
                 Container(
+                  padding: const EdgeInsets.all(4), // Ring width
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        colorScheme.primary.withOpacity(0.5),
+                        colorScheme.tertiary.withOpacity(0.5),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: colorScheme.primary.withOpacity(0.2),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: _profilePictureService.buildProfileAvatar(
-                    displayName: user.displayName,
-                    colorScheme: colorScheme,
-                    radius: 55,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: colorScheme.background, width: 2),
+                    ),
+                    child: _profilePictureService.buildProfileAvatar(
+                      displayName: user.displayName,
+                      colorScheme: colorScheme,
+                      radius: 48,
+                    ),
                   ),
                 ),
                 Positioned(
@@ -314,7 +361,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     child: Icon(
                       Icons.camera_alt_rounded,
                       color: colorScheme.onPrimary,
-                      size: 16,
+                      size: 14,
                     ),
                   ),
                 ),
@@ -338,7 +385,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               color: colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           // Premium Badge
           BlocBuilder<SubscriptionBloc, SubscriptionState>(
             builder: (context, state) {
@@ -346,32 +393,34 @@ class _ProfileScreenState extends State<ProfileScreen>
               return GestureDetector(
                 onTap: isPremium ? null : () => _navigateToPaywall(),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: isPremium
                         ? colorScheme.primary.withOpacity(0.1)
-                        : colorScheme.surfaceVariant.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(20),
+                        : colorScheme.surfaceVariant.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(100),
                     border: Border.all(
                       color: isPremium
-                          ? colorScheme.primary.withOpacity(0.3)
-                          : colorScheme.outline.withOpacity(0.2),
+                          ? colorScheme.primary // Solid primary
+                          : colorScheme.outline, // Solid outline
+                      width: 1.5, // Thicker border
                     ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isPremium ? Icons.star_rounded : Icons.lock_outline_rounded,
-                        size: 16,
+                        isPremium ? Icons.verified_rounded : Icons.star_outline_rounded,
+                        size: 14,
                         color: isPremium ? colorScheme.primary : colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        isPremium ? 'Premium Member' : 'Upgrade to Premium',
+                        isPremium ? 'Premium Member' : 'Get Premium',
                         style: theme.textTheme.labelMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: isPremium ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ],
@@ -833,9 +882,12 @@ class _ProfileScreenState extends State<ProfileScreen>
     try {
       final XFile? image = await _picker.pickImage(source: source, maxWidth: 512, maxHeight: 512, imageQuality: 85);
       if (image != null) {
-        await _profilePictureService.setProfileImage(File(image.path));
-        setState(() {});
-        AppSnackbar.showSuccess(context, message: 'Profile picture updated!');
+        final authState = context.read<AuthBloc>().state;
+        if (authState is AuthAuthenticated) {
+          await _profilePictureService.setProfileImage(File(image.path), userId: authState.user.id);
+          setState(() {});
+          AppSnackbar.showSuccess(context, message: 'Profile picture updated!');
+        }
       }
     } catch (e) {
       AppSnackbar.showError(context, message: 'Failed to pick image: $e');
@@ -843,9 +895,12 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _removeProfileImage() async {
-    await _profilePictureService.removeProfileImage();
-    setState(() {});
-    AppSnackbar.showSuccess(context, message: 'Profile picture removed!');
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      await _profilePictureService.removeProfileImage(userId: authState.user.id);
+      setState(() {});
+      AppSnackbar.showSuccess(context, message: 'Profile picture removed!');
+    }
   }
 
   Future<void> _manageSubscription() async {
@@ -871,184 +926,239 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _showExportFormatDialog() {
-    _showDateRangeDialog();
-  }
-
-  void _showDateRangeDialog() {
     final colorScheme = Theme.of(context).colorScheme;
+    int selectedDays = 30; // Default: Last 30 days
+    Budget? selectedBudget; // Default: All Budgets
+    String selectedFormat = 'pdf'; // Default: PDF
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (dialogContext) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colorScheme.onSurface.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
+      isScrollControlled: true,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final budgetState = context.read<BudgetBloc>().state;
+          final budgets = budgetState is BudgetLoaded ? budgetState.budgets : <Budget>[];
+          
+          return Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            const SizedBox(height: 20),
-            Text(
-              'Select Time Range',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colorScheme.onSurface.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Export Data',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // 1. Time Range Selector
+                Text(
+                  'Time Range',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceVariant.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      value: selectedDays,
+                      isExpanded: true,
+                      icon: Icon(Icons.keyboard_arrow_down_rounded, color: colorScheme.onSurface),
+                      dropdownColor: colorScheme.surface,
+                      items: [
+                        const DropdownMenuItem(value: 7, child: Text('Last 7 days')),
+                        const DropdownMenuItem(value: 30, child: Text('Last 30 days')),
+                        const DropdownMenuItem(value: 90, child: Text('Last 3 months')),
+                        const DropdownMenuItem(value: 365, child: Text('Last 1 year')),
+                        const DropdownMenuItem(value: -1, child: Text('All time')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setModalState(() => selectedDays = value);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // 2. Budget Filter (Optional)
+                if (budgets.isNotEmpty) ...[
+                   Text(
+                    'Filter by Budget (Optional)',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceVariant.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<Budget?>(
+                        value: selectedBudget,
+                        isExpanded: true,
+                        icon: Icon(Icons.keyboard_arrow_down_rounded, color: colorScheme.onSurface),
+                        dropdownColor: colorScheme.surface,
+                        hint: const Text('All Budgets'),
+                        items: [
+                          DropdownMenuItem<Budget?>(
+                            value: null,
+                            child: const Text('All Budgets'),
+                          ),
+                          ...budgets.map((b) => DropdownMenuItem(
+                            value: b,
+                            child: Text(b.name),
+                          )),
+                        ],
+                        onChanged: (value) {
+                          setModalState(() => selectedBudget = value);
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // 3. Format Selector
+                Text(
+                  'Format',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildFormatOption(
+                        'PDF', 
+                        Icons.picture_as_pdf_rounded, 
+                        selectedFormat == 'pdf', 
+                        () => setModalState(() => selectedFormat = 'pdf'),
+                        colorScheme,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildFormatOption(
+                        'CSV', 
+                        Icons.table_chart_rounded, 
+                        selectedFormat == 'csv', 
+                        () => setModalState(() => selectedFormat = 'csv'),
+                        colorScheme,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                
+                // Action Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                      _performExport(
+                        format: selectedFormat, 
+                        days: selectedDays, 
+                        budget: selectedBudget,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Generate Export',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Choose the period of data to export',
-              style: TextStyle(
-                fontSize: 14,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 24),
-            _buildDateRangeOption('Last 7 days', 7, dialogContext, colorScheme),
-            const SizedBox(height: 8),
-            _buildDateRangeOption('Last 30 days', 30, dialogContext, colorScheme),
-            const SizedBox(height: 8),
-            _buildDateRangeOption('Last 3 months', 90, dialogContext, colorScheme),
-            const SizedBox(height: 8),
-            _buildDateRangeOption('Last 1 year', 365, dialogContext, colorScheme),
-            const SizedBox(height: 8),
-            _buildDateRangeOption('All time', -1, dialogContext, colorScheme),
-            const SizedBox(height: 20),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildDateRangeOption(String title, int days, BuildContext dialogContext, ColorScheme colorScheme) {
-    return ListTile(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
-      ),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: colorScheme.primary.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(Icons.calendar_today_outlined, color: colorScheme.primary, size: 20),
-      ),
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.w500, color: colorScheme.onSurface)),
-      trailing: Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
-      onTap: () {
-        Navigator.pop(dialogContext);
-        _showFormatSelectionDialog(days);
-      },
-    );
-  }
-
-  void _showFormatSelectionDialog(int days) {
-    final colorScheme = Theme.of(context).colorScheme;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (dialogContext) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colorScheme.onSurface.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Export Format',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Choose your preferred format',
-              style: TextStyle(
-                fontSize: 14,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 24),
-            _buildExportOption(
-              icon: Icons.table_chart_outlined,
-              title: 'CSV',
-              subtitle: 'Spreadsheet compatible',
-              onTap: () {
-                Navigator.pop(dialogContext);
-                _performExport('csv', days);
-              },
-              colorScheme: colorScheme,
-            ),
-            const SizedBox(height: 12),
-            _buildExportOption(
-              icon: Icons.picture_as_pdf_outlined,
-              title: 'PDF',
-              subtitle: 'Formatted report',
-              onTap: () {
-                Navigator.pop(dialogContext);
-                _performExport('pdf', days);
-              },
-              colorScheme: colorScheme,
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExportOption({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    required ColorScheme colorScheme,
-  }) {
-    return ListTile(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
-      ),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: colorScheme.primary.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: colorScheme.primary),
-      ),
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
-      subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
-      trailing: Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
+  Widget _buildFormatOption(String label, IconData icon, bool isSelected, VoidCallback onTap, ColorScheme colorScheme) {
+    return GestureDetector(
       onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? colorScheme.primary.withOpacity(0.1) : colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? colorScheme.primary : colorScheme.outline.withOpacity(0.2),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Future<void> _performExport(String format, int days) async {
+  Future<void> _performExport({required String format, required int days, Budget? budget}) async {
     // Show loading dialog
     showDialog(
       context: context,
@@ -1066,24 +1176,58 @@ class _ProfileScreenState extends State<ProfileScreen>
           ? DateTime.now().subtract(Duration(days: days))
           : null;
       
-      // Get transactions and filter by date
+      // Get transactions and filter
       final transactionState = context.read<TransactionBloc>().state;
       var transactions = transactionState is TransactionLoaded 
           ? transactionState.transactions 
           : <dynamic>[];
       
+      // Cast to Transaction List for stronger typing
+      List<Transaction> filteredTransactions = transactions.cast<Transaction>();
+
+      print('DEBUG: Total transactions: ${filteredTransactions.length}');
+
+      // Filter by Date
       if (cutoffDate != null) {
-        transactions = transactions.where((t) => t.date.isAfter(cutoffDate)).toList();
+        filteredTransactions = filteredTransactions.where((t) => t.date.isAfter(cutoffDate)).toList();
+        print('DEBUG: After date filter: ${filteredTransactions.length}');
+      }
+
+      // Filter by Budget (Category)
+      if (budget != null) {
+        final category = budget!.category;
+        final budgetId = budget!.id;
+        print('DEBUG: Filtering by Budget Category: "$category" (ID: $budgetId)');
+        
+        filteredTransactions = filteredTransactions.where((t) {
+            final match = t.category == category || t.budgetId == budgetId;
+            if (!match && filteredTransactions.length < 10) {
+               print('DEBUG: No match for t.category="${t.category}", t.budgetId="${t.budgetId}"');
+            }
+            return match;
+        }).toList();
+        print('DEBUG: After budget filter: ${filteredTransactions.length}');
       }
       
-      // Get income and filter by date
+      // Get income and filter
       final incomeState = context.read<IncomeBloc>().state;
       var incomes = incomeState is IncomeLoaded 
           ? incomeState.incomes 
           : <dynamic>[];
       
+      // Cast to Income List
+      List<Income> filteredIncomes = incomes.cast<Income>();
+
+      // Filter by Date
       if (cutoffDate != null) {
-        incomes = incomes.where((i) => i.date.isAfter(cutoffDate)).toList();
+        filteredIncomes = filteredIncomes.where((i) => i.date.isAfter(cutoffDate)).toList();
+      }
+
+      // Filter by Budget (Linked Incomes)
+      if (budget != null) {
+        final budgetId = budget!.id;
+        // Only include incomes EXPLICITLY linked to this budget
+        filteredIncomes = filteredIncomes.where((i) => i.budgetId == budgetId).toList();
       }
 
       // Get user name for PDF
@@ -1095,8 +1239,8 @@ class _ProfileScreenState extends State<ProfileScreen>
       File generatedFile;
       if (format == 'csv') {
         final csvContent = exportService.generateCsv(
-          transactions.cast(),
-          incomes.cast(),
+          filteredTransactions,
+          filteredIncomes,
         );
         generatedFile = await exportService.generateFile(
           Uint8List.fromList(csvContent.codeUnits), 
@@ -1104,8 +1248,8 @@ class _ProfileScreenState extends State<ProfileScreen>
         );
       } else {
         final pdfBytes = await exportService.generatePdf(
-          transactions.cast(),
-          incomes.cast(),
+          filteredTransactions,
+          filteredIncomes,
           userName,
         );
         generatedFile = await exportService.generateFile(

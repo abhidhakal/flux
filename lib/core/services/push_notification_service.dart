@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart' as fln;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:flutter_timezone/flutter_timezone.dart';
 import '../models/notification_model.dart';
 
 class PushNotificationService {
@@ -10,27 +11,35 @@ class PushNotificationService {
   factory PushNotificationService() => _instance;
   PushNotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
+  final fln.FlutterLocalNotificationsPlugin _notifications = fln.FlutterLocalNotificationsPlugin();
   bool _isInitialized = false;
 
   // Initialize the notification service
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    // Initialize timezone
+    // Initialize timezone with device location
     tz.initializeTimeZones();
+    try {
+      final timeZoneInfo = await FlutterTimezone.getLocalTimezone();
+      final String timeZoneName = timeZoneInfo.identifier;
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+    } catch (e) {
+      print('Failed to get local timezone: $e');
+      tz.setLocalLocation(tz.getLocation('UTC'));
+    }
 
     // Android initialization settings
-    const androidSettings = AndroidInitializationSettings('@mipmap/launcher_icon');
+    const androidSettings = fln.AndroidInitializationSettings('@mipmap/launcher_icon');
     
     // iOS initialization settings
-    const iosSettings = DarwinInitializationSettings(
+    const iosSettings = fln.DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
 
-    const initSettings = InitializationSettings(
+    const initSettings = fln.InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
     );
@@ -65,7 +74,7 @@ class PushNotificationService {
   }) async {
     if (!_isInitialized) await initialize();
 
-    final androidDetails = AndroidNotificationDetails(
+    final androidDetails = fln.AndroidNotificationDetails(
       'flux_notifications',
       'Flux Notifications',
       channelDescription: 'Notifications from Flux financial app',
@@ -77,13 +86,13 @@ class PushNotificationService {
       enableVibration: true,
     );
 
-    const iosDetails = DarwinNotificationDetails(
+    const iosDetails = fln.DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
     );
 
-    final details = NotificationDetails(
+    final details = fln.NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -99,11 +108,11 @@ class PushNotificationService {
     required DateTime scheduledDate,
     String? payload,
     NotificationPriority priority = NotificationPriority.medium,
-    DateTimeComponents? matchDateTimeComponents,
+    fln.DateTimeComponents? matchDateTimeComponents,
   }) async {
     if (!_isInitialized) await initialize();
 
-    final androidDetails = AndroidNotificationDetails(
+    final androidDetails = fln.AndroidNotificationDetails(
       'flux_scheduled',
       'Scheduled Notifications',
       channelDescription: 'Scheduled notifications from Flux',
@@ -113,27 +122,36 @@ class PushNotificationService {
       color: const Color(0xFF0079DC),
     );
 
-    const iosDetails = DarwinNotificationDetails(
+    const iosDetails = fln.DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
     );
 
-    final details = NotificationDetails(
+    final details = fln.NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
 
-    await _notifications.zonedSchedule(
-      id,
-      title,
-      body,
-      tz.TZDateTime.from(scheduledDate, tz.local),
-      details,
-      payload: payload,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: matchDateTimeComponents,
-    );
+    print('DEBUG: Scheduling notification id=$id, date=$scheduledDate');
+    print('DEBUG: Timezone location: ${tz.local.name}');
+
+    try {
+      await _notifications.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(scheduledDate, tz.local),
+        details,
+        payload: payload,
+        androidScheduleMode: fln.AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: matchDateTimeComponents,
+      );
+      print('DEBUG: Successfully scheduled notification $id');
+    } catch (e) {
+      print('DEBUG: Failed in zonedSchedule: $e');
+      rethrow;
+    }
   }
 
   // Schedule weekly summary notification
@@ -163,6 +181,7 @@ class PushNotificationService {
       scheduledDate: scheduledDate,
       payload: payload,
       priority: NotificationPriority.medium,
+      matchDateTimeComponents: fln.DateTimeComponents.dayOfWeekAndTime,
     );
   }
 
@@ -179,11 +198,21 @@ class PushNotificationService {
 
     final now = DateTime.now();
     var scheduledDate = DateTime(now.year, now.month, now.day, hour, minute);
+
+    print('DEBUG: daily scheduling - Now: $now');
+    print('DEBUG: daily scheduling - Target (Naive): $scheduledDate');
     
     // If time has passed today, schedule for tomorrow
     if (scheduledDate.isBefore(now)) {
+      print('DEBUG: Target is before Now, adding 1 day');
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
+
+    // Check exact alarm permission on Android
+    final androidInfo = await fln.FlutterLocalNotificationsPlugin()
+        .resolvePlatformSpecificImplementation<fln.AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestExactAlarmsPermission();
+    print('DEBUG: Exact alarm permission request result: $androidInfo');
 
     await scheduleNotification(
       id: id,
@@ -192,6 +221,7 @@ class PushNotificationService {
       scheduledDate: scheduledDate,
       payload: payload,
       priority: NotificationPriority.low,
+      matchDateTimeComponents: fln.DateTimeComponents.time,
     );
   }
 
@@ -206,42 +236,42 @@ class PushNotificationService {
   }
 
   // Get pending notifications
-  Future<List<PendingNotificationRequest>> getPendingNotifications() async {
+  Future<List<fln.PendingNotificationRequest>> getPendingNotifications() async {
     return await _notifications.pendingNotificationRequests();
   }
 
   // Handle notification tap
-  void _onNotificationTapped(NotificationResponse response) {
+  void _onNotificationTapped(fln.NotificationResponse response) {
     // Handle notification tap - you can navigate to specific screens
     // based on the payload
     print('Notification tapped: ${response.payload}');
   }
 
   // Convert priority to Android importance
-  Importance _getAndroidImportance(NotificationPriority priority) {
+  fln.Importance _getAndroidImportance(NotificationPriority priority) {
     switch (priority) {
       case NotificationPriority.low:
-        return Importance.low;
+        return fln.Importance.low;
       case NotificationPriority.medium:
-        return Importance.defaultImportance;
+        return fln.Importance.defaultImportance;
       case NotificationPriority.high:
-        return Importance.high;
+        return fln.Importance.high;
       case NotificationPriority.urgent:
-        return Importance.max;
+        return fln.Importance.max;
     }
   }
 
   // Convert priority to Android priority
-  Priority _getAndroidPriority(NotificationPriority priority) {
+  fln.Priority _getAndroidPriority(NotificationPriority priority) {
     switch (priority) {
       case NotificationPriority.low:
-        return Priority.low;
+        return fln.Priority.low;
       case NotificationPriority.medium:
-        return Priority.defaultPriority;
+        return fln.Priority.defaultPriority;
       case NotificationPriority.high:
-        return Priority.high;
+        return fln.Priority.high;
       case NotificationPriority.urgent:
-        return Priority.max;
+        return fln.Priority.max;
     }
   }
 

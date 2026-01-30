@@ -65,11 +65,12 @@ class TransactionLoading extends TransactionState {}
 
 class TransactionLoaded extends TransactionState {
   final List<Transaction> transactions;
+  final String? message;
 
-  const TransactionLoaded(this.transactions);
+  const TransactionLoaded(this.transactions, {this.message});
 
   @override
-  List<Object?> get props => [transactions];
+  List<Object?> get props => [transactions, message];
 }
 
 class TransactionError extends TransactionState {
@@ -142,8 +143,8 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       
       // Reload transactions
       final transactions = await _transactionService.getUserTransactions(event.transaction.userId);
-      emit(TransactionLoaded(transactions));
-      emit(TransactionSuccess('Transaction added successfully!'));
+      // Emit Loaded with Success Message
+      emit(TransactionLoaded(transactions, message: 'Transaction added successfully!'));
       
       // Trigger notification checks
       _notificationTriggerService.monitorSpendingPatterns(event.transaction.userId, transactions);
@@ -170,8 +171,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       
       // Reload transactions
       final transactions = await _transactionService.getUserTransactions(event.transaction.userId);
-      emit(TransactionLoaded(transactions));
-      emit(TransactionSuccess('Transaction updated successfully!'));
+      emit(TransactionLoaded(transactions, message: 'Transaction updated successfully!'));
       
       // Trigger notification checks
       _notificationTriggerService.monitorSpendingPatterns(event.transaction.userId, transactions);
@@ -194,8 +194,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       
       // Reload transactions after deletion using userId from event
       final transactions = await _transactionService.getUserTransactions(event.userId);
-      emit(TransactionLoaded(transactions));
-      emit(TransactionSuccess('Transaction deleted successfully!'));
+      emit(TransactionLoaded(transactions, message: 'Transaction deleted successfully!'));
       
       // Check budgets after deletion
       final budgets = await _budgetService.getUserBudgets(event.userId);

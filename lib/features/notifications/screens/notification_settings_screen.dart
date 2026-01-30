@@ -728,7 +728,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         if (mounted) AppSnackbar.showSuccess(context, message: 'Weekly summary scheduled');
       }
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, message: 'Failed to schedule');
+      if (mounted) AppSnackbar.showError(context, message: 'Failed to schedule: $e');
     }
   }
 
@@ -760,7 +760,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         if (mounted) AppSnackbar.showSuccess(context, message: 'Daily reminder scheduled');
       }
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, message: 'Failed to schedule');
+      if (mounted) AppSnackbar.showError(context, message: 'Failed to schedule: $e');
     }
   }
 

@@ -385,7 +385,18 @@ class DataExportService {
       throw Exception('Could not access storage directory');
     }
 
-    final newPath = '${downloadsDir.path}/${tempFile.uri.pathSegments.last}';
+    String newPath = '${downloadsDir.path}/${tempFile.uri.pathSegments.last}';
+    
+    // Check for duplicates and append suffix if needed
+    int counter = 1;
+    String fileNameWithoutExt = tempFile.uri.pathSegments.last.replaceAll(RegExp(r'\.(pdf|csv)$'), '');
+    String extension = tempFile.uri.pathSegments.last.split('.').last;
+    
+    while (File(newPath).existsSync()) {
+      newPath = '${downloadsDir.path}/$fileNameWithoutExt ($counter).$extension';
+      counter++;
+    }
+
     await tempFile.copy(newPath);
     return newPath;
   }

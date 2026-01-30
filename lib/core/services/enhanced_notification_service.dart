@@ -231,7 +231,7 @@ class EnhancedNotificationService {
       );
 
       // Save schedule to user preferences
-      await _saveNotificationSchedule(userId, 'daily_reminder_$reminderType', {
+      await _saveNotificationSchedule(userId, 'daily_reminder', {
         'hour': hour,
         'minute': minute,
         'enabled': true,
@@ -456,6 +456,13 @@ class EnhancedNotificationService {
   // Schedule the smart daily reminder (called on app init)
   Future<void> scheduleSmartDailyLogReminder(String userId) async {
     try {
+      // 0. Check if user already has a custom daily reminder set
+      final schedules = await getUserNotificationSchedules(userId);
+      if (schedules['daily_reminder']?['enabled'] == true) {
+        print('🔵 ENHANCED NOTIFICATION SERVICE: Custom daily reminder enabled, skipping smart reminder.');
+        return;
+      }
+
       // 1. Check if user has already added transactions today
       final hasTransactions = await TransactionService().hasTransactionsToday(userId);
       

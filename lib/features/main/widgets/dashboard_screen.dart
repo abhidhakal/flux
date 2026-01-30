@@ -44,8 +44,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context.read<NotificationsBloc>().add(LoadNotifications(user.user.id));
       context.read<IncomeBloc>().add(LoadIncome(user.user.id));
       context.read<GoalsBloc>().add(LoadGoals(user.user.id));
+      _profilePictureService.loadProfileImage(userId: user.user.id).then((_) {
+        if (mounted) setState(() {});
+      });
+    } else {
+       // Should wait for auth or handle unauthenticated state if needed
+       // But usually Dashboard is protected. 
     }
-    _profilePictureService.loadProfileImage();
   }
 
   void _updateWidget(BuildContext context) {

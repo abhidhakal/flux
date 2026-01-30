@@ -6,8 +6,9 @@
 
     <LinearLayout
         android:id="@+id/widget_button_add"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="center"
         android:background="@drawable/add_button_background"
         android:gravity="center"
         android:orientation="vertical"
@@ -19,9 +20,10 @@
             android:layout_height="wrap_content"
             android:text="+"
             android:textColor="@color/widget_button_text"
-            android:textSize="36sp"
+            android:textSize="32sp"
             android:textStyle="bold"
-            android:includeFontPadding="false" />
+            android:includeFontPadding="false"
+            android:layout_marginTop="-2dp" />
     </LinearLayout>
 
 </FrameLayout>

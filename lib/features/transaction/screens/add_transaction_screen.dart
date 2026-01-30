@@ -120,15 +120,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 setState(() => _isLoading = false);
               }
 
-              if (state is TransactionSuccess) {
-            AppSnackbar.showSuccess(context, message: state.message);
-              // Reload budgets to update spent amounts
-              final user = context.read<AuthBloc>().state;
-              if (user is AuthAuthenticated) {
-                context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
+              if (state is TransactionLoaded && state.message != null) {
+                AppSnackbar.showSuccess(context, message: state.message!);
+                // Reload budgets to update spent amounts
+                final user = context.read<AuthBloc>().state;
+                if (user is AuthAuthenticated) {
+                  context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
+                }
+                Navigator.pop(context);
               }
-            Navigator.pop(context);
-          }
 
           if (state is TransactionError) {
             AppSnackbar.showError(context, message: state.message);
@@ -151,9 +151,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   const SizedBox(height: 16),
                   _buildCategorySelector(),
                   const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                  _buildBudgetSelector(),
+                  const SizedBox(height: 16),
                   if (_selectedType == TransactionType.expense) ...[
-                    _buildBudgetSelector(),
-                    const SizedBox(height: 16),
                     _buildEssentialToggle(),
                     const SizedBox(height: 16),
                   ],
@@ -742,6 +743,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           date: _selectedDate,
           notes: _descriptionController.text.trim(),
           category: _selectedCategory,
+          budgetId: _selectedBudget?.id,
           createdAt: DateTime.now(),
         );
         context.read<IncomeBloc>().add(AddIncome(income));
