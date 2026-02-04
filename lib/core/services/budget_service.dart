@@ -229,35 +229,6 @@ class BudgetService {
         }
       }
 
-      // Get all incomes for the user
-      final incomesQuery = await _firestore
-          .collection('incomes')
-          .where('userId', isEqualTo: userId)
-          .get();
-
-      final incomes = incomesQuery.docs
-          .map((doc) => Income.fromJson(doc.data()))
-          .toList();
-
-      // Credit incomes to budgets
-      for (final income in incomes) {
-        if (income.budgetId != null && income.budgetId!.isNotEmpty) {
-           final matchingBudget = budgets.firstWhere(
-            (budget) => budget.id == income.budgetId && budget.isActive,
-            orElse: () => Budget(
-              id: '', userId: '', name: '', amount: 0, period: BudgetPeriod.monthly, 
-              category: '', startDate: DateTime.now(), endDate: DateTime.now(), createdAt: DateTime.now(),
-            ),
-          );
-
-          if (matchingBudget.id.isNotEmpty) {
-            // Subtract income from spent (Credit)
-            budgetSpentMap[matchingBudget.id] = 
-                (budgetSpentMap[matchingBudget.id] ?? 0.0) - income.amount;
-          }
-        }
-      }
-
       // Update all budgets with calculated spent amounts
       for (final budget in budgets) {
         final budgetRef = _firestore.collection('budgets').doc(budget.id);

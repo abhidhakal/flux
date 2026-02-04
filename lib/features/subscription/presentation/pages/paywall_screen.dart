@@ -289,7 +289,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: const Text(
-                            'SAVE 40%',
+                            'SAVE 33%',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 9,

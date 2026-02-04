@@ -14,6 +14,7 @@ import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/page_transitions.dart';
 import '../../../shared/widgets/animated_button.dart';
 import '../../../shared/widgets/skeleton_components.dart';
+import '../../../core/widgets/app_banner_ad.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -391,8 +392,14 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), // Added bottom padding
-      itemCount: groupedItems.length,
+      itemCount: groupedItems.length + 1,
       itemBuilder: (context, index) {
+        if (index == groupedItems.length) {
+          return const Padding(
+            padding: EdgeInsets.only(top: 16),
+            child: AppBannerAd(),
+          );
+        }
         final dateKey = groupedItems.keys.elementAt(index);
         final dayTransactions = groupedItems[dateKey]!;
         return AnimatedBuilder(

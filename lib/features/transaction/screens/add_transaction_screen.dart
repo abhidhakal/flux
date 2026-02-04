@@ -84,7 +84,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           if (state is BudgetLoaded) {
             setState(() {
               _availableBudgets = state.budgets
-                  .where((budget) => budget.isCurrent)
+                  .where((budget) => budget.isActive)
                   .toList();
               // Auto-select budget if category matches
               if (_selectedBudget == null && _availableBudgets.isNotEmpty) {

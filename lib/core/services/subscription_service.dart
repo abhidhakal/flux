@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'feature_flag_service.dart';
 
 class SubscriptionService {
   static final SubscriptionService _instance = SubscriptionService._internal();
@@ -93,24 +94,24 @@ class SubscriptionService {
         id: _kMonthlySubscriptionId,
         title: 'Monthly Premium',
         description: 'Unlock all features',
-        price: '\$4.99',
-        rawPrice: 4.99,
+        price: '\$1.49',
+        rawPrice: 1.49,
         currencyCode: 'USD',
       ),
       ProductDetails(
         id: _kYearlySubscriptionId,
         title: 'Yearly Premium',
         description: 'Unlock all features',
-        price: '\$49.99',
-        rawPrice: 49.99,
+        price: '\$11.99',
+        rawPrice: 11.99,
         currencyCode: 'USD',
       ),
       ProductDetails(
         id: _kLifetimeSubscriptionId,
         title: 'Lifetime Access',
         description: 'Pay once, keep forever',
-        price: '\$149.99',
-        rawPrice: 149.99,
+        price: '\$34.99',
+        rawPrice: 34.99,
         currencyCode: 'USD',
       ),
     ];
@@ -206,6 +207,14 @@ class SubscriptionService {
   static String _getExpiryKey(String uid) => '${_kPremiumExpiryKey}_$uid';
 
   Future<void> _checkPremiumStatus() async {
+    // If subscriptions are disabled globally (Ad-supported mode), 
+    // we grant premium status to unlock all features.
+    // Ads will be handled separately by AdService.
+    if (!FeatureFlagService.isSubscriptionEnabled) {
+      _isPremium = true;
+      return;
+    }
+
     _isPremium = false; // Reset first
     
     final user = FirebaseAuth.instance.currentUser;

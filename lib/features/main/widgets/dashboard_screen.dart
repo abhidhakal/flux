@@ -7,6 +7,7 @@ import '../../../core/services/currency_service.dart';
 import '../../../core/services/profile_picture_service.dart';
 import '../../../core/services/widget_service.dart';
 import '../../../shared/widgets/skeleton_components.dart';
+import '../../../core/widgets/app_banner_ad.dart';
 
 import '../../../core/models/transaction_model.dart';
 import '../../auth/auth_bloc.dart';
@@ -242,6 +243,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           _buildRecentTransactions(transactionState.transactions),
                           const SizedBox(height: 24),
                           _buildFinancialTips(), // Extra content
+                          const SizedBox(height: 24),
+                          const AppBannerAd(), // Ad-supported monetization
                         ],
                       ),
                     );

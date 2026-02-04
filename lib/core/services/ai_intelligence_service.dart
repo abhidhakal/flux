@@ -49,7 +49,7 @@ class AIIntelligenceService {
       'utility', 'bill', 'power', 'energy', 'at&t', 'verizon',
       'comcast', 'spectrum', 'cable', 'electricity'
     ])) {
-      return 'Utilities';
+      return 'Bills & Utilities';
     }
     
     // Healthcare patterns
@@ -197,7 +197,7 @@ class AIIntelligenceService {
       // Prioritize user-defined essential status, fallback to category mapping
       if (t.isEssential) {
         needs += t.amount;
-      } else if (['Housing', 'Utilities', 'Healthcare', 'Transportation', 'Education'].contains(t.category)) {
+      } else if (['Housing', 'Bills & Utilities', 'Healthcare', 'Transportation', 'Education'].contains(t.category)) {
         // Fallback for transactions where user hasn't toggled it yet
         needs += t.amount;
       } else {

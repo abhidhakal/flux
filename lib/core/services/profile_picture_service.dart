@@ -13,7 +13,8 @@ class ProfilePictureService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   File? _profileImage;
-  static const String _profileImagePathKey = 'profile_image_path';
+  // No longer using a static key since we need it to be user-specific
+  // static const String _profileImagePathKey = 'profile_image_path';
 
   File? get profileImage => _profileImage;
 
@@ -21,7 +22,7 @@ class ProfilePictureService {
     _profileImage = image;
     if (image != null) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_profileImagePathKey, image.path);
+      await prefs.setString('profile_image_path_$userId', image.path);
       
       // Save to Firestore as Base64
       try {
@@ -35,7 +36,7 @@ class ProfilePictureService {
       }
     } else {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_profileImagePathKey);
+      await prefs.remove('profile_image_path_$userId');
       
       // Remove from Firestore
       try {
@@ -63,7 +64,7 @@ class ProfilePictureService {
            
            // Update local cache
            final prefs = await SharedPreferences.getInstance();
-           await prefs.setString(_profileImagePathKey, file.path);
+           await prefs.setString('profile_image_path_$userId', file.path);
            return;
         }
       }
@@ -73,7 +74,7 @@ class ProfilePictureService {
 
     // 2. Fallback to local cache if Firestore failed or empty
     final prefs = await SharedPreferences.getInstance();
-    final imagePath = prefs.getString(_profileImagePathKey);
+    final imagePath = prefs.getString('profile_image_path_$userId');
     if (imagePath != null && File(imagePath).existsSync()) {
       _profileImage = File(imagePath);
     } else {

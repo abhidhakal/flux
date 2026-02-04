@@ -1,3 +1,4 @@
+import 'package:flux/core/constants/categories.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
@@ -187,7 +188,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           if (state is BudgetLoaded) {
             setState(() {
               _availableBudgets = state.budgets
-                  .where((budget) => budget.isCurrent)
+                  .where((budget) => budget.isActive)
                   .toList();
               // Set selected budget if transaction has budgetId
               if (widget.transaction.budgetId != null && widget.transaction.budgetId!.isNotEmpty) {
@@ -657,25 +658,9 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
   List<Budget> _availableBudgets = [];
   Budget? _selectedBudget;
 
-  final List<String> _expenseCategories = [
-    'Food & Dining',
-    'Transportation',
-    'Shopping',
-    'Entertainment',
-    'Bills & Utilities',
-    'Healthcare',
-    'Education',
-    'Travel',
-    'Other',
-  ];
+  List<String> get _expenseCategories => AppCategories.expenseCategories;
 
-  final List<String> _incomeCategories = [
-    'Salary',
-    'Freelance',
-    'Investment',
-    'Gift',
-    'Other',
-  ];
+  List<String> get _incomeCategories => AppCategories.incomeCategories;
 
   @override
   void initState() {
@@ -719,7 +704,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
         if (state is BudgetLoaded) {
           setState(() {
             _availableBudgets = state.budgets
-                .where((budget) => budget.isCurrent)
+                .where((budget) => budget.isActive)
                 .toList();
             // Set selected budget if transaction has budgetId
             if (widget.transaction.budgetId != null && widget.transaction.budgetId!.isNotEmpty) {

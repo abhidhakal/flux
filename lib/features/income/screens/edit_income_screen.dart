@@ -140,7 +140,7 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
                     if (state is BudgetLoaded) {
                       setState(() {
                         _availableBudgets = state.budgets
-                            .where((budget) => budget.isCurrent)
+                            .where((budget) => budget.isActive)
                             .toList();
                         
                         // Set selected budget if income has budgetId

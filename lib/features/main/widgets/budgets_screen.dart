@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
-import '../../../core/constants/app_theme.dart';
+import '../../../core/constants/categories.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../../../shared/widgets/skeleton_components.dart';
+import '../../../core/widgets/app_banner_ad.dart';
 import '../../auth/auth_bloc.dart';
 import '../../budget/budget_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
@@ -188,12 +189,17 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   Widget _buildBudgetsList(List<Budget> budgets) {
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 120, left: 16, right: 16, top: 16),
-      itemCount: budgets.length + 2, // +1 for overview cards, +1 for heading
+      itemCount: budgets.length + 3, // +1 for overview cards, +1 for heading, +1 for Ad
       itemBuilder: (context, index) {
         if (index == 0) {
           return _buildOverviewCards(budgets);
         } else if (index == 1) {
           return _buildBudgetsHeading();
+        } else if (index == budgets.length + 2) {
+          return const Padding(
+            padding: EdgeInsets.only(top: 24),
+            child: AppBannerAd(),
+          );
         }
         final budget = budgets[index - 2];
         return _buildBudgetCard(budget);
@@ -415,7 +421,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               ),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
-                widthFactor: percentage / 100,
+                widthFactor: (percentage / 100).clamp(0.0, 1.0),
                 child: Container(
                   decoration: BoxDecoration(
                     color: progressColor,
@@ -499,148 +505,152 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       borderColor = AppColors.primary.withOpacity(0.2);
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 0,
-      color: cardColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radius16),
-        side: BorderSide(
-          color: borderColor,
-          width: 1,
+    return InkWell(
+      onTap: () => _showEditBudgetDialog(budget),
+      borderRadius: BorderRadius.circular(AppTheme.radius16),
+      child: Card(
+        margin: EdgeInsets.zero, // Card margin handled by ListView separator
+        elevation: 0,
+        color: cardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radius16),
+          side: BorderSide(
+            color: borderColor,
+            width: 1,
+          ),
         ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacing20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row with icon and title
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(AppTheme.spacing8),
-                  decoration: BoxDecoration(
-                    color: isOverBudget 
-                        ? AppColors.error.withValues(alpha: 0.1)
-                        : percentage > 80 
-                            ? AppColors.warning.withValues(alpha: 0.1)
-                            : AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppTheme.radius8),
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.spacing20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header row with icon and title
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(AppTheme.spacing8),
+                    decoration: BoxDecoration(
+                      color: isOverBudget 
+                          ? AppColors.error.withValues(alpha: 0.1)
+                          : percentage > 80 
+                              ? AppColors.warning.withValues(alpha: 0.1)
+                              : AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppTheme.radius8),
+                    ),
+                    child: Icon(
+                      isOverBudget 
+                          ? Icons.warning
+                          : percentage > 80 
+                              ? Icons.trending_up_rounded
+                              : Icons.wallet_rounded,
+                      color: isOverBudget 
+                          ? AppColors.error
+                          : percentage > 80 
+                              ? AppColors.warning
+                              : AppColors.primary,
+                      size: 20,
+                    ),
                   ),
-                  child: Icon(
-                    isOverBudget 
-                        ? Icons.warning
-                        : percentage > 80 
-                            ? Icons.trending_up_rounded
-                            : Icons.wallet_rounded,
-                    color: isOverBudget 
-                        ? AppColors.error
-                        : percentage > 80 
-                            ? AppColors.warning
-                            : AppColors.primary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: AppTheme.spacing12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        budget.name,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
+                  const SizedBox(width: AppTheme.spacing12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          budget.name,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
                         ),
-                      ),
-                      Text(
-                        '${budget.category} • ${budget.period.name.toUpperCase()}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurface.withOpacity(0.6),
+                        Text(
+                          '${budget.category} • ${budget.period.name.toUpperCase()}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => _showDeleteBudgetDialog(budget),
-                  icon: const Icon(Icons.delete_outline, color: AppColors.error),
-                  tooltip: 'Delete Budget',
-                ),
-              ],
-            ),
-            const SizedBox(height: AppTheme.spacing8),
-            // Amount row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${CurrencyService().formatAmount(spent)} / ${CurrencyService().formatAmount(total)}',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: isOverBudget ? AppColors.error : colorScheme.onSurface.withOpacity(0.8),
+                  IconButton(
+                    onPressed: () => _showDeleteBudgetDialog(budget),
+                    icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                    tooltip: 'Delete Budget',
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            LinearProgressIndicator(
-              value: percentage / 100,
-              backgroundColor: colorScheme.outline.withOpacity(0.3),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                isOverBudget ? AppColors.error : AppColors.primary,
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${percentage.toStringAsFixed(1)}% used',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: isOverBudget ? AppColors.error : colorScheme.onSurface.withOpacity(0.8),
+              const SizedBox(height: AppTheme.spacing8),
+              // Amount row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${CurrencyService().formatAmount(spent)} / ${CurrencyService().formatAmount(total)}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: isOverBudget ? AppColors.error : colorScheme.onSurface.withValues(alpha: 0.8),
+                    ),
                   ),
-                ),
-                Text(
-                  '${CurrencyService().formatAmount(total - spent)} remaining',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ],
-            ),
-            if (isOverBudget)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  'Over budget by ${CurrencyService().formatAmount(spent - total)}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.error,
-                    fontWeight: FontWeight.w500,
-                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              LinearProgressIndicator(
+                value: (percentage / 100).clamp(0.0, 1.0),
+                backgroundColor: colorScheme.outline.withValues(alpha: 0.3),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isOverBudget ? AppColors.error : AppColors.primary,
                 ),
               ),
-            if (budget.hasRollover)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  'Includes ${CurrencyService().formatAmount(budget.rolloverAmount)} rollover',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.success,
-                    fontWeight: FontWeight.w500,
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${percentage.toStringAsFixed(1)}% used',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isOverBudget ? AppColors.error : colorScheme.onSurface.withValues(alpha: 0.8),
+                    ),
+                  ),
+                  Text(
+                    '${CurrencyService().formatAmount(total - spent)} remaining',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ),
+              if (isOverBudget)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Over budget by ${CurrencyService().formatAmount(spent - total)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.error,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-          ],
+              if (budget.hasRollover)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    'Includes ${CurrencyService().formatAmount(budget.rolloverAmount)} rollover',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.success,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -684,21 +694,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     labelText: 'Category',
                     border: OutlineInputBorder(),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'Food & Dining', child: Text('Food & Dining')),
-                    DropdownMenuItem(value: 'Transportation', child: Text('Transportation')),
-                    DropdownMenuItem(value: 'Shopping', child: Text('Shopping')),
-                    DropdownMenuItem(value: 'Entertainment', child: Text('Entertainment')),
-                    DropdownMenuItem(value: 'Bills & Utilities', child: Text('Bills & Utilities')),
-                    DropdownMenuItem(value: 'Healthcare', child: Text('Healthcare')),
-                    DropdownMenuItem(value: 'Education', child: Text('Education')),
-                    DropdownMenuItem(value: 'Travel', child: Text('Travel')),
-                    DropdownMenuItem(value: 'Personal Care', child: Text('Personal Care')),
-                    DropdownMenuItem(value: 'Home & Garden', child: Text('Home & Garden')),
-                    DropdownMenuItem(value: 'Investment', child: Text('Investment')),
-                    DropdownMenuItem(value: 'Emergency Fund', child: Text('Emergency Fund')),
-                    DropdownMenuItem(value: 'Other', child: Text('Other')),
-                  ],
+                  items: AppCategories.expenseCategories.map((category) {
+                    return DropdownMenuItem(
+                      value: category,
+                      child: Text(category),
+                    );
+                  }).toList(),
                   onChanged: (value) {
                     setState(() {
                       selectedCategory = value;
@@ -811,6 +812,172 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               },
               child: Text(
                 'Create',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditBudgetDialog(Budget budget) {
+    final nameController = TextEditingController(text: budget.name);
+    final amountController = TextEditingController(text: budget.amount.toString());
+    BudgetPeriod selectedPeriod = budget.period;
+    bool enableRollover = budget.enableRollover;
+    bool isActive = budget.isActive;
+    String? selectedCategory = budget.category;
+
+    // Get user outside the dialog context
+    final user = context.read<AuthBloc>().state;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(
+            'Edit Budget',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Budget Name',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedCategory,
+                  decoration: const InputDecoration(
+                    labelText: 'Category',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: AppCategories.expenseCategories.map((category) {
+                    return DropdownMenuItem(
+                      value: category,
+                      child: Text(category),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedCategory = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: amountController,
+                  decoration: InputDecoration(
+                    labelText: 'Budget Amount',
+                    prefixText: CurrencyService().symbol,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<BudgetPeriod>(
+                  initialValue: selectedPeriod,
+                  decoration: const InputDecoration(
+                    labelText: 'Budget Period',
+                  ),
+                  items: BudgetPeriod.values.map((period) {
+                    return DropdownMenuItem(
+                      value: period,
+                      child: Text(period.name.toUpperCase()),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedPeriod = value ?? BudgetPeriod.monthly;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  title: Text(
+                    'Is Active',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Inactive budgets are hidden from most lists',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  value: isActive,
+                  onChanged: (value) {
+                    setState(() {
+                      isActive = value ?? false;
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+                CheckboxListTile(
+                  title: Text(
+                    'Enable Rollover',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Unused budget carries over to next period',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  value: enableRollover,
+                  onChanged: (value) {
+                    setState(() {
+                      enableRollover = value ?? false;
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (nameController.text.isNotEmpty && 
+                    selectedCategory != null &&
+                    amountController.text.isNotEmpty) {
+                  if (user is AuthAuthenticated) {
+                    final updatedBudget = budget.copyWith(
+                      name: nameController.text.trim(),
+                      amount: double.tryParse(amountController.text) ?? 0,
+                      period: selectedPeriod,
+                      category: selectedCategory!,
+                      enableRollover: enableRollover,
+                      isActive: isActive,
+                    );
+                    
+                    Navigator.of(dialogContext).pop();
+                    this.context.read<BudgetBloc>().add(UpdateBudget(updatedBudget));
+                  }
+                }
+              },
+              child: Text(
+                'Save Changes',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onPrimary,
                 ),

@@ -99,15 +99,9 @@ class _MainScreenState extends State<MainScreen> {
                       currentIndex: navState.currentIndex,
                       onTap: (index) {
                         if (index == 3) {
-                          final subscriptionState = context.read<SubscriptionBloc>().state;
-                          if (subscriptionState is! SubscriptionPremium) {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const PaywallScreen(),
-                              ),
-                            );
-                            return;
-                          }
+                          // Allow access to insights for everyone in ad-supported mode
+                          context.read<NavigationCubit>().setTab(index);
+                          return;
                         }
                         context.read<NavigationCubit>().setTab(index);
                       },

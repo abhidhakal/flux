@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flux/core/services/subscription_service.dart';
+import 'feature_flag_service.dart';
 
 class AdService {
   static final AdService _instance = AdService._internal();
@@ -43,7 +44,10 @@ class AdService {
   bool get isInitialized => _isInitialized;
 
   bool get shouldShowAds {
-    // If user is premium, don't show ads
+    if (FeatureFlagService.forceShowAds) {
+      return true;
+    }
+
     if (SubscriptionService().isPremium) {
       return false;
     }
@@ -60,7 +64,7 @@ class AdService {
     }
     // Replace these with production IDs when releasing
     if (Platform.isAndroid) {
-      return 'ca-app-pub-3940256099942544/6300978111'; // Placeholder
+      return 'ca-app-pub-8194895103164797/4213340343';
     } else if (Platform.isIOS) {
       return 'ca-app-pub-3940256099942544/2934735716'; // Placeholder
     }
