@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_theme.dart';
-import '../../core/constants/app_theme.dart';
 
 enum AppSnackbarType {
   success,
@@ -144,19 +143,6 @@ class AppSnackbar {
         return Icons.warning;
       case AppSnackbarType.info:
         return Icons.info;
-    }
-  }
-
-  static String _getTitleForType(AppSnackbarType type) {
-    switch (type) {
-      case AppSnackbarType.success:
-        return 'Success';
-      case AppSnackbarType.error:
-        return 'Error';
-      case AppSnackbarType.warning:
-        return 'Warning';
-      case AppSnackbarType.info:
-        return 'Info';
     }
   }
 

@@ -1195,8 +1195,8 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       // Filter by Budget (Category)
       if (budget != null) {
-        final category = budget!.category;
-        final budgetId = budget!.id;
+        final category = budget.category;
+        final budgetId = budget.id;
         print('DEBUG: Filtering by Budget Category: "$category" (ID: $budgetId)');
         
         filteredTransactions = filteredTransactions.where((t) {
@@ -1225,7 +1225,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       // Filter by Budget (Linked Incomes)
       if (budget != null) {
-        final budgetId = budget!.id;
+        final budgetId = budget.id;
         // Only include incomes EXPLICITLY linked to this budget
         filteredIncomes = filteredIncomes.where((i) => i.budgetId == budgetId).toList();
       }
@@ -1409,9 +1409,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutUsScreen()));
   }
 
-  void _showSnackBar(String message) {
-    AppSnackbar.showInfo(context, message: message);
-  }
 
   Widget _buildProfileSkeleton() {
     return SingleChildScrollView(

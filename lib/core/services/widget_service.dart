@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class WidgetService {
+  // ignore: unused_field
   static const String _androidWidgetName = 'BalanceWidgetProvider';
 
   static Future<void> updateBalanceWidget({

@@ -8,8 +8,6 @@ import '../widgets/transactions_screen.dart';
 import '../widgets/profile_screen.dart';
 import '../../analytics/screens/analytics_dashboard_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../subscription/subscription_bloc.dart';
-import '../../subscription/presentation/pages/paywall_screen.dart';
 
 import '../navigation_cubit.dart';
 import '../../../core/widgets/app_banner_ad.dart';

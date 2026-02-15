@@ -2,13 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:uuid/uuid.dart';
 import '../models/budget_model.dart';
 import '../models/transaction_model.dart';
-import '../models/income_model.dart';
-import 'transaction_service.dart';
 
 class BudgetService {
   final firestore.FirebaseFirestore _firestore = firestore.FirebaseFirestore.instance;
   final Uuid _uuid = const Uuid();
-  final TransactionService _transactionService = TransactionService();
 
   // Create new budget
   Future<void> createBudget(Budget budget) async {

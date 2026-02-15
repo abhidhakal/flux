@@ -127,7 +127,7 @@ class AppColors {
 
 class AppTheme {
   // Typography
-  static const String fontFamily = 'Inter';
+  static const String fontFamily = 'Satoshi';
   
   // Light Text Theme
   static const TextTheme lightTextTheme = TextTheme(

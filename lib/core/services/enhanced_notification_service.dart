@@ -13,6 +13,7 @@ class EnhancedNotificationService {
   final NotificationService _notificationService = NotificationService();
   final PushNotificationService _pushService = PushNotificationService();
   final firestore.FirebaseFirestore _firestore = firestore.FirebaseFirestore.instance;
+  // ignore: unused_field
   final Uuid _uuid = const Uuid();
 
   // Initialize the enhanced notification service

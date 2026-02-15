@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_theme.dart';
-import '../../core/constants/app_theme.dart';
 
 class LoadingScreen extends StatelessWidget {
   const LoadingScreen({super.key});

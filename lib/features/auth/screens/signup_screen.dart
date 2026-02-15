@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
-import '../../../shared/widgets/loading_screen.dart';
 import '../../../core/constants/app_theme.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -22,7 +21,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
-  bool _loadingRouteShown = false;
 
   @override
   void dispose() {

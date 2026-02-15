@@ -11,7 +11,6 @@ import '../../auth/auth_bloc.dart';
 import '../../budget/budget_bloc.dart';
 import '../../income/income_bloc.dart';
 import '../../../core/models/income_model.dart';
-import '../../../core/services/income_service.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 
 class AddTransactionScreen extends StatefulWidget {

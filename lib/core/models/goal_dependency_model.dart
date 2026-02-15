@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 
 enum DependencyType {
   prerequisite, // Goal A must be completed before Goal B can start

@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
-import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/models/income_model.dart';
 import '../../../core/services/currency_service.dart';
-import '../../../shared/widgets/skeleton_components.dart';
 import '../../auth/auth_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
 import '../../income/income_bloc.dart';
 import '../analytics_bloc.dart';
-import '../widgets/spending_chart.dart';
 import '../widgets/category_breakdown_chart.dart';
 import '../widgets/insights_card.dart';
 import '../widgets/trend_analysis_chart.dart';
