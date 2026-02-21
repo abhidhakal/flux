@@ -18,17 +18,17 @@ class AppSnackbar {
     String? actionLabel,
     IconData? icon,
   }) {
-    final snackBar = _buildSnackbar(
-      context: context,
-      message: message,
-      type: type,
-      duration: duration,
-      onAction: onAction,
-      actionLabel: actionLabel,
-      icon: icon,
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(_buildSnackbar(
+        context: context,
+        message: message,
+        type: type,
+        duration: duration,
+        onAction: onAction,
+        actionLabel: actionLabel,
+        icon: icon,
+      ));
   }
 
   static SnackBar _buildSnackbar({
@@ -41,128 +41,119 @@ class AppSnackbar {
     IconData? icon,
   }) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final colors = _getColorsForType(type, colorScheme);
-    final defaultIcon = _getDefaultIconForType(type);
+    final cs = theme.colorScheme;
+    final accentColor = _accentColor(type, cs);
+    final defaultIcon = _defaultIcon(type);
 
     return SnackBar(
-      content: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon ?? defaultIcon,
-              color: colors.iconColor,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.onInverseSurface,
-                  fontFamily: AppTheme.fontFamily,
-                ),
-              ),
-            ),
-            if (onAction != null && actionLabel != null) ...[
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: onAction,
-                style: TextButton.styleFrom(
-                  foregroundColor: colors.actionColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  actionLabel,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-      backgroundColor: colorScheme.inverseSurface,
       duration: duration,
       behavior: SnackBarBehavior.floating,
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(30),
-      ),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+      padding: EdgeInsets.zero,
+      backgroundColor: Colors.transparent,
       elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      content: Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cs.outline.withOpacity(0.12)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Left accent bar
+                Container(width: 4, color: accentColor),
+                // Content
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    child: Row(
+                      children: [
+                        Icon(icon ?? defaultIcon, color: accentColor, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            message,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: cs.onSurface,
+                              fontWeight: FontWeight.w500,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                        if (onAction != null && actionLabel != null) ...[
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: onAction,
+                            child: Text(
+                              actionLabel,
+                              style: TextStyle(
+                                color: accentColor,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
-  static _SnackbarColors _getColorsForType(AppSnackbarType type, ColorScheme colorScheme) {
+  static Color _accentColor(AppSnackbarType type, ColorScheme cs) {
     switch (type) {
       case AppSnackbarType.success:
-        return _SnackbarColors(
-          backgroundColor: AppColors.success.withOpacity(0.1),
-          iconColor: AppColors.success,
-          borderColor: AppColors.success.withOpacity(0.3),
-          actionColor: AppColors.success,
-        );
+        return AppColors.success;
       case AppSnackbarType.error:
-        return _SnackbarColors(
-          backgroundColor: AppColors.error.withOpacity(0.1),
-          iconColor: AppColors.error,
-          borderColor: AppColors.error.withOpacity(0.3),
-          actionColor: AppColors.error,
-        );
+        return AppColors.error;
       case AppSnackbarType.warning:
-        return _SnackbarColors(
-          backgroundColor: AppColors.warning.withOpacity(0.1),
-          iconColor: AppColors.warning,
-          borderColor: AppColors.warning.withOpacity(0.3),
-          actionColor: AppColors.warning,
-        );
+        return AppColors.warning;
       case AppSnackbarType.info:
-        return _SnackbarColors(
-          backgroundColor: colorScheme.primary.withOpacity(0.1),
-          iconColor: colorScheme.primary,
-          borderColor: colorScheme.primary.withOpacity(0.3),
-          actionColor: colorScheme.primary,
-        );
+        return cs.primary;
     }
   }
 
-  static IconData _getDefaultIconForType(AppSnackbarType type) {
+  static IconData _defaultIcon(AppSnackbarType type) {
     switch (type) {
       case AppSnackbarType.success:
-        return Icons.check_circle;
+        return Icons.check_circle_rounded;
       case AppSnackbarType.error:
-        return Icons.error;
+        return Icons.error_rounded;
       case AppSnackbarType.warning:
-        return Icons.warning;
+        return Icons.warning_rounded;
       case AppSnackbarType.info:
-        return Icons.info;
+        return Icons.info_rounded;
     }
   }
 
-  // Convenience methods for common use cases
+  // Convenience methods
   static void showSuccess(
     BuildContext context, {
     required String message,
     Duration duration = const Duration(seconds: 3),
     VoidCallback? onAction,
     String? actionLabel,
-  }) {
-    show(
-      context,
-      message: message,
-      type: AppSnackbarType.success,
-      duration: duration,
-      onAction: onAction,
-      actionLabel: actionLabel,
-    );
-  }
+  }) =>
+      show(context, message: message, type: AppSnackbarType.success,
+          duration: duration, onAction: onAction, actionLabel: actionLabel);
 
   static void showError(
     BuildContext context, {
@@ -170,16 +161,9 @@ class AppSnackbar {
     Duration duration = const Duration(seconds: 4),
     VoidCallback? onAction,
     String? actionLabel,
-  }) {
-    show(
-      context,
-      message: message,
-      type: AppSnackbarType.error,
-      duration: duration,
-      onAction: onAction,
-      actionLabel: actionLabel,
-    );
-  }
+  }) =>
+      show(context, message: message, type: AppSnackbarType.error,
+          duration: duration, onAction: onAction, actionLabel: actionLabel);
 
   static void showWarning(
     BuildContext context, {
@@ -187,16 +171,9 @@ class AppSnackbar {
     Duration duration = const Duration(seconds: 3),
     VoidCallback? onAction,
     String? actionLabel,
-  }) {
-    show(
-      context,
-      message: message,
-      type: AppSnackbarType.warning,
-      duration: duration,
-      onAction: onAction,
-      actionLabel: actionLabel,
-    );
-  }
+  }) =>
+      show(context, message: message, type: AppSnackbarType.warning,
+          duration: duration, onAction: onAction, actionLabel: actionLabel);
 
   static void showInfo(
     BuildContext context, {
@@ -204,28 +181,7 @@ class AppSnackbar {
     Duration duration = const Duration(seconds: 3),
     VoidCallback? onAction,
     String? actionLabel,
-  }) {
-    show(
-      context,
-      message: message,
-      type: AppSnackbarType.info,
-      duration: duration,
-      onAction: onAction,
-      actionLabel: actionLabel,
-    );
-  }
-}
-
-class _SnackbarColors {
-  final Color backgroundColor;
-  final Color iconColor;
-  final Color borderColor;
-  final Color actionColor;
-
-  const _SnackbarColors({
-    required this.backgroundColor,
-    required this.iconColor,
-    required this.borderColor,
-    required this.actionColor,
-  });
+  }) =>
+      show(context, message: message, type: AppSnackbarType.info,
+          duration: duration, onAction: onAction, actionLabel: actionLabel);
 }

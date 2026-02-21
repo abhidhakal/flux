@@ -599,7 +599,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
       ),
       child: DropdownButtonHideUnderline(

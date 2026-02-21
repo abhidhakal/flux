@@ -66,12 +66,13 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
-        titleTextStyle: const TextStyle(
+        titleTextStyle: theme.textTheme.displaySmall?.copyWith(
+          fontSize: 24,
+          letterSpacing: -1,
           color: Colors.white,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
         ),
         elevation: 0,
+        scrolledUnderElevation: 0,
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,

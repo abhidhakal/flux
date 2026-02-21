@@ -264,6 +264,38 @@ class AuthService {
     }
   }
 
+  // Check if current user uses email/password (not Google-only)
+  bool get isEmailPasswordUser {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+    return user.providerData.any((info) => info.providerId == 'password');
+  }
+
+  // Update password (requires current password for reauthentication)
+  Future<void> updatePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw Exception('No user logged in');
+      if (user.email == null) throw Exception('No email on account');
+
+      final credential = firebase_auth.EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+      await user.reauthenticateWithCredential(credential);
+      await user.updatePassword(newPassword);
+    } catch (e) {
+      final msg = e.toString();
+      if (msg.contains('wrong-password') || msg.contains('invalid-credential')) {
+        throw Exception('Current password is incorrect');
+      }
+      throw Exception('Failed to update password: $e');
+    }
+  }
+
   // Set premium status on user preferences
   Future<void> setPremiumStatus({
     required String userId,

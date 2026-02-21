@@ -15,7 +15,7 @@ import 'core/services/network_service.dart';
 import 'core/services/subscription_service.dart';
 import 'features/subscription/subscription_bloc.dart';
 import 'features/auth/auth_bloc.dart';
-import 'features/auth/screens/login_screen.dart';
+import 'features/auth/screens/welcome_screen.dart';
 import 'features/budget/budget_bloc.dart';
 import 'features/transaction/transaction_bloc.dart';
 import 'features/analytics/analytics_bloc.dart';
@@ -243,12 +243,12 @@ class _AppViewState extends State<AppView> {
                 if (state is AuthAuthenticated) {
                   return const MainScreen();
                 }
-                
+
                 if (state is AuthLoading || state is AuthInitial) {
-                  return const LoginScreen();
+                  return const WelcomeScreen();
                 }
 
-                return const LoginScreen();
+                return const WelcomeScreen();
               },
             ),
           );

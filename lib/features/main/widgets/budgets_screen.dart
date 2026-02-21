@@ -43,12 +43,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         backgroundColor: colorScheme.background,
         foregroundColor: colorScheme.onBackground,
         iconTheme: IconThemeData(color: colorScheme.onBackground),
-        titleTextStyle: TextStyle(
-          color: colorScheme.onBackground,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
+        titleTextStyle: theme.textTheme.displaySmall?.copyWith(
+          fontSize: 24,
+          letterSpacing: -1,
         ),
         elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           IconButton(
             icon: Icon(Icons.add_rounded, color: colorScheme.onBackground),
@@ -202,7 +202,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           );
         }
         final budget = budgets[index - 2];
-        return _buildBudgetCard(budget);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildBudgetCard(budget),
+        );
       },
     );
   }

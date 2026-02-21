@@ -114,8 +114,8 @@ class _MainScreenState extends State<MainScreen> {
                       elevation: 0,
                       items: const [
                         BottomNavigationBarItem(
-                          icon: Icon(Icons.dashboard_rounded),
-                          activeIcon: Icon(Icons.dashboard_rounded, size: 24),
+                          icon: Icon(Icons.home_rounded),
+                          activeIcon: Icon(Icons.home_rounded, size: 24),
                           label: 'Home',
                         ),
                         BottomNavigationBarItem(
@@ -134,8 +134,8 @@ class _MainScreenState extends State<MainScreen> {
                           label: 'Insights',
                         ),
                         BottomNavigationBarItem(
-                          icon: Icon(Icons.person_outline_rounded),
-                          activeIcon: Icon(Icons.person_outline_rounded, size: 24),
+                          icon: Icon(Icons.person_rounded),
+                          activeIcon: Icon(Icons.person_rounded, size: 24),
                           label: 'Profile',
                         ),
                       ],

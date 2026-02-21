@@ -35,19 +35,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
         title: const Text('Notifications'),
         centerTitle: false,
-        backgroundColor: Theme.of(context).colorScheme.background,
-        foregroundColor: Theme.of(context).colorScheme.onBackground,
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onBackground),
-        titleTextStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onBackground,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
+        backgroundColor: colorScheme.background,
+        foregroundColor: colorScheme.onBackground,
+        iconTheme: IconThemeData(color: colorScheme.onBackground),
+        titleTextStyle: theme.textTheme.displaySmall?.copyWith(
+          fontSize: 24,
+          letterSpacing: -1,
         ),
+        elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           BlocBuilder<NotificationsBloc, NotificationsState>(
             builder: (context, state) {

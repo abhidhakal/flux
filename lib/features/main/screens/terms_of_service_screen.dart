@@ -16,10 +16,10 @@ class TermsOfServiceScreen extends StatelessWidget {
         backgroundColor: colorScheme.background,
         foregroundColor: colorScheme.onBackground,
         elevation: 0,
-        titleTextStyle: TextStyle(
-          color: colorScheme.onBackground,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
+        scrolledUnderElevation: 0,
+        titleTextStyle: theme.textTheme.displaySmall?.copyWith(
+          fontSize: 24,
+          letterSpacing: -1,
         ),
         iconTheme: IconThemeData(color: colorScheme.onBackground),
       ),

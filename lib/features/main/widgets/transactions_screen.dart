@@ -123,11 +123,12 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         backgroundColor: colorScheme.background,
         foregroundColor: colorScheme.onBackground,
         iconTheme: IconThemeData(color: colorScheme.onBackground),
-        titleTextStyle: TextStyle(
-          color: colorScheme.onBackground,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
+        titleTextStyle: theme.textTheme.displaySmall?.copyWith(
+          fontSize: 24,
+          letterSpacing: -1,
         ),
+        elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           AnimatedIconButton(
             icon: Icon(Icons.add_rounded, color: colorScheme.onBackground),

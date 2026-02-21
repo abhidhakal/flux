@@ -117,7 +117,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     
     return Scaffold(
       backgroundColor: colorScheme.background,
@@ -126,6 +127,11 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         backgroundColor: colorScheme.background,
         foregroundColor: colorScheme.onBackground,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        titleTextStyle: theme.textTheme.displaySmall?.copyWith(
+          fontSize: 24,
+          letterSpacing: -1,
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

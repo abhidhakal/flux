@@ -22,7 +22,6 @@ import '../../transaction/screens/add_transaction_screen.dart';
 import '../../income/income_bloc.dart';
 import '../../../core/models/income_model.dart';
 import '../../subscription/subscription_bloc.dart';
-import '../../subscription/presentation/pages/paywall_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -233,11 +232,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           _buildBalanceCard(transactionState.transactions, incomeList, isPremium),
                           const SizedBox(height: 24),
                           _buildQuickActions(),
-                          if (!isPremium) ...[
-                             const SizedBox(height: 24),
-                             _buildPremiumBanner(),
-                          ],
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 32),
                           _buildAIInsights(isPremium),
                           const SizedBox(height: 24),
                           _buildRecentTransactions(transactionState.transactions),
@@ -245,6 +240,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           _buildFinancialTips(), // Extra content
                           const SizedBox(height: 24),
                           const AppBannerAd(), // Ad-supported monetization
+                          const SizedBox(height: 24),
                         ],
                       ),
                     );
@@ -442,73 +438,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildPremiumBanner() {
-    return InkWell(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => const PaywallScreen()),
-        );
-      },
-      borderRadius: BorderRadius.circular(24),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF6366F1).withOpacity(0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(Icons.star_rounded, color: Colors.white, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Upgrade to Premium',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Unlock AI insights & unlimited budgets',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildAIInsights(bool isPremium) {
     if (!isPremium) {
       return Stack(
@@ -609,6 +538,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
      return Opacity(
        opacity: 0.5,
        child: Column(
+         mainAxisSize: MainAxisSize.min,
          crossAxisAlignment: CrossAxisAlignment.start,
          children: [
            Row(
@@ -651,6 +581,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (transactions.isEmpty) return const SizedBox.shrink();
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(

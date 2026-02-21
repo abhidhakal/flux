@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/constants/app_theme.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import '../../../core/services/currency_service.dart';
@@ -16,10 +17,6 @@ import '../../transaction/transaction_bloc.dart';
 import '../screens/about_us_screen.dart';
 import '../screens/privacy_policy_screen.dart';
 import '../screens/terms_of_service_screen.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-import '../../subscription/subscription_bloc.dart';
-import '../../subscription/presentation/pages/paywall_screen.dart';
 import '../../../core/services/widget_service.dart';
 import '../../income/income_bloc.dart';
 import '../../theme/theme_bloc.dart';
@@ -198,27 +195,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                   },
                 ),
               const SizedBox(height: 24),
-              _buildSectionHeader('Subscription', colorScheme),
-              BlocBuilder<SubscriptionBloc, SubscriptionState>(
-                builder: (context, state) {
-                  final isPremium = state is SubscriptionPremium;
-                  return _buildSettingsGroup([
-                    _SettingsItem(
-                      icon: isPremium ? Icons.stars_rounded : Icons.star_outline_rounded,
-                      title: isPremium ? 'Manage Subscription' : 'Upgrade to Premium',
-                      subtitle: isPremium ? 'Active Plan' : 'Unlock all features',
-                      onTap: () {
-                        if (isPremium) {
-                          _manageSubscription();
-                        } else {
-                          _navigateToPaywall();
-                        }
-                      },
-                    ),
-                  ], colorScheme);
-                },
-              ),
-              const SizedBox(height: 24),
               _buildSectionHeader('Data & Privacy', colorScheme),
               _buildSettingsGroup([
                 _SettingsItem(
@@ -385,50 +361,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               color: colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 16),
-          // Premium Badge
-          BlocBuilder<SubscriptionBloc, SubscriptionState>(
-            builder: (context, state) {
-              final isPremium = state is SubscriptionPremium;
-              return GestureDetector(
-                onTap: isPremium ? null : () => _navigateToPaywall(),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isPremium
-                        ? colorScheme.primary.withOpacity(0.1)
-                        : colorScheme.surfaceVariant.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(100),
-                    border: Border.all(
-                      color: isPremium
-                          ? colorScheme.primary // Solid primary
-                          : colorScheme.outline, // Solid outline
-                      width: 1.5, // Thicker border
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isPremium ? Icons.verified_rounded : Icons.star_outline_rounded,
-                        size: 14,
-                        color: isPremium ? colorScheme.primary : colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        isPremium ? 'Premium Member' : 'Get Premium',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: isPremium ? colorScheme.primary : colorScheme.onSurfaceVariant,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+
         ],
       ),
     );
@@ -758,86 +691,417 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _showEditProfileDialog(User user) {
-    final nameController = TextEditingController(text: user.displayName ?? '');
     final authService = AuthService();
-    final formKey = GlobalKey<FormState>();
-    bool isLoading = false;
+    final isEmailUser = authService.isEmailPasswordUser;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
-    showDialog(
+    final nameController = TextEditingController(text: user.displayName ?? '');
+    final emailController = TextEditingController();
+    final currentPwController = TextEditingController();
+    final newPwController = TextEditingController();
+    final confirmPwController = TextEditingController();
+
+    final nameKey = GlobalKey<FormFieldState>();
+    final emailKey = GlobalKey<FormFieldState>();
+    final pwKey = GlobalKey<FormState>();
+
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: false,
-      builder: (context) {
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetCtx) {
+        bool savingName = false;
+        bool savingEmail = false;
+        bool savingPw = false;
+        bool showCurrentPw = false;
+        bool showNewPw = false;
+        bool showConfirmPw = false;
+
         return StatefulBuilder(
-          builder: (context, setState) => AlertDialog(
-            title: const Text('Edit Profile'),
-            content: Form(
-              key: formKey,
-              child: TextFormField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  border: OutlineInputBorder(),
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 ),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Enter a name' : null,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Handle
+                      Center(
+                        child: Container(
+                          width: 40, height: 4,
+                          decoration: BoxDecoration(
+                            color: cs.onSurfaceVariant.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text('Edit Profile', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 32),
+
+                      // ── Display Name ────────────────────────────
+                      Text('Display Name', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              key: nameKey,
+                              controller: nameController,
+                              textCapitalization: TextCapitalization.words,
+                              decoration: _inputDeco(cs, hint: 'Your name'),
+                              validator: (v) => v == null || v.trim().isEmpty ? 'Enter a name' : null,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          _saveButton(
+                            loading: savingName,
+                            onTap: () async {
+                              if (nameKey.currentState?.validate() != true) return;
+                              setState(() => savingName = true);
+                              try {
+                                await authService.updateProfile(
+                                  userId: user.id,
+                                  displayName: nameController.text.trim(),
+                                );
+                                if (mounted) {
+                                  this.context.read<AuthBloc>().add(AuthCheckRequested());
+                                  Navigator.pop(sheetCtx);
+                                  AppSnackbar.showSuccess(this.context, message: 'Name updated');
+                                }
+                              } catch (e) {
+                                setState(() => savingName = false);
+                                if (mounted) AppSnackbar.showError(this.context, message: 'Failed to update name');
+                              }
+                            },
+                            cs: cs,
+                          ),
+                        ],
+                      ),
+
+                      if (isEmailUser) ...[
+                        const SizedBox(height: 28),
+                        Divider(color: cs.outline.withOpacity(0.15)),
+                        const SizedBox(height: 20),
+
+                        // ── Email ──────────────────────────────────
+                        Text('Change Email', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 4),
+                        Text(
+                          'A verification link will be sent to the new address.',
+                          style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                key: emailKey,
+                                controller: emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                decoration: _inputDeco(cs, hint: 'New email address'),
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) return 'Enter an email';
+                                  if (!v.contains('@')) return 'Enter a valid email';
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            _saveButton(
+                              loading: savingEmail,
+                              onTap: () async {
+                                if (emailKey.currentState?.validate() != true) return;
+                                setState(() => savingEmail = true);
+                                try {
+                                  await authService.updateEmail(
+                                    userId: user.id,
+                                    newEmail: emailController.text.trim(),
+                                  );
+                                  if (mounted) {
+                                    Navigator.pop(sheetCtx);
+                                    AppSnackbar.showSuccess(this.context, message: 'Verification email sent — check your inbox');
+                                  }
+                                } catch (e) {
+                                  setState(() => savingEmail = false);
+                                  if (mounted) AppSnackbar.showError(this.context, message: 'Failed to change email');
+                                }
+                              },
+                              cs: cs,
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 28),
+                        Divider(color: cs.outline.withOpacity(0.15)),
+                        const SizedBox(height: 20),
+
+                        // ── Password ───────────────────────────────
+                        Text('Change Password', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: savingPw
+                                ? null
+                                : () async {
+                                    setState(() => savingPw = true);
+                                    try {
+                                      await authService.resetPassword(user.email);
+                                      if (mounted) {
+                                        Navigator.pop(sheetCtx);
+                                        AppSnackbar.showSuccess(this.context, message: 'Password reset link sent to ${user.email}');
+                                      }
+                                    } catch (e) {
+                                      setState(() => savingPw = false);
+                                      if (mounted) AppSnackbar.showError(this.context, message: 'Failed to send reset email');
+                                    }
+                                  },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primary,
+                              side: BorderSide(color: AppColors.primary.withOpacity(0.5)),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            icon: savingPw
+                                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                                : const Icon(Icons.mail_outline_rounded, size: 18),
+                            label: const Text('Send password reset email', style: TextStyle(fontWeight: FontWeight.w600)),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(child: Divider(color: cs.outline.withOpacity(0.2))),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              child: Text('or change manually', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                            ),
+                            Expanded(child: Divider(color: cs.outline.withOpacity(0.2))),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Form(
+                          key: pwKey,
+                          child: Column(
+                            children: [
+                              TextFormField(
+                                controller: currentPwController,
+                                obscureText: !showCurrentPw,
+                                decoration: _inputDeco(cs, hint: 'Current password', suffix: _eyeToggle(showCurrentPw, cs, () => setState(() => showCurrentPw = !showCurrentPw))),
+                                validator: (v) => v == null || v.isEmpty ? 'Enter current password' : null,
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: newPwController,
+                                obscureText: !showNewPw,
+                                decoration: _inputDeco(cs, hint: 'New password', suffix: _eyeToggle(showNewPw, cs, () => setState(() => showNewPw = !showNewPw))),
+                                validator: (v) {
+                                  if (v == null || v.isEmpty) return 'Enter new password';
+                                  if (v.length < 6) return 'At least 6 characters';
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: confirmPwController,
+                                obscureText: !showConfirmPw,
+                                decoration: _inputDeco(cs, hint: 'Confirm new password', suffix: _eyeToggle(showConfirmPw, cs, () => setState(() => showConfirmPw = !showConfirmPw))),
+                                validator: (v) => v != newPwController.text ? 'Passwords do not match' : null,
+                              ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                child: FilledButton(
+                                  onPressed: savingPw
+                                      ? null
+                                      : () async {
+                                          if (!pwKey.currentState!.validate()) return;
+                                          setState(() => savingPw = true);
+                                          try {
+                                            await authService.updatePassword(
+                                              currentPassword: currentPwController.text,
+                                              newPassword: newPwController.text,
+                                            );
+                                            if (mounted) {
+                                              Navigator.pop(sheetCtx);
+                                              AppSnackbar.showSuccess(this.context, message: 'Password updated');
+                                            }
+                                          } catch (e) {
+                                            setState(() => savingPw = false);
+                                            if (mounted) {
+                                              final msg = e.toString().replaceAll('Exception: ', '');
+                                              AppSnackbar.showError(this.context, message: msg);
+                                            }
+                                          }
+                                        },
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  ),
+                                  child: savingPw
+                                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                      : const Text('Update Password', style: TextStyle(fontWeight: FontWeight.w600)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: isLoading ? null : () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: isLoading
-                    ? null
-                    : () async {
-                        if (!formKey.currentState!.validate()) return;
-                        setState(() => isLoading = true);
-                        try {
-                          await authService.updateProfile(
-                            userId: user.id,
-                            displayName: nameController.text.trim(),
-                          );
-                          if (mounted) {
-                            this.context.read<AuthBloc>().add(AuthCheckRequested());
-                            Navigator.pop(context);
-                            AppSnackbar.showSuccess(this.context, message: 'Profile updated!');
-                          }
-                        } catch (e) {
-                          setState(() => isLoading = false);
-                          if (mounted) {
-                            AppSnackbar.showError(context, message: '$e');
-                          }
-                        }
-                      },
-                child: isLoading
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Save'),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
 
+  InputDecoration _inputDeco(ColorScheme cs, {required String hint, Widget? suffix}) {
+    return InputDecoration(
+      hintText: hint,
+      suffixIcon: suffix,
+      filled: true,
+      fillColor: cs.surfaceVariant.withOpacity(0.35),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: cs.outline.withOpacity(0.15))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
+      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: cs.error)),
+      focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: cs.error, width: 1.5)),
+    );
+  }
+
+  Widget _saveButton({required bool loading, required VoidCallback onTap, required ColorScheme cs}) {
+    return SizedBox(
+      height: 50,
+      child: FilledButton(
+        onPressed: loading ? null : onTap,
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        child: loading
+            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            : const Text('Save', style: TextStyle(fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+
+  Widget _eyeToggle(bool visible, ColorScheme cs, VoidCallback onTap) {
+    return IconButton(
+      icon: Icon(visible ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 20, color: cs.onSurfaceVariant),
+      onPressed: onTap,
+    );
+  }
+
   void _showSignOutDialog() {
     final authBloc = context.read<AuthBloc>();
-    showDialog(
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    showModalBottomSheet(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              authBloc.add(SignOutRequested());
-            },
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
-            child: const Text('Sign Out'),
-          ),
-        ],
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (dialogContext) => Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: EdgeInsets.fromLTRB(
+            24, 12, 24, 40 + MediaQuery.of(context).viewInsets.bottom),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: cs.onSurfaceVariant.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 28),
+            // Icon
+            Container(
+              width: 68,
+              height: 68,
+              decoration: BoxDecoration(
+                color: cs.error.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: Icon(Icons.logout_rounded, color: cs.error, size: 32),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Sign Out',
+              style: theme.textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "You'll be returned to the welcome screen.\nYour data will remain safe.",
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: cs.onSurfaceVariant,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                      side: BorderSide(color: cs.outline.withOpacity(0.4)),
+                    ),
+                    child: Text('Cancel',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: cs.onSurface)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                      authBloc.add(SignOutRequested());
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: cs.error,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text('Sign Out',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -903,32 +1167,16 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  Future<void> _manageSubscription() async {
-    // Open system subscription settings
-    final Uri url = Uri.parse(Platform.isIOS
-        ? 'https://apps.apple.com/account/subscriptions'
-        : 'https://play.google.com/store/account/subscriptions');
-    
-    if (!await launchUrl(url)) {
-      if (mounted) {
-        AppSnackbar.showError(context, message: 'Could not open subscription settings');
-      }
-    }
-  }
-
   void _handleExportData() {
-    final subscriptionState = context.read<SubscriptionBloc>().state;
-    if (subscriptionState is SubscriptionPremium) {
-      _showExportFormatDialog();
-    } else {
-      _navigateToPaywall();
-    }
+    _showExportFormatDialog();
   }
 
   void _showExportFormatDialog() {
     final colorScheme = Theme.of(context).colorScheme;
-    int selectedDays = 30; // Default: Last 30 days
-    Budget? selectedBudget; // Default: All Budgets
+    // filterMode: 'time' or 'budget'
+    String filterMode = 'time';
+    int selectedDays = 30; // Used only in 'time' mode
+    Budget? selectedBudget; // Used only in 'budget' mode
     String selectedFormat = 'pdf'; // Default: PDF
 
     showModalBottomSheet(
@@ -970,10 +1218,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                 ),
                 const SizedBox(height: 24),
-                
-                // 1. Time Range Selector
+
+                // 1. Filter Mode Toggle
                 Text(
-                  'Time Range',
+                  'Filter By',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -981,40 +1229,159 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                 ),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceVariant.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<int>(
-                      value: selectedDays,
-                      isExpanded: true,
-                      icon: Icon(Icons.keyboard_arrow_down_rounded, color: colorScheme.onSurface),
-                      dropdownColor: colorScheme.surface,
-                      items: [
-                        const DropdownMenuItem(value: 7, child: Text('Last 7 days')),
-                        const DropdownMenuItem(value: 30, child: Text('Last 30 days')),
-                        const DropdownMenuItem(value: 90, child: Text('Last 3 months')),
-                        const DropdownMenuItem(value: 365, child: Text('Last 1 year')),
-                        const DropdownMenuItem(value: -1, child: Text('All time')),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setModalState(() => selectedDays = value);
-                        }
-                      },
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setModalState(() {
+                          filterMode = 'time';
+                          selectedBudget = null;
+                        }),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: filterMode == 'time'
+                                ? colorScheme.primary.withOpacity(0.1)
+                                : colorScheme.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: filterMode == 'time'
+                                  ? colorScheme.primary
+                                  : colorScheme.outline.withOpacity(0.3),
+                              width: filterMode == 'time' ? 2 : 1,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.calendar_month_rounded,
+                                color: filterMode == 'time'
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurfaceVariant,
+                                size: 20,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Time Range',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: filterMode == 'time'
+                                      ? colorScheme.primary
+                                      : colorScheme.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: budgets.isEmpty
+                            ? null
+                            : () => setModalState(() {
+                                  filterMode = 'budget';
+                                  selectedDays = 30;
+                                }),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: budgets.isEmpty
+                                ? colorScheme.surfaceVariant.withOpacity(0.2)
+                                : filterMode == 'budget'
+                                    ? colorScheme.primary.withOpacity(0.1)
+                                    : colorScheme.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: budgets.isEmpty
+                                  ? colorScheme.outline.withOpacity(0.1)
+                                  : filterMode == 'budget'
+                                      ? colorScheme.primary
+                                      : colorScheme.outline.withOpacity(0.3),
+                              width: filterMode == 'budget' ? 2 : 1,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.account_balance_wallet_rounded,
+                                color: budgets.isEmpty
+                                    ? colorScheme.onSurface.withOpacity(0.3)
+                                    : filterMode == 'budget'
+                                        ? colorScheme.primary
+                                        : colorScheme.onSurfaceVariant,
+                                size: 20,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                budgets.isEmpty ? 'Budget (none)' : 'Budget',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: budgets.isEmpty
+                                      ? colorScheme.onSurface.withOpacity(0.3)
+                                      : filterMode == 'budget'
+                                          ? colorScheme.primary
+                                          : colorScheme.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // 2a. Time Range Selector (shown only in 'time' mode)
+                if (filterMode == 'time') ...[  
+                  Text(
+                    'Time Range',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                
-                // 2. Budget Filter (Optional)
-                if (budgets.isNotEmpty) ...[
-                   Text(
-                    'Filter by Budget (Optional)',
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceVariant.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: selectedDays,
+                        isExpanded: true,
+                        icon: Icon(Icons.keyboard_arrow_down_rounded, color: colorScheme.onSurface),
+                        dropdownColor: colorScheme.surface,
+                        items: const [
+                          DropdownMenuItem(value: 7, child: Text('Last 7 days')),
+                          DropdownMenuItem(value: 30, child: Text('Last 30 days')),
+                          DropdownMenuItem(value: 90, child: Text('Last 3 months')),
+                          DropdownMenuItem(value: 365, child: Text('Last 1 year')),
+                          DropdownMenuItem(value: -1, child: Text('All time')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) setModalState(() => selectedDays = value);
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // 2b. Budget Selector (shown only in 'budget' mode)
+                if (filterMode == 'budget' && budgets.isNotEmpty) ...[  
+                  Text(
+                    'Select Budget',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -1035,20 +1402,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                         isExpanded: true,
                         icon: Icon(Icons.keyboard_arrow_down_rounded, color: colorScheme.onSurface),
                         dropdownColor: colorScheme.surface,
-                        hint: const Text('All Budgets'),
-                        items: [
-                          DropdownMenuItem<Budget?>(
-                            value: null,
-                            child: const Text('All Budgets'),
-                          ),
-                          ...budgets.map((b) => DropdownMenuItem(
-                            value: b,
-                            child: Text(b.name),
-                          )),
-                        ],
-                        onChanged: (value) {
-                          setModalState(() => selectedBudget = value);
-                        },
+                        hint: const Text('Choose a budget'),
+                        items: budgets
+                            .map((b) => DropdownMenuItem(
+                                  value: b,
+                                  child: Text(b.name),
+                                ))
+                            .toList(),
+                        onChanged: (value) => setModalState(() => selectedBudget = value),
                       ),
                     ),
                   ),
@@ -1097,9 +1458,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                     onPressed: () {
                       Navigator.pop(dialogContext);
                       _performExport(
-                        format: selectedFormat, 
-                        days: selectedDays, 
-                        budget: selectedBudget,
+                        format: selectedFormat,
+                        // In budget mode pass days=-1 so no date cutoff is applied
+                        days: filterMode == 'budget' ? -1 : selectedDays,
+                        budget: filterMode == 'budget' ? selectedBudget : null,
                       );
                     },
                     style: ElevatedButton.styleFrom(
@@ -1171,63 +1533,48 @@ class _ProfileScreenState extends State<ProfileScreen>
     try {
       final exportService = DataExportService();
       
-      // Calculate the cutoff date
-      final DateTime? cutoffDate = days > 0 
-          ? DateTime.now().subtract(Duration(days: days))
-          : null;
-      
-      // Get transactions and filter
+      // Get transactions
       final transactionState = context.read<TransactionBloc>().state;
-      var transactions = transactionState is TransactionLoaded 
-          ? transactionState.transactions 
-          : <dynamic>[];
-      
-      // Cast to Transaction List for stronger typing
-      List<Transaction> filteredTransactions = transactions.cast<Transaction>();
+      List<Transaction> filteredTransactions = (transactionState is TransactionLoaded
+          ? transactionState.transactions
+          : <Transaction>[]).cast<Transaction>();
+
+      // Get incomes
+      final incomeState = context.read<IncomeBloc>().state;
+      List<Income> filteredIncomes = (incomeState is IncomeLoaded
+          ? incomeState.incomes
+          : <Income>[]).cast<Income>();
 
       print('DEBUG: Total transactions: ${filteredTransactions.length}');
 
-      // Filter by Date
-      if (cutoffDate != null) {
-        filteredTransactions = filteredTransactions.where((t) => t.date.isAfter(cutoffDate)).toList();
-        print('DEBUG: After date filter: ${filteredTransactions.length}');
-      }
-
-      // Filter by Budget (Category)
       if (budget != null) {
-        final category = budget.category;
+        // BUDGET MODE: export all transactions for the chosen budget, ignore date range
         final budgetId = budget.id;
-        print('DEBUG: Filtering by Budget Category: "$category" (ID: $budgetId)');
-        
-        filteredTransactions = filteredTransactions.where((t) {
-            final match = t.category == category || t.budgetId == budgetId;
-            if (!match && filteredTransactions.length < 10) {
-               print('DEBUG: No match for t.category="${t.category}", t.budgetId="${t.budgetId}"');
-            }
-            return match;
-        }).toList();
-        print('DEBUG: After budget filter: ${filteredTransactions.length}');
-      }
-      
-      // Get income and filter
-      final incomeState = context.read<IncomeBloc>().state;
-      var incomes = incomeState is IncomeLoaded 
-          ? incomeState.incomes 
-          : <dynamic>[];
-      
-      // Cast to Income List
-      List<Income> filteredIncomes = incomes.cast<Income>();
+        print('DEBUG: Budget mode — filtering by budget "${budget.name}" (id: $budgetId)');
 
-      // Filter by Date
-      if (cutoffDate != null) {
-        filteredIncomes = filteredIncomes.where((i) => i.date.isAfter(cutoffDate)).toList();
-      }
+        filteredTransactions = filteredTransactions
+            .where((t) => t.budgetId == budgetId)
+            .toList();
+        filteredIncomes = filteredIncomes
+            .where((i) => i.budgetId == budgetId)
+            .toList();
 
-      // Filter by Budget (Linked Incomes)
-      if (budget != null) {
-        final budgetId = budget.id;
-        // Only include incomes EXPLICITLY linked to this budget
-        filteredIncomes = filteredIncomes.where((i) => i.budgetId == budgetId).toList();
+        print('DEBUG: After budget filter — transactions: ${filteredTransactions.length}, incomes: ${filteredIncomes.length}');
+      } else {
+        // TIME MODE: export transactions within the selected time range, no budget filter
+        final DateTime? cutoffDate =
+            days > 0 ? DateTime.now().subtract(Duration(days: days)) : null;
+
+        if (cutoffDate != null) {
+          print('DEBUG: Time mode — filtering since ${cutoffDate.toIso8601String()}');
+          filteredTransactions =
+              filteredTransactions.where((t) => t.date.isAfter(cutoffDate)).toList();
+          filteredIncomes =
+              filteredIncomes.where((i) => i.date.isAfter(cutoffDate)).toList();
+          print('DEBUG: After date filter — transactions: ${filteredTransactions.length}, incomes: ${filteredIncomes.length}');
+        } else {
+          print('DEBUG: Time mode — All time, no date filter applied');
+        }
       }
 
       // Get user name for PDF
@@ -1399,10 +1746,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
       ),
     );
-  }
-
-  void _navigateToPaywall() {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => const PaywallScreen()));
   }
 
   void _navigateToAboutUs() {
