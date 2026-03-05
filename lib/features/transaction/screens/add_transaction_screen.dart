@@ -56,7 +56,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+    final isDark = theme.brightness == Brightness.dark;
+    final saveIconColor = isDark ? Colors.white : colorScheme.onBackground;
+
     return Scaffold(
       backgroundColor: colorScheme.background,
       appBar: AppBar(
@@ -65,16 +67,28 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         backgroundColor: colorScheme.background,
         foregroundColor: colorScheme.onBackground,
         iconTheme: IconThemeData(color: colorScheme.onBackground),
-        titleTextStyle: TextStyle(
+        titleTextStyle: theme.textTheme.titleLarge?.copyWith(
           color: colorScheme.onBackground,
-          fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
         elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
-          IconButton(
-            icon: Icon(Icons.save_rounded, color: colorScheme.primary),
+          TextButton(
             onPressed: _isLoading ? null : _handleSave,
+            child: _isLoading
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: saveIconColor),
+                  )
+                : Text(
+                    'Save',
+                    style: TextStyle(
+                      color: saveIconColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -140,25 +154,38 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  _buildSectionTitle('Transaction Type'),
+                  const SizedBox(height: 8),
                   _buildTransactionTypeSelector(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
+                  _buildSectionTitle('Title'),
+                  const SizedBox(height: 8),
                   _buildTitleField(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
+                  _buildSectionTitle('Description'),
+                  const SizedBox(height: 8),
                   _buildDescriptionField(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
+                  _buildSectionTitle('Amount'),
+                  const SizedBox(height: 8),
                   _buildAmountField(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
+                  _buildSectionTitle('Category'),
+                  const SizedBox(height: 8),
                   _buildCategorySelector(),
-                  const SizedBox(height: 16),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
+                  _buildSectionTitle('Budget'),
+                  const SizedBox(height: 8),
                   _buildBudgetSelector(),
-                  const SizedBox(height: 16),
                   if (_selectedType == TransactionType.expense) ...[
+                    const SizedBox(height: 20),
                     _buildEssentialToggle(),
-                    const SizedBox(height: 16),
                   ],
+                  const SizedBox(height: 20),
+                  _buildSectionTitle('Date'),
+                  const SizedBox(height: 8),
                   _buildDateSelector(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                   _buildSaveButton(),
                 ],
               ),
@@ -171,47 +198,26 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   Widget _buildTransactionTypeSelector() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Transaction Type',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onBackground,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildTypeButton(
-                    TransactionType.expense,
-                    'Expense',
-                    Icons.remove_circle_outline,
-                    AppColors.error,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildTypeButton(
-                    TransactionType.income,
-                    'Income',
-                    Icons.add_circle_outline,
-                    AppColors.success,
-                  ),
-                ),
-              ],
-            ),
-          ],
+    return Row(
+      children: [
+        Expanded(
+          child: _buildTypeButton(
+            TransactionType.expense,
+            'Expense',
+            Icons.remove_circle_outline,
+            AppColors.error,
+          ),
         ),
-      ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildTypeButton(
+            TransactionType.income,
+            'Income',
+            Icons.add_circle_outline,
+            AppColors.success,
+          ),
+        ),
+      ],
     );
   }
 
@@ -269,12 +275,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     return TextFormField(
       controller: _titleController,
       decoration: InputDecoration(
-        labelText: 'Title',
         hintText: 'Enter transaction title',
         prefixIcon: const Icon(Icons.title_rounded),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -289,12 +292,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     return TextFormField(
       controller: _descriptionController,
       decoration: InputDecoration(
-        labelText: 'Description',
-        hintText: 'Enter transaction description (optional)',
+        hintText: 'Enter description (optional)',
         prefixIcon: const Icon(Icons.description_rounded),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       ),
       maxLines: 2,
     );
@@ -305,12 +305,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       controller: _amountController,
       keyboardType: TextInputType.number,
       decoration: InputDecoration(
-        labelText: 'Amount',
         hintText: 'Enter amount',
-        prefixText: CurrencyService().symbol + ' ',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        prefixIcon: const Icon(Icons.attach_money_rounded),
+        prefixText: '${CurrencyService().symbol} ',
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -330,116 +328,74 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         ? AppCategories.incomeCategories
         : AppCategories.expenseCategories;
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Category',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onBackground,
+    return DropdownButtonFormField<String>(
+      value: _selectedCategory,
+      decoration: InputDecoration(
+        prefixIcon: const Icon(Icons.category_rounded),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      items: categories.map((category) {
+        return DropdownMenuItem(
+          value: category,
+          child: Row(
+            children: [
+              Icon(
+                Icons.circle,
+                size: 10,
+                color: Color(AppCategories.getColor(category)),
               ),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-          value: _selectedCategory,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+              const SizedBox(width: 8),
+              Text(
+                category,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              items: categories.map((category) {
-                return DropdownMenuItem(
-                  value: category,
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.category_rounded,
-                        color: Color(AppCategories.getColor(category)),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        category,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedCategory = value!;
-                });
-              },
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      }).toList(),
+      onChanged: (value) {
+        setState(() {
+          _selectedCategory = value!;
+        });
+      },
     );
   }
 
   Widget _buildDateSelector() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
+    return InkWell(
+      onTap: () async {
+        final date = await showDatePicker(
+          context: context,
+          initialDate: _selectedDate,
+          firstDate: DateTime(2020),
+          lastDate: DateTime.now().add(const Duration(days: 1)),
+        );
+        if (date != null) {
+          setState(() {
+            _selectedDate = date;
+          });
+        }
+      },
+      child: Container(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        decoration: BoxDecoration(
+          border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
           children: [
+            Icon(
+              Icons.calendar_today_rounded,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
             Text(
-              'Date',
+              '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
               style: TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
                 color: Theme.of(context).colorScheme.onBackground,
-              ),
-            ),
-            const SizedBox(height: 12),
-            InkWell(
-              onTap: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: _selectedDate,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now().add(const Duration(days: 1)),
-                );
-                if (date != null) {
-                  setState(() {
-                    _selectedDate = date;
-                  });
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today_rounded,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Theme.of(context).colorScheme.onBackground,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ],
@@ -453,218 +409,210 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     return ElevatedButton(
       onPressed: _isLoading ? null : _handleSave,
       style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
         padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       child: _isLoading
           ? const SizedBox(
               height: 20,
               width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.textInverse),
-              ),
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
             )
           : const Text(
               'Save Transaction',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
             ),
     );
   }
 
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: Theme.of(context).colorScheme.onBackground,
+      ),
+    );
+  }
+
   Widget _buildBudgetSelector() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Budget',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onBackground,
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_availableBudgets.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.error.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
             ),
-            const SizedBox(height: 12),
-            if (_availableBudgets.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.warning, color: AppColors.error),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        'No budgets available. Create a budget first!',
-                        style: TextStyle(color: AppColors.error),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        // Navigate to budgets screen
-                      },
-                      child: Text(
-                        'Create Budget',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              DropdownButtonFormField<Budget?>(
-                value: _selectedBudget,
-                isExpanded: true,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+            child: Row(
+              children: [
+                const Icon(Icons.warning, color: AppColors.error),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'No budgets available. Create a budget first!',
+                    style: TextStyle(color: AppColors.error),
                   ),
-                  hintText: 'Select a budget (Optional)',
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  suffixIcon: _selectedBudget != null 
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, size: 18),
-                        onPressed: () => setState(() => _selectedBudget = null),
-                      )
-                    : null,
                 ),
-                items: [
-                  const DropdownMenuItem<Budget?>(
-                    value: null,
-                    child: Text('No Budget'),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: Text(
+                    'Create Budget',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
-                  ..._availableBudgets.map((budget) {
-                    return DropdownMenuItem<Budget?>(
-                      value: budget,
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 48),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              budget.name,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              'Total: ${CurrencyService().formatAmount(budget.amount)}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-                selectedItemBuilder: (BuildContext context) {
-                  return [
-                    const Text('No Budget'),
-                    ..._availableBudgets.map((budget) {
-                      return Text(
-                        budget.name,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      );
-                    }),
-                  ];
-                },
-                onChanged: (budget) {
-                  setState(() {
-                    _selectedBudget = budget;
-                  });
-                },
-                validator: (value) => null, // Optional
-              ),
-            if (_selectedBudget != null) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _selectedBudget!.isOverBudget ? Icons.warning : Icons.info_outline,
-                      color: _selectedBudget!.isOverBudget ? AppColors.error : AppColors.primary,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _selectedBudget!.isOverBudget
-                            ? 'Budget is over by ${CurrencyService().formatAmount(-_selectedBudget!.remaining)}'
-                            : 'Remaining: ${CurrencyService().formatAmount(_selectedBudget!.remaining)} of ${CurrencyService().formatAmount(_selectedBudget!.totalAvailable)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: _selectedBudget!.isOverBudget ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
+              ],
+            ),
+          )
+        else
+          DropdownButtonFormField<Budget?>(
+            value: _selectedBudget,
+            isExpanded: true,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              hintText: 'Select a budget (Optional)',
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              suffixIcon: _selectedBudget != null
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () => setState(() => _selectedBudget = null),
+                    )
+                  : null,
+            ),
+            items: [
+              const DropdownMenuItem<Budget?>(
+                value: null,
+                child: Text('No Budget'),
               ),
+              ..._availableBudgets.map((budget) {
+                return DropdownMenuItem<Budget?>(
+                  value: budget,
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 48),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          budget.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          'Total: ${CurrencyService().formatAmount(budget.amount)}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
             ],
-          ],
-              ),
+            selectedItemBuilder: (BuildContext context) {
+              return [
+                const Text('No Budget'),
+                ..._availableBudgets.map((budget) {
+                  return Text(
+                    budget.name,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  );
+                }),
+              ];
+            },
+            onChanged: (budget) {
+              setState(() {
+                _selectedBudget = budget;
+              });
+            },
+            validator: (value) => null,
+          ),
+        if (_selectedBudget != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: Row(
+              children: [
+                Icon(
+                  _selectedBudget!.isOverBudget ? Icons.warning : Icons.info_outline,
+                  color: _selectedBudget!.isOverBudget ? AppColors.error : AppColors.primary,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _selectedBudget!.isOverBudget
+                        ? 'Budget is over by ${CurrencyService().formatAmount(-_selectedBudget!.remaining)}'
+                        : 'Remaining: ${CurrencyService().formatAmount(_selectedBudget!.remaining)} of ${CurrencyService().formatAmount(_selectedBudget!.totalAvailable)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _selectedBudget!.isOverBudget
+                          ? Theme.of(context).colorScheme.error
+                          : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 
 
   Widget _buildEssentialToggle() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: SwitchListTile(
-        title: const Text(
+        title: Text(
           'Mark as Essential',
-          style: TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onBackground),
         ),
-        subtitle: const Text('Is this a "Need" (Housing, Bills) or a "Want"?'),
+        subtitle: Text(
+          'Is this a "Need" (Housing, Bills) or a "Want"?',
+          style: TextStyle(color: colorScheme.onBackground.withOpacity(0.6)),
+        ),
         value: _isEssential,
         activeColor: AppColors.primary,
-        onChanged: (value) {
-          setState(() {
-            _isEssential = value;
-          });
-        },
+        onChanged: (value) => setState(() => _isEssential = value),
         secondary: Icon(
           _isEssential ? Icons.fact_check_rounded : Icons.shopping_bag_outlined,
           color: _isEssential ? AppColors.success : AppColors.primary,

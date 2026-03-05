@@ -1,11 +1,11 @@
 package com.klivostudios.flux
 
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
-import android.net.Uri
 import android.widget.RemoteViews
-import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
 
 class BalanceWidgetProvider : HomeWidgetProvider() {
@@ -16,24 +16,51 @@ class BalanceWidgetProvider : HomeWidgetProvider() {
         widgetData: SharedPreferences
     ) {
         for (appWidgetId in appWidgetIds) {
-            val views = RemoteViews(context.packageName, R.layout.balance_widget).apply {
-                val balance = widgetData.getString("balance", "$0.00")
-                val income = widgetData.getString("income", "$0.00")
-                val expenses = widgetData.getString("expenses", "$0.00")
-                
-                setTextViewText(R.id.widget_balance, balance)
-                setTextViewText(R.id.widget_income, income)
-                setTextViewText(R.id.widget_expenses, expenses)
+            try {
+                val views = RemoteViews(context.packageName, R.layout.balance_widget)
 
-                // Create a PendingIntent to launch the app with a specific URI
-                val pendingIntent = HomeWidgetLaunchIntent.getActivity(
-                    context,
-                    MainActivity::class.java,
-                    Uri.parse("flux://add_transaction")
+                val balance = widgetData.getString("balance", "\$0.00") ?: "\$0.00"
+                val income = widgetData.getString("income", "\$0.00") ?: "\$0.00"
+                val expenses = widgetData.getString("expenses", "\$0.00") ?: "\$0.00"
+
+                views.setTextViewText(R.id.widget_balance, balance)
+                views.setTextViewText(R.id.widget_income, income)
+                views.setTextViewText(R.id.widget_expenses, expenses)
+
+                // Accessibility: describe the live amounts for TalkBack
+                views.setContentDescription(
+                    R.id.widget_balance,
+                    context.getString(R.string.widget_cd_balance, balance)
                 )
-                setOnClickPendingIntent(R.id.widget_button_add, pendingIntent)
+                views.setContentDescription(
+                    R.id.widget_income,
+                    context.getString(R.string.widget_cd_income, income)
+                )
+                views.setContentDescription(
+                    R.id.widget_expenses,
+                    context.getString(R.string.widget_cd_expenses, expenses)
+                )
+
+                // Tap launches the app normally
+                val launchIntent = context.packageManager
+                    .getLaunchIntentForPackage(context.packageName)
+                    ?.apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP }
+
+                if (launchIntent != null) {
+                    val pendingIntent = PendingIntent.getActivity(
+                        context,
+                        appWidgetId,
+                        launchIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+                }
+
+                appWidgetManager.updateAppWidget(appWidgetId, views)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            appWidgetManager.updateAppWidget(appWidgetId, views)
         }
     }
 }
+

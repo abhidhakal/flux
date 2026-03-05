@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class WidgetService {
-  // ignore: unused_field
-  static const String _androidWidgetName = 'BalanceWidgetProvider';
+  static const String _androidWidgetName = 'ActionWidgetProvider';
+  static const String _androidBalanceWidgetName = 'BalanceWidgetProvider';
 
   static Future<void> updateBalanceWidget({
     required double balance,
@@ -25,21 +25,16 @@ class WidgetService {
       await HomeWidget.saveWidgetData<String>('expenses', currencyService.formatAmount(expenses));
       await HomeWidget.saveWidgetData<int>('transactionCount', transactionCount);
       
-      // Update all 3 widgets
       await HomeWidget.updateWidget(
-        name: 'BalanceWidgetProvider',
-        androidName: 'BalanceWidgetProvider',
+        name: _androidBalanceWidgetName,
+        androidName: _androidBalanceWidgetName,
       );
       await HomeWidget.updateWidget(
-        name: 'SummaryWidgetProvider',
-        androidName: 'SummaryWidgetProvider',
+        name: _androidWidgetName,
+        androidName: _androidWidgetName,
       );
-      await HomeWidget.updateWidget(
-        name: 'ActionWidgetProvider',
-        androidName: 'ActionWidgetProvider',
-      );
-      
-      print('✅ All widgets updated: Balance: $balance, Transactions: $transactionCount');
+
+      print('✅ Widgets updated: balance=$balance');
     } catch (e) {
       print('❌ Error updating widget: $e');
     }

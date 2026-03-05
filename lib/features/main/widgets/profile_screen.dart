@@ -258,19 +258,12 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: theme.brightness == Brightness.dark 
-            ? colorScheme.surface 
-            : colorScheme.surface,
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            theme.brightness == Brightness.dark 
-                ? colorScheme.surface 
-                : Colors.white,
-            theme.brightness == Brightness.dark 
-                ? colorScheme.primary.withOpacity(0.1) 
-                : colorScheme.primaryContainer.withOpacity(0.3),
+            colorScheme.surface,
+            colorScheme.primary.withOpacity(0.1),
           ],
         ),
         borderRadius: BorderRadius.circular(24),
@@ -350,7 +343,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             user.displayName ?? 'User',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: colorScheme.onBackground,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),

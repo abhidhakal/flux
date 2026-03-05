@@ -461,11 +461,10 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   }
 
   Widget _buildStatCard(String label, double amount, IconData icon, Color color) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : Colors.white,
+        color: AppColors.darkSurface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: color.withOpacity(0.1),
@@ -495,17 +494,17 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
             label,
             style: TextStyle(
               fontSize: 13,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              color: Colors.white.withOpacity(0.6),
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             CurrencyService().formatAmount(amount).replaceAll('.00', ''),
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
+              color: Colors.white,
             ),
           ),
         ],

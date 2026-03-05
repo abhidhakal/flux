@@ -55,7 +55,7 @@ class AppSnackbar {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       content: Container(
         decoration: BoxDecoration(
-          color: cs.surface,
+          color: cs.inverseSurface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: cs.outline.withOpacity(0.12)),
           boxShadow: [
@@ -86,7 +86,7 @@ class AppSnackbar {
                           child: Text(
                             message,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: cs.onSurface,
+                              color: cs.onInverseSurface,
                               fontWeight: FontWeight.w500,
                               height: 1.4,
                             ),

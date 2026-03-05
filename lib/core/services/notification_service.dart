@@ -22,9 +22,6 @@ class NotificationService {
   // Get user notifications
   Future<List<Notification>> getUserNotifications(String userId) async {
     try {
-      // Ensure user document exists
-      await _ensureUserExists(userId);
-      
       final querySnapshot = await _firestore
           .collection('notifications')
           .where('userId', isEqualTo: userId)
@@ -137,7 +134,7 @@ class NotificationService {
     }
   }
 
-  // Budget alerts
+  // Budget alerts — uses deterministic doc IDs so repeated checks upsert rather than create duplicates
   Future<void> _generateBudgetAlerts(String userId, List<Budget> budgets) async {
     for (final budget in budgets) {
       if (!budget.isActive) continue;
@@ -146,7 +143,7 @@ class NotificationService {
       
       if (percentageUsed >= 90 && percentageUsed < 100) {
         await createNotification(Notification(
-          id: _uuid.v4(),
+          id: 'budget_alert_critical_${budget.id}',
           userId: userId,
           title: 'Budget Alert: ${budget.name}',
           message: 'You\'ve used ${percentageUsed.toStringAsFixed(1)}% of your ${budget.name} budget. Consider reducing spending in this category.',
@@ -166,7 +163,7 @@ class NotificationService {
         ));
       } else if (percentageUsed >= 100) {
         await createNotification(Notification(
-          id: _uuid.v4(),
+          id: 'budget_alert_exceeded_${budget.id}',
           userId: userId,
           title: 'Budget Exceeded: ${budget.name}',
           message: 'You\'ve exceeded your ${budget.name} budget by \$${(budget.spent - budget.amount).toStringAsFixed(2)}. Review your spending habits.',
@@ -555,32 +552,6 @@ class NotificationService {
     } catch (e) {
       print('❌ NOTIFICATION SERVICE: Error getting time until next generation: $e');
       return null;
-    }
-  }
-
-  // Private method to ensure user document exists
-  Future<void> _ensureUserExists(String userId) async {
-    try {
-      final userDoc = await _firestore
-          .collection('users')
-          .doc(userId)
-          .get();
-      
-      if (!userDoc.exists) {
-        print('⚠️ NOTIFICATION SERVICE: User not found, creating user document');
-        // Create basic user document if it doesn't exist
-        await _firestore
-            .collection('users')
-            .doc(userId)
-            .set({
-          'id': userId,
-          'createdAt': DateTime.now().toIso8601String(),
-          'lastLoginAt': DateTime.now().toIso8601String(),
-        });
-      }
-    } catch (e) {
-      print('❌ NOTIFICATION SERVICE: Error ensuring user exists: $e');
-      // Don't throw here to prevent cascading failures
     }
   }
 }

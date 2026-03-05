@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static preview for API <= 30 widget picker. Matches the actual action_widget layout. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="57dp"
+    android:height="57dp"
+    android:viewportWidth="57"
+    android:viewportHeight="57">
+
+    <!-- Circular background -->
+    <path
+        android:fillColor="#0079DC"
+        android:pathData="M28.5,4 A24.5,24.5 0 1,1 28.4999,4 Z" />
+
+    <!-- White plus sign — horizontal bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,27 L37,27 L37,30 L20,30 Z" />
+
+    <!-- White plus sign — vertical bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M27,20 L30,20 L30,37 L27,37 Z" />
+
+</vector>

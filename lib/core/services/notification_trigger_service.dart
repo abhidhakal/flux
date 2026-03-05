@@ -109,7 +109,7 @@ class NotificationTriggerService {
 
       await _notificationService.createNotificationWithPush(
         Notification(
-          id: _generateId(),
+          id: _generateId(alertKey),
           userId: userId,
           title: 'Budget Warning: ${budget.name}',
           message: 'You\'ve used ${percentageUsed.toStringAsFixed(1)}% of your ${budget.name} budget. Consider monitoring your spending.',
@@ -144,7 +144,7 @@ class NotificationTriggerService {
 
       await _notificationService.createNotificationWithPush(
         Notification(
-          id: _generateId(),
+          id: _generateId(alertKey),
           userId: userId,
           title: 'Budget Critical: ${budget.name}',
           message: 'You\'ve used ${percentageUsed.toStringAsFixed(1)}% of your ${budget.name} budget. Please review your spending immediately.',
@@ -179,7 +179,7 @@ class NotificationTriggerService {
 
       await _notificationService.createNotificationWithPush(
         Notification(
-          id: _generateId(),
+          id: _generateId(alertKey),
           userId: userId,
           title: 'Budget Exceeded: ${budget.name}',
           message: 'You\'ve exceeded your ${budget.name} budget by \$${(budget.spent - budget.amount).toStringAsFixed(2)}. Review your spending habits.',
@@ -213,7 +213,7 @@ class NotificationTriggerService {
 
       await _notificationService.createNotificationWithPush(
         Notification(
-          id: _generateId(),
+          id: _generateId(alertKey),
           userId: userId,
           title: 'Goal Milestone: ${goal.name}',
           message: 'Congratulations! You\'ve reached $milestone of your ${goal.name} goal. Keep up the great work!',
@@ -247,7 +247,7 @@ class NotificationTriggerService {
 
       await _notificationService.createNotificationWithPush(
         Notification(
-          id: _generateId(),
+          id: _generateId(alertKey),
           userId: userId,
           title: 'Goal Completed: ${goal.name}',
           message: '🎉 Congratulations! You\'ve successfully completed your ${goal.name} goal!',
@@ -280,7 +280,7 @@ class NotificationTriggerService {
 
       await _notificationService.createNotificationWithPush(
         Notification(
-          id: _generateId(),
+          id: _generateId(alertKey),
           userId: userId,
           title: 'Unusual Spending Detected',
           message: 'You\'ve made $transactionCount high-value transaction(s) this week totaling \$${totalSpent.toStringAsFixed(2)}. Review your recent spending.',
@@ -313,7 +313,7 @@ class NotificationTriggerService {
 
       await _notificationService.createNotificationWithPush(
         Notification(
-          id: _generateId(),
+          id: _generateId(alertKey),
           userId: userId,
           title: 'High Daily Spending',
           message: 'You\'ve spent \$${todaySpent.toStringAsFixed(2)} today, which is ${((todaySpent / dailyAverage) * 100).toStringAsFixed(0)}% above your daily average.',
@@ -380,8 +380,9 @@ class NotificationTriggerService {
     }
   }
 
-  // Generate unique ID
-  String _generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString();
+  // Generate deterministic notification ID from alert key so repeated triggers
+  // upsert the same Firestore document instead of creating duplicates.
+  String _generateId(String alertKey) {
+    return alertKey;
   }
 }

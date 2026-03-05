@@ -118,7 +118,6 @@ class NotificationsSuccess extends NotificationsState {
 // BLoC
 class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   final EnhancedNotificationService _notificationService;
-  String? _currentUserId;
 
   NotificationsBloc({required EnhancedNotificationService notificationService})
       : _notificationService = notificationService,
@@ -137,8 +136,6 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     Emitter<NotificationsState> emit,
   ) async {
     emit(NotificationsLoading());
-    _currentUserId = event.userId;
-    
     try {
       final notifications = await _notificationService.getUserNotifications(event.userId);
       emit(NotificationsLoaded(notifications));
@@ -163,16 +160,18 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     MarkAsRead event,
     Emitter<NotificationsState> emit,
   ) async {
+    // Optimistic update — update in memory instantly, persist in background
+    if (state is NotificationsLoaded) {
+      final current = (state as NotificationsLoaded).notifications;
+      final updated = current.map((n) => n.id == event.notificationId
+          ? n.copyWith(status: NotificationStatus.read)
+          : n).toList();
+      emit(NotificationsLoaded(updated));
+    }
     try {
       await _notificationService.markAsRead(event.notificationId);
-      
-      // Reload notifications to update UI
-      if (_currentUserId != null) {
-        final notifications = await _notificationService.getUserNotifications(_currentUserId!);
-        emit(NotificationsLoaded(notifications));
-      }
     } catch (e) {
-      emit(NotificationsError('Failed to mark as read'));
+      emit(const NotificationsError('Failed to mark as read'));
     }
   }
 
@@ -180,16 +179,16 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     DismissNotification event,
     Emitter<NotificationsState> emit,
   ) async {
+    // Optimistic update — remove from list instantly, persist in background
+    if (state is NotificationsLoaded) {
+      final current = (state as NotificationsLoaded).notifications;
+      final updated = current.where((n) => n.id != event.notificationId).toList();
+      emit(NotificationsLoaded(updated));
+    }
     try {
       await _notificationService.dismissNotification(event.notificationId);
-      
-      // Reload notifications to update UI
-      if (_currentUserId != null) {
-        final notifications = await _notificationService.getUserNotifications(_currentUserId!);
-        emit(NotificationsLoaded(notifications));
-      }
     } catch (e) {
-      emit(NotificationsError('Failed to dismiss notification'));
+      emit(const NotificationsError('Failed to dismiss notification'));
     }
   }
 
@@ -197,16 +196,16 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     DeleteNotification event,
     Emitter<NotificationsState> emit,
   ) async {
+    // Optimistic update — remove from list instantly, persist in background
+    if (state is NotificationsLoaded) {
+      final current = (state as NotificationsLoaded).notifications;
+      final updated = current.where((n) => n.id != event.notificationId).toList();
+      emit(NotificationsLoaded(updated));
+    }
     try {
       await _notificationService.deleteNotification(event.notificationId);
-      
-      // Reload notifications to update UI
-      if (_currentUserId != null) {
-        final notifications = await _notificationService.getUserNotifications(_currentUserId!);
-        emit(NotificationsLoaded(notifications));
-      }
     } catch (e) {
-      emit(NotificationsError('Failed to delete notification'));
+      emit(const NotificationsError('Failed to delete notification'));
     }
   }
 
