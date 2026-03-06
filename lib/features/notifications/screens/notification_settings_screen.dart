@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/services/enhanced_notification_service.dart';
-import '../../../core/services/subscription_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 
@@ -20,7 +19,6 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   
   bool _isLoading = true;
   bool _notificationsEnabled = false;
-  bool _isDeveloper = false;
   
   // Notification type preferences
   bool _budgetAlerts = true;
@@ -28,12 +26,9 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   bool _spendingAlerts = true;
   
   // Scheduled notifications
-  bool _weeklySummaries = false;
   bool _dailyReminders = false;
-  
-  int _weeklySummaryDay = 1; // Monday
-  int _weeklySummaryHour = 9;
-  int _weeklySummaryMinute = 0;
+  bool _morningGreetings = false;
+  bool _backgroundHealthChecks = true;
   
   int _dailyReminderHour = 20;
   int _dailyReminderMinute = 0;
@@ -51,7 +46,6 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       final user = context.read<AuthBloc>().state;
       if (user is AuthAuthenticated) {
         final enabled = await _notificationService.areNotificationsEnabled();
-        final isDev = SubscriptionService().isDeveloperUser(); // Sync check since we have user
         
         // Load user preferences from Firestore
         final userDoc = await _firestore.collection('users').doc(user.user.id).get();
@@ -61,7 +55,6 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         
         setState(() {
           _notificationsEnabled = enabled;
-          _isDeveloper = isDev;
           
           // Load notification type preferences
           _budgetAlerts = prefs['budgetAlerts'] ?? true;
@@ -69,14 +62,9 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           _spendingAlerts = prefs['spendingAlerts'] ?? true;
           
           // Load schedule preferences
-          _weeklySummaries = schedules['weekly_summary']?['enabled'] ?? false;
           _dailyReminders = schedules['daily_reminder']?['enabled'] ?? false;
-          
-          if (schedules['weekly_summary'] != null) {
-            _weeklySummaryDay = schedules['weekly_summary']['dayOfWeek'] ?? 1;
-            _weeklySummaryHour = schedules['weekly_summary']['hour'] ?? 9;
-            _weeklySummaryMinute = schedules['weekly_summary']['minute'] ?? 0;
-          }
+          _morningGreetings = schedules['morning_greeting']?['enabled'] ?? false;
+          _backgroundHealthChecks = schedules['background_health_check']?['enabled'] ?? true;
           
           if (schedules['daily_reminder'] != null) {
             _dailyReminderHour = schedules['daily_reminder']['hour'] ?? 20;
@@ -145,10 +133,6 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   _buildAutomaticAlertsCard(colorScheme),
                   const SizedBox(height: 16),
                   _buildScheduledNotificationsCard(colorScheme),
-                  if (_isDeveloper) ...[
-                    const SizedBox(height: 16),
-                    _buildTestNotificationsCard(colorScheme),
-                  ],
                 ],
               ),
             ),
@@ -358,25 +342,6 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           ),
           const SizedBox(height: 20),
           
-          // Weekly Summary
-          _buildScheduleItem(
-            'Weekly Summary',
-            'Get a summary of your week every ${_getDayName(_weeklySummaryDay)}',
-            Icons.calendar_today_outlined,
-            _weeklySummaries,
-            (value) async {
-              setState(() => _weeklySummaries = value);
-              if (value) {
-                await _scheduleWeeklySummary();
-              } else {
-                await _cancelWeeklySummary();
-              }
-            },
-            colorScheme,
-            onConfigure: _weeklySummaries ? () => _showWeeklySummaryConfig(colorScheme) : null,
-          ),
-          const Divider(height: 24),
-          
           // Daily Reminder
           _buildScheduleItem(
             'Daily Reminder',
@@ -393,6 +358,34 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             },
             colorScheme,
             onConfigure: _dailyReminders ? () => _showDailyReminderConfig(colorScheme) : null,
+          ),
+          const Divider(height: 24),
+          _buildScheduleItem(
+            'Morning Greeting',
+            'Start your day with a quick financial status at 8:00 AM',
+            Icons.wb_sunny_outlined,
+            _morningGreetings,
+            (value) async {
+              setState(() => _morningGreetings = value);
+              if (value) {
+                await _scheduleMorningGreeting();
+              } else {
+                await _cancelMorningGreeting();
+              }
+            },
+            colorScheme,
+          ),
+          const Divider(height: 24),
+          _buildScheduleItem(
+            'Background Checks',
+            'Allow periodic health checks of your budgets and goals',
+            Icons.security_update_good_outlined,
+            _backgroundHealthChecks,
+            (value) async {
+              setState(() => _backgroundHealthChecks = value);
+              await _toggleBackgroundChecks(value);
+            },
+            colorScheme,
           ),
         ],
       ),
@@ -459,6 +452,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     );
   }
 
+  // ignore: unused_element
   String _getDayName(int day) {
     const days = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     return days[day];
@@ -468,121 +462,6 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     final h = hour.toString().padLeft(2, '0');
     final m = minute.toString().padLeft(2, '0');
     return '$h:$m';
-  }
-
-  void _showWeeklySummaryConfig(ColorScheme colorScheme) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Weekly Summary Schedule',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text('Day', style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<int>(
-                value: _weeklySummaryDay,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-                items: List.generate(7, (i) => DropdownMenuItem(
-                  value: i + 1,
-                  child: Text(_getDayName(i + 1)),
-                )),
-                onChanged: (value) {
-                  if (value != null) {
-                    setModalState(() => _weeklySummaryDay = value);
-                    setState(() => _weeklySummaryDay = value);
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              Text('Time', style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
-                      value: _weeklySummaryHour,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
-                      items: List.generate(24, (i) => DropdownMenuItem(
-                        value: i,
-                        child: Text(i.toString().padLeft(2, '0')),
-                      )),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setModalState(() => _weeklySummaryHour = value);
-                          setState(() => _weeklySummaryHour = value);
-                        }
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(':', style: TextStyle(fontSize: 20, color: colorScheme.onSurface)),
-                  ),
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
-                      value: _weeklySummaryMinute,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
-                      items: List.generate(12, (i) => DropdownMenuItem(
-                        value: i * 5,
-                        child: Text((i * 5).toString().padLeft(2, '0')),
-                      )),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setModalState(() => _weeklySummaryMinute = value);
-                          setState(() => _weeklySummaryMinute = value);
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    _scheduleWeeklySummary();
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Save'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   void _showDailyReminderConfig(ColorScheme colorScheme) {
@@ -721,38 +600,6 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     }
   }
 
-  Future<void> _scheduleWeeklySummary() async {
-    try {
-      final user = context.read<AuthBloc>().state;
-      if (user is AuthAuthenticated) {
-        await _notificationService.scheduleWeeklySummary(
-          userId: user.user.id,
-          dayOfWeek: _weeklySummaryDay,
-          hour: _weeklySummaryHour,
-          minute: _weeklySummaryMinute,
-        );
-        if (mounted) AppSnackbar.showSuccess(context, message: 'Weekly summary scheduled');
-      }
-    } catch (e) {
-      if (mounted) AppSnackbar.showError(context, message: 'Failed to schedule: $e');
-    }
-  }
-
-  Future<void> _cancelWeeklySummary() async {
-    try {
-      final user = context.read<AuthBloc>().state;
-      if (user is AuthAuthenticated) {
-        await _firestore.collection('users').doc(user.user.id).set({
-          'notificationSchedules': {
-            'weekly_summary': {'enabled': false},
-          },
-        }, SetOptions(merge: true));
-      }
-    } catch (e) {
-      // Silently fail
-    }
-  }
-
   Future<void> _scheduleDailyReminder() async {
     try {
       final user = context.read<AuthBloc>().state;
@@ -779,101 +626,56 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             'daily_reminder': {'enabled': false},
           },
         }, SetOptions(merge: true));
+        if (mounted) AppSnackbar.showInfo(context, message: 'Daily reminder disabled');
       }
     } catch (e) {
-      // Silently fail
+      if (mounted) AppSnackbar.showError(context, message: 'Failed to disable: $e');
     }
   }
 
-  Widget _buildTestNotificationsCard(ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Developer Tools',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Test notification triggers (Developer Only)',
-            style: TextStyle(
-              fontSize: 14,
-              color: colorScheme.onSurface.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _buildTestButton('Budget Alert', _testBudgetAlert),
-              _buildTestButton('Goal Milestone', _testGoalMilestone),
-              _buildTestButton('Spending Alert', _testSpendingAlert),
-              _buildTestButton('Financial Tip', _testFinancialTip),
-              _buildTestButton('Morning Greeting', _testMorningGreeting),
-            ],
-          ),
-        ],
-      ),
-    );
+  Future<void> _scheduleMorningGreeting() async {
+    try {
+      final user = context.read<AuthBloc>().state;
+      if (user is AuthAuthenticated) {
+        await _notificationService.scheduleMorningGreeting(user.user.id);
+        if (mounted) AppSnackbar.showSuccess(context, message: 'Morning greeting scheduled');
+      }
+    } catch (e) {
+      if (mounted) AppSnackbar.showError(context, message: 'Failed to schedule greeting: $e');
+    }
   }
 
-  Widget _buildTestButton(String label, VoidCallback onPressed) {
-    return ElevatedButton(
-      onPressed: _notificationsEnabled ? onPressed : null,
-      style: ElevatedButton.styleFrom(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-      child: Text(label),
-    );
+  Future<void> _cancelMorningGreeting() async {
+    try {
+      final user = context.read<AuthBloc>().state;
+      if (user is AuthAuthenticated) {
+        await _firestore.collection('users').doc(user.user.id).set({
+          'notificationSchedules': {
+            'morning_greeting': {'enabled': false},
+          },
+        }, SetOptions(merge: true));
+        if (mounted) AppSnackbar.showInfo(context, message: 'Morning greeting disabled');
+      }
+    } catch (e) {
+      if (mounted) AppSnackbar.showError(context, message: 'Failed to disable: $e');
+    }
   }
 
-  Future<void> _testBudgetAlert() async {
-    await _notificationService.showBudgetAlert(
-      budgetName: 'Test Budget',
-      percentageUsed: 95.0,
-      remaining: 50.0,
-    );
-  }
-
-  Future<void> _testGoalMilestone() async {
-    await _notificationService.showGoalMilestone(
-      goalName: 'Test Goal',
-      progress: 50.0,
-      milestone: '50%',
-    );
-  }
-
-  Future<void> _testSpendingAlert() async {
-    await _notificationService.showSpendingAlert(
-      message: 'You\'ve made 3 high-value transactions this week. Review your spending.',
-      transactionCount: 3,
-    );
-  }
-
-  Future<void> _testFinancialTip() async {
-    await _notificationService.showFinancialTip(
-      title: 'Financial Tip',
-      message: 'Consider the 50/30/20 rule: 50% needs, 30% wants, 20% savings.',
-    );
-  }
-
-  Future<void> _testMorningGreeting() async {
-    // Shows immediate notification for testing
-    await _notificationService.showFinancialTip(
-      title: 'Good Morning ☀️',
-      message: 'Rise and shine! Take a moment to track your finances today.',
-    );
+  Future<void> _toggleBackgroundChecks(bool enabled) async {
+    try {
+      final user = context.read<AuthBloc>().state;
+      if (user is AuthAuthenticated) {
+        await _firestore.collection('users').doc(user.user.id).set({
+          'notificationSchedules': {
+            'background_health_check': {'enabled': enabled},
+          },
+        }, SetOptions(merge: true));
+        
+        final msg = enabled ? 'Background checks enabled' : 'Background checks disabled';
+        if (mounted) AppSnackbar.showInfo(context, message: msg);
+      }
+    } catch (e) {
+      if (mounted) AppSnackbar.showError(context, message: 'Failed to update: $e');
+    }
   }
 }

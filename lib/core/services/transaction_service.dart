@@ -240,82 +240,61 @@ class TransactionService {
   ) async {
     try {
       print('🔵 TRANSACTION SERVICE: Handling budget update for transaction change');
-      
-      // If old transaction was an expense, subtract its amount
-      if (oldTransaction.isExpense) {
-        await _subtractFromBudget(oldTransaction, batch);
+
+      // 1. Identify affected budget IDs
+      final String? oldBudgetId = oldTransaction.isExpense ? oldTransaction.budgetId : null;
+      final String? newBudgetId = newTransaction.isExpense ? newTransaction.budgetId : null;
+
+      // Case 1: No budgets involved
+      if (oldBudgetId == null && newBudgetId == null) {
+        print('⚠️ TRANSACTION SERVICE: No budgets affected');
+        return;
       }
-      
-      // If new transaction is an expense, add its amount
-      if (newTransaction.isExpense) {
-        await _addToBudget(newTransaction, batch);
+
+      // Case 2: Same budget - recalculate with net difference
+      if (oldBudgetId == newBudgetId && oldBudgetId != null) {
+        final budgetDoc = await _firestore.collection('budgets').doc(oldBudgetId).get();
+        if (budgetDoc.exists) {
+          final budget = Budget.fromJson(budgetDoc.data()!);
+          if (budget.userId == newTransaction.userId && budget.isActive) {
+            final netChange = newTransaction.amount - oldTransaction.amount;
+            final newSpent = budget.spent + netChange;
+            
+            batch.update(budgetDoc.reference, {'spent': newSpent});
+            print('✅ TRANSACTION SERVICE: Updated single budget ${budget.name} with net change: \$$netChange');
+          }
+        }
+        return;
+      }
+
+      // Case 3: Different budgets or moving to/from no budget
+      // Handle subtraction from old budget
+      if (oldBudgetId != null) {
+        final oldBudgetDoc = await _firestore.collection('budgets').doc(oldBudgetId).get();
+        if (oldBudgetDoc.exists) {
+          final oldBudget = Budget.fromJson(oldBudgetDoc.data()!);
+          if (oldBudget.userId == oldTransaction.userId && oldBudget.isActive) {
+            batch.update(oldBudgetDoc.reference, {'spent': oldBudget.spent - oldTransaction.amount});
+            print('✅ TRANSACTION SERVICE: Subtracted amount from OLD budget: ${oldBudget.name}');
+          }
+        }
+      }
+
+      // Handle addition to new budget
+      if (newBudgetId != null) {
+        final newBudgetDoc = await _firestore.collection('budgets').doc(newBudgetId).get();
+        if (newBudgetDoc.exists) {
+          final newBudget = Budget.fromJson(newBudgetDoc.data()!);
+          if (newBudget.userId == newTransaction.userId && newBudget.isActive) {
+            batch.update(newBudgetDoc.reference, {'spent': newBudget.spent + newTransaction.amount});
+            print('✅ TRANSACTION SERVICE: Added amount to NEW budget: ${newBudget.name}');
+          }
+        }
       }
       
     } catch (e) {
       print('❌ TRANSACTION SERVICE: Error handling budget update: $e');
       throw Exception('Failed to handle budget update: $e');
-    }
-  }
-
-  // Private method to subtract amount from budget
-  Future<void> _subtractFromBudget(Transaction transaction, firestore.WriteBatch batch) async {
-    try {
-      // If no budgetId assigned, skip budget update
-      if (transaction.budgetId == null || transaction.budgetId!.isEmpty) {
-        return;
-      }
-      
-      final budgetDoc = await _firestore
-          .collection('budgets')
-          .doc(transaction.budgetId!)
-          .get();
-
-      if (budgetDoc.exists) {
-        final budget = Budget.fromJson(budgetDoc.data()!);
-        
-        // Verify budget belongs to user and is active
-        if (budget.userId == transaction.userId && budget.isActive) {
-          final newSpent = budget.spent - transaction.amount;
-          
-          final budgetRef = _firestore.collection('budgets').doc(budget.id);
-          batch.update(budgetRef, {'spent': newSpent});
-          
-          print('✅ TRANSACTION SERVICE: Subtracted \$${transaction.amount} from budget');
-        }
-      }
-    } catch (e) {
-      print('❌ TRANSACTION SERVICE: Error subtracting from budget: $e');
-    }
-  }
-
-  // Private method to add amount to budget
-  Future<void> _addToBudget(Transaction transaction, firestore.WriteBatch batch) async {
-    try {
-      // If no budgetId assigned, skip budget update
-      if (transaction.budgetId == null || transaction.budgetId!.isEmpty) {
-        return;
-      }
-      
-      final budgetDoc = await _firestore
-          .collection('budgets')
-          .doc(transaction.budgetId!)
-          .get();
-
-      if (budgetDoc.exists) {
-        final budget = Budget.fromJson(budgetDoc.data()!);
-        
-        // Verify budget belongs to user and is active
-        if (budget.userId == transaction.userId && budget.isActive) {
-          final newSpent = budget.spent + transaction.amount;
-        
-        final budgetRef = _firestore.collection('budgets').doc(budget.id);
-        batch.update(budgetRef, {'spent': newSpent});
-        
-        print('✅ TRANSACTION SERVICE: Added \$${transaction.amount} to budget');
-        }
-      }
-    } catch (e) {
-      print('❌ TRANSACTION SERVICE: Error adding to budget: $e');
     }
   }
 

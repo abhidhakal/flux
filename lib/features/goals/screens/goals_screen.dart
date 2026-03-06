@@ -63,21 +63,21 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
       appBar: AppBar(
         title: const Text('Financial Goals'),
         centerTitle: false,
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: colorScheme.background,
+        foregroundColor: colorScheme.onBackground,
+        iconTheme: IconThemeData(color: colorScheme.onBackground),
         titleTextStyle: theme.textTheme.displaySmall?.copyWith(
           fontSize: 24,
           letterSpacing: -1,
-          color: Colors.white,
+          color: colorScheme.onBackground,
         ),
         elevation: 0,
         scrolledUnderElevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          indicatorColor: AppColors.primary,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: colorScheme.onBackground.withOpacity(0.5),
           tabs: const [
             Tab(text: 'Goals'),
             Tab(text: 'Completed'),
@@ -85,54 +85,9 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
           ],
         ),
         actions: [
-          PopupMenuButton<String>(
-            icon: Icon(Icons.add, color: Colors.white),
-            onSelected: (value) {
-              switch (value) {
-                case 'create_manual':
-                  final subscriptionState = context.read<SubscriptionBloc>().state;
-                  if (subscriptionState is SubscriptionPremium) {
-                    context.pushSmooth(
-                      const CreateGoalScreen(),
-                      transitionType: PageTransitionType.slideFromBottom,
-                    );
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const PaywallScreen()),
-                    );
-                  }
-                  break;
-                case 'create_from_template':
-                  context.pushSmooth(
-                    const GoalTemplatesScreen(),
-                    transitionType: PageTransitionType.slideFromRight,
-                  );
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'create_manual',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit, color: AppColors.primary),
-                    SizedBox(width: 12),
-                    Text('Create Custom Goal'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'create_from_template',
-                child: Row(
-                  children: [
-                    Icon(Icons.description_outlined, color: AppColors.primary),
-                    SizedBox(width: 12),
-                    Text('Use Template'),
-                  ],
-                ),
-              ),
-            ],
+          IconButton(
+            icon: Icon(Icons.add, color: colorScheme.onBackground),
+            onPressed: () => _showAddGoalOptions(context),
           ),
         ],
       ),
@@ -185,6 +140,93 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
 
             return _buildEmptyState();
           },
+        ),
+      ),
+    );
+  }
+
+  void _showAddGoalOptions(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurface.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Add New Goal',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.edit_outlined, color: AppColors.primary),
+              ),
+              title: const Text('Create Custom Goal', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: const Text('Design a goal from scratch'),
+              onTap: () {
+                Navigator.pop(context);
+                final subscriptionState = context.read<SubscriptionBloc>().state;
+                if (subscriptionState is SubscriptionPremium) {
+                  context.pushSmooth(
+                    const CreateGoalScreen(),
+                    transitionType: PageTransitionType.slideFromBottom,
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PaywallScreen()),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colorScheme.secondary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.description_outlined, color: colorScheme.secondary),
+              ),
+              title: const Text('Use Template', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: const Text('Choose from common savings goals'),
+              onTap: () {
+                Navigator.pop(context);
+                context.pushSmooth(
+                  const GoalTemplatesScreen(),
+                  transitionType: PageTransitionType.slideFromRight,
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
         ),
       ),
     );

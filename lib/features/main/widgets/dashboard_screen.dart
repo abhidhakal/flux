@@ -5,6 +5,7 @@ import 'package:flux/features/main/widgets/budgets_screen.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/services/currency_service.dart';
 import '../../../core/services/profile_picture_service.dart';
+import '../../../core/services/stale_budget_helper.dart';
 import '../../../core/services/widget_service.dart';
 import '../../../shared/widgets/skeleton_components.dart';
 import '../../../core/widgets/app_banner_ad.dart';
@@ -57,6 +58,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetService.refreshWidgets(context);
   }
 
+  void _checkStaleBudgets() {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) return;
+
+    final budgetState = context.read<BudgetBloc>().state;
+    final txState = context.read<TransactionBloc>().state;
+
+    if (budgetState is BudgetLoaded && txState is TransactionLoaded) {
+      StaleBudgetHelper.checkAndShowAlert(
+        context,
+        budgets: budgetState.budgets,
+        transactions: txState.transactions,
+        userId: authState.user.id,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -68,6 +86,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           listener: (context, state) {
             if (state is TransactionLoaded) {
               _updateWidget(context);
+              _checkStaleBudgets();
             }
           },
         ),
@@ -75,6 +94,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           listener: (context, state) {
             if (state is IncomeLoaded) {
               _updateWidget(context);
+            }
+          },
+        ),
+        BlocListener<BudgetBloc, BudgetState>(
+          listener: (context, state) {
+            if (state is BudgetLoaded) {
+              _checkStaleBudgets();
             }
           },
         ),
@@ -233,7 +259,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(height: 24),
                           _buildQuickActions(),
                           const SizedBox(height: 32),
-                          _buildAIInsights(isPremium),
+                          _buildSmartInsights(isPremium),
                           const SizedBox(height: 24),
                           _buildRecentTransactions(transactionState.transactions),
                           const SizedBox(height: 24),
@@ -438,7 +464,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildAIInsights(bool isPremium) {
+  Widget _buildSmartInsights(bool isPremium) {
     if (!isPremium) {
       return Stack(
         children: [
@@ -492,7 +518,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Icon(Icons.auto_awesome_rounded, size: 20, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 8),
                     Text(
-                      'AI Insights',
+                      'Smart Insights',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -546,7 +572,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Icon(Icons.auto_awesome_rounded, size: 20, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 8),
                     Text(
-                      'AI Insights',
+                      'Smart Insights',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

@@ -154,37 +154,6 @@ class PushNotificationService {
     }
   }
 
-  // Schedule weekly summary notification
-  Future<void> scheduleWeeklySummary({
-    required int id,
-    required String title,
-    required String body,
-    required int dayOfWeek, // 1 = Monday, 7 = Sunday
-    required int hour,
-    required int minute,
-    String? payload,
-  }) async {
-    if (!_isInitialized) await initialize();
-
-    final now = DateTime.now();
-    var scheduledDate = DateTime(now.year, now.month, now.day, hour, minute);
-    
-    // Find next occurrence of the specified day
-    while (scheduledDate.weekday != dayOfWeek || scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
-
-    await scheduleNotification(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: scheduledDate,
-      payload: payload,
-      priority: NotificationPriority.medium,
-      matchDateTimeComponents: fln.DateTimeComponents.dayOfWeekAndTime,
-    );
-  }
-
   // Schedule daily reminder
   Future<void> scheduleDailyReminder({
     required int id,
@@ -332,20 +301,6 @@ class PushNotificationService {
       body: message,
       priority: NotificationPriority.medium,
       payload: 'spending_alert:$transactionCount',
-    );
-  }
-
-  // Show weekly summary notification
-  Future<void> showWeeklySummary({
-    required String title,
-    required String body,
-  }) async {
-    await showNotification(
-      id: _generateNotificationId(),
-      title: title,
-      body: body,
-      priority: NotificationPriority.medium,
-      payload: 'weekly_summary',
     );
   }
 

@@ -314,55 +314,136 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       }
     }
     final net = totalIncome - totalExpense;
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+        color: isDark ? colorScheme.surface : Colors.black,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Balance',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: Colors.white.withOpacity(0.6),
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    CurrencyService().formatAmount(net),
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.account_balance_wallet_outlined,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          Row(
+            children: [
+              _modernSummaryItem(
+                label: 'Income',
+                amount: totalIncome,
+                icon: Icons.arrow_downward_rounded,
+                color: AppColors.success,
+              ),
+              Container(
+                width: 1,
+                height: 40,
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                color: Colors.white.withOpacity(0.1),
+              ),
+              _modernSummaryItem(
+                label: 'Expenses',
+                amount: totalExpense,
+                icon: Icons.arrow_upward_rounded,
+                color: AppColors.error,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _modernSummaryItem({
+    required String label,
+    required double amount,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Expanded(
       child: Row(
         children: [
-          _summaryChip('Income', totalIncome, AppColors.success),
-          _summaryDivider(),
-          _summaryChip('Expenses', totalExpense, AppColors.error),
-          _summaryDivider(),
-          _summaryChip('Net', net, net >= 0 ? AppColors.success : AppColors.error),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.5),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  CurrencyService().formatAmount(amount),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _summaryChip(String label, double amount, Color color) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: colorScheme.onBackground.withOpacity(0.55)),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            CurrencyService().formatAmount(amount.abs()),
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: color),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _summaryDivider() {
-    return Container(
-      width: 1,
-      height: 32,
-      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-      margin: const EdgeInsets.symmetric(horizontal: 8),
     );
   }
 

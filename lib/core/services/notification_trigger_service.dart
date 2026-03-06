@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/budget_model.dart';
 import '../models/goal_model.dart';
 import '../models/transaction_model.dart';
@@ -39,15 +40,9 @@ class NotificationTriggerService {
 
         final progress = goal.progressPercentage;
         
-        // Check for milestone achievements
-        if (progress >= 25 && progress < 30) {
-          await _triggerGoalMilestoneAlert(userId, goal, '25%');
-        } else if (progress >= 50 && progress < 55) {
+        // Check for milestone achievements - Only 50% and 100%
+        if (progress >= 50 && progress < 55) {
           await _triggerGoalMilestoneAlert(userId, goal, '50%');
-        } else if (progress >= 75 && progress < 80) {
-          await _triggerGoalMilestoneAlert(userId, goal, '75%');
-        } else if (progress >= 90 && progress < 95) {
-          await _triggerGoalMilestoneAlert(userId, goal, '90%');
         } else if (goal.isCompleted) {
           await _triggerGoalCompletedAlert(userId, goal);
         }
@@ -69,30 +64,25 @@ class NotificationTriggerService {
 
       if (recentTransactions.isNotEmpty) {
         final totalSpent = recentTransactions.fold(0.0, (sum, t) => sum + t.amount);
-        final averageSpent = totalSpent / recentTransactions.length;
         
-        // Check for unusual spending patterns
+        // Calculate daily average to check for spikes
+        final dailyAverage = totalSpent / 7;
+        final todaySpent = transactions
+            .where((t) => t.date.day == now.day && t.date.month == now.month && t.date.year == now.year && t.isExpense)
+            .fold(0.0, (sum, t) => sum + t.amount);
+
+        if (todaySpent > dailyAverage * 2 && todaySpent > 50) {
+          await _triggerDailySpendingAlert(userId, todaySpent, dailyAverage);
+        }
+
+        // Also check for high value transactions (Spikes)
+        final averageSpent = totalSpent / recentTransactions.length;
         final highValueTransactions = recentTransactions
-            .where((t) => t.amount > averageSpent * 2)
+            .where((t) => t.amount > averageSpent * 3)
             .toList();
 
         if (highValueTransactions.isNotEmpty) {
           await _triggerSpendingPatternAlert(userId, highValueTransactions.length, totalSpent);
-        }
-
-        // Check for daily spending spikes
-        final today = DateTime(now.year, now.month, now.day);
-        final todayTransactions = recentTransactions
-            .where((t) => t.date.isAfter(today))
-            .toList();
-
-        if (todayTransactions.isNotEmpty) {
-          final todaySpent = todayTransactions.fold(0.0, (sum, t) => sum + t.amount);
-          final dailyAverage = totalSpent / 7;
-          
-          if (todaySpent > dailyAverage * 1.5) {
-            await _triggerDailySpendingAlert(userId, todaySpent, dailyAverage);
-          }
         }
       }
     } catch (e) {
@@ -338,24 +328,22 @@ class NotificationTriggerService {
     }
   }
 
-  // Check if we've sent a recent alert
+  // Check if we've sent a recent alert using local cache for performance
   Future<bool> _hasRecentAlert(String userId, String alertKey) async {
     try {
-      final alertDoc = await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('recent_alerts')
-          .doc(alertKey)
-          .get();
-
-      if (alertDoc.exists) {
-        final data = alertDoc.data()!;
-        final sentAt = DateTime.parse(data['sentAt']);
+      final prefs = await SharedPreferences.getInstance();
+      final lastSentStr = prefs.getString('alert_${userId}_$alertKey');
+      
+      if (lastSentStr != null) {
+        final sentAt = DateTime.parse(lastSentStr);
         final hoursSinceSent = DateTime.now().difference(sentAt).inHours;
         
         // Don't send the same alert within 24 hours
-        return hoursSinceSent < 24;
+        if (hoursSinceSent < 24) return true;
       }
+
+      // Fallback check to Firestore if needed (optional, but keeping for dual consistency if desired)
+      // For "lightweight", we prefer just local pref. If it's a new device, user gets 1 extra notify.
       return false;
     } catch (e) {
       print('❌ NOTIFICATION TRIGGER: Error checking recent alert: $e');
@@ -363,20 +351,22 @@ class NotificationTriggerService {
     }
   }
 
-  // Record that an alert was sent
+  // Record that an alert was sent locally
   Future<void> _recordAlertSent(String userId, String alertKey) async {
     try {
-      await _firestore
+      final prefs = await SharedPreferences.getInstance();
+      final now = DateTime.now().toIso8601String();
+      await prefs.setString('alert_${userId}_$alertKey', now);
+
+      // Also sync to Firestore in background (no await)
+      _firestore
           .collection('users')
           .doc(userId)
           .collection('recent_alerts')
           .doc(alertKey)
-          .set({
-        'sentAt': DateTime.now().toIso8601String(),
-        'alertKey': alertKey,
-      });
+          .set({'sentAt': now});
     } catch (e) {
-      print('❌ NOTIFICATION TRIGGER: Error recording alert: $e');
+      print('❌ NOTIFICATION TRIGGER: Error recording alert sent: $e');
     }
   }
 
@@ -384,5 +374,87 @@ class NotificationTriggerService {
   // upsert the same Firestore document instead of creating duplicates.
   String _generateId(String alertKey) {
     return alertKey;
+  }
+
+  // Trigger a morning greeting notification
+  Future<void> triggerMorningGreeting(String userId) async {
+    try {
+      final today = DateTime.now();
+      final alertKey = 'morning_greeting_${today.year}_${today.month}_${today.day}';
+      
+      if (await _hasRecentAlert(userId, alertKey)) return;
+
+      await _notificationService.createNotificationWithPush(
+        Notification(
+          id: alertKey,
+          userId: userId,
+          title: 'Good Morning!',
+          message: 'Start your day right by checking your financial progress.',
+          type: NotificationType.financialTip,
+          priority: NotificationPriority.low,
+          status: NotificationStatus.unread,
+          createdAt: DateTime.now(),
+          isActionable: true,
+          actionTitle: 'Launch Flux',
+          actionRoute: '/',
+        ),
+      );
+
+      await _recordAlertSent(userId, alertKey);
+    } catch (e) {
+      print('❌ NOTIFICATION TRIGGER: Error triggering morning greeting: $e');
+    }
+  }
+
+  // Trigger a daily reminder notification
+  Future<void> triggerDailyReminder(String userId, String type) async {
+    try {
+      final today = DateTime.now();
+      final alertKey = 'daily_reminder_${type}_${today.year}_${today.month}_${today.day}';
+      
+      if (await _hasRecentAlert(userId, alertKey)) return;
+
+      String title = 'Daily Reminder';
+      String message = 'Don\'t forget to check your finances today!';
+      String route = '/';
+
+      switch (type) {
+        case 'budget_check':
+          title = 'Budget Check Reminder';
+          message = 'Time to check your budget progress and spending habits!';
+          route = '/budgets';
+          break;
+        case 'goal_update':
+          title = 'Goal Progress Update';
+          message = 'Update your goal progress and stay motivated!';
+          route = '/goals';
+          break;
+        case 'expense_log':
+          title = 'Log Your Expenses';
+          message = 'Don\'t forget to log your expenses for today.';
+          route = '/transactions';
+          break;
+      }
+
+      await _notificationService.createNotificationWithPush(
+        Notification(
+          id: alertKey,
+          userId: userId,
+          title: title,
+          message: message,
+          type: NotificationType.spendingReminder,
+          priority: NotificationPriority.medium,
+          status: NotificationStatus.unread,
+          createdAt: DateTime.now(),
+          isActionable: true,
+          actionTitle: 'Check Now',
+          actionRoute: route,
+        ),
+      );
+
+      await _recordAlertSent(userId, alertKey);
+    } catch (e) {
+      print('❌ NOTIFICATION TRIGGER: Error triggering daily reminder: $e');
+    }
   }
 }

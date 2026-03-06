@@ -13,6 +13,7 @@ import 'core/services/notification_trigger_service.dart';
 import 'core/services/currency_service.dart';
 import 'core/services/network_service.dart';
 import 'core/services/subscription_service.dart';
+import 'core/services/background_task_service.dart';
 import 'features/subscription/subscription_bloc.dart';
 import 'features/auth/auth_bloc.dart';
 import 'features/auth/screens/welcome_screen.dart';
@@ -188,6 +189,9 @@ class _AppViewState extends State<AppView> {
             if (state is AuthAuthenticated) {
               context.read<SubscriptionBloc>().add(SubscriptionCheckRequested());
               _checkPendingWidgetLaunch();
+              
+              // Register background health checks for notifications
+              BackgroundTaskService().registerDailyHealthCheck(state.user.id);
             }
           },
         ),

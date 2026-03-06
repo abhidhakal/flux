@@ -2,9 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:uuid/uuid.dart';
 import '../models/notification_model.dart';
-import '../models/budget_model.dart';
-import '../models/transaction_model.dart';
-import '../models/goal_model.dart';
 import 'notification_service.dart';
 import 'push_notification_service.dart';
 import 'transaction_service.dart';
@@ -58,157 +55,7 @@ class EnhancedNotificationService {
     }
   }
 
-  // Generate smart notifications with push notifications
-  Future<void> generateSmartNotificationsWithPush(
-    String userId,
-    List<Budget> budgets,
-    List<Transaction> transactions,
-    List<Goal> goals,
-  ) async {
-    try {
-      // Generate Firestore notifications
-      await _notificationService.generateSmartNotifications(
-        userId,
-        budgets,
-        transactions,
-        goals,
-      );
-
-      // Send push notifications for critical alerts
-      await _generatePushNotifications(userId, budgets, transactions, goals);
-      
-    } catch (e) {
-      throw Exception('Failed to generate smart notifications with push: $e');
-    }
-  }
-
-  // Generate push notifications for critical alerts
-  Future<void> _generatePushNotifications(
-    String userId,
-    List<Budget> budgets,
-    List<Transaction> transactions,
-    List<Goal> goals,
-  ) async {
-    if (!await areNotificationsEnabled()) return;
-
-    // Budget alerts
-    await _generateBudgetPushAlerts(budgets);
-    
-    // Goal milestones
-    await _generateGoalPushMilestones(goals);
-    
-    // Spending alerts
-    await _generateSpendingPushAlerts(transactions);
-  }
-
-  // Generate budget push alerts
-  Future<void> _generateBudgetPushAlerts(List<Budget> budgets) async {
-    for (final budget in budgets) {
-      if (!budget.isActive) continue;
-
-      final percentageUsed = (budget.spent / budget.amount) * 100;
-      
-      if (percentageUsed >= 90) {
-        await _pushService.showBudgetAlert(
-          budgetName: budget.name,
-          percentageUsed: percentageUsed,
-          remaining: budget.remaining,
-        );
-      }
-    }
-  }
-
-  // Generate goal push milestones
-  Future<void> _generateGoalPushMilestones(List<Goal> goals) async {
-    for (final goal in goals) {
-      if (goal.status != GoalStatus.active) continue;
-
-      final progress = goal.progressPercentage;
-      
-      // Check for milestone achievements
-      if (progress >= 25 && progress < 30) {
-        await _pushService.showGoalMilestone(
-          goalName: goal.name,
-          progress: progress,
-          milestone: '25%',
-        );
-      } else if (progress >= 50 && progress < 55) {
-        await _pushService.showGoalMilestone(
-          goalName: goal.name,
-          progress: progress,
-          milestone: '50%',
-        );
-      } else if (progress >= 90 && progress < 95) {
-        await _pushService.showGoalMilestone(
-          goalName: goal.name,
-          progress: progress,
-          milestone: '90%',
-        );
-      }
-    }
-  }
-
-  // Generate spending push alerts
-  Future<void> _generateSpendingPushAlerts(List<Transaction> transactions) async {
-    final now = DateTime.now();
-    final lastWeek = now.subtract(const Duration(days: 7));
-    
-    final recentTransactions = transactions
-        .where((t) => t.date.isAfter(lastWeek) && t.isExpense)
-        .toList();
-
-    if (recentTransactions.isNotEmpty) {
-      final totalSpent = recentTransactions.fold(0.0, (sum, t) => sum + t.amount);
-      final averageSpent = totalSpent / recentTransactions.length;
-      
-      final highValueTransactions = recentTransactions
-          .where((t) => t.amount > averageSpent * 2)
-          .toList();
-
-      if (highValueTransactions.isNotEmpty) {
-        await _pushService.showSpendingAlert(
-          message: 'You\'ve made ${highValueTransactions.length} high-value transaction(s) this week. Review your recent spending.',
-          transactionCount: highValueTransactions.length,
-        );
-      }
-    }
-  }
-
-  // Schedule weekly summary
-  Future<void> scheduleWeeklySummary({
-    required String userId,
-    required int dayOfWeek, // 1 = Monday, 7 = Sunday
-    required int hour,
-    required int minute,
-  }) async {
-    try {
-      // Cancel existing weekly summary
-      await _pushService.cancelNotification(9999);
-      
-      // Schedule new weekly summary
-      await _pushService.scheduleWeeklySummary(
-        id: 9999,
-        title: 'Weekly Financial Summary',
-        body: 'Your weekly financial summary is ready. Check your progress and insights!',
-        dayOfWeek: dayOfWeek,
-        hour: hour,
-        minute: minute,
-        payload: 'weekly_summary:$userId',
-      );
-
-      // Save schedule to user preferences
-      await _saveNotificationSchedule(userId, 'weekly_summary', {
-        'dayOfWeek': dayOfWeek,
-        'hour': hour,
-        'minute': minute,
-        'enabled': true,
-      });
-    } catch (e) {
-      throw Exception('Failed to schedule weekly summary: $e');
-    }
-  }
-
-  // Schedule daily reminder
+  // Daily Reminders Logic
   Future<void> scheduleDailyReminder({
     required String userId,
     required int hour,
@@ -237,55 +84,11 @@ class EnhancedNotificationService {
         'minute': minute,
         'enabled': true,
         'type': reminderType,
+        'lastScheduled': DateTime.now().toIso8601String(),
       });
     } catch (e) {
       throw Exception('Failed to schedule daily reminder: $e');
     }
-  }
-
-  // Schedule budget alerts
-  Future<void> scheduleBudgetAlerts({
-    required String userId,
-    required List<Budget> budgets,
-  }) async {
-    try {
-      for (final budget in budgets) {
-        if (!budget.isActive) continue;
-
-        // Schedule alert for 80% usage
-        final alertId = budget.id.hashCode + 1000;
-        await _pushService.cancelNotification(alertId);
-        
-        // Calculate when budget will likely hit 80%
-        final dailySpending = _calculateDailySpending(budget);
-        if (dailySpending > 0) {
-          final daysTo80Percent = ((budget.amount * 0.8) - budget.spent) / dailySpending;
-          if (daysTo80Percent > 0 && daysTo80Percent <= 7) {
-            final alertDate = DateTime.now().add(Duration(days: daysTo80Percent.round()));
-            await _pushService.scheduleNotification(
-              id: alertId,
-              title: 'Budget Alert: ${budget.name}',
-              body: 'Your ${budget.name} budget is approaching 80% usage. Consider monitoring your spending.',
-              scheduledDate: alertDate,
-              priority: NotificationPriority.high,
-              payload: 'budget_alert:${budget.id}',
-            );
-          }
-        }
-      }
-    } catch (e) {
-      throw Exception('Failed to schedule budget alerts: $e');
-    }
-  }
-
-  // Calculate daily spending for a budget
-  double _calculateDailySpending(Budget budget) {
-    // This is a simplified calculation - in a real app, you'd analyze historical data
-    final now = DateTime.now();
-    final monthStart = DateTime(now.year, now.month, 1);
-    final daysInMonth = now.difference(monthStart).inDays + 1;
-    
-    return budget.spent / daysInMonth;
   }
 
   // Get reminder ID based on type
@@ -399,12 +202,24 @@ class EnhancedNotificationService {
     return await _notificationService.deleteNotification(notificationId);
   }
 
+  Future<void> deleteAllNotifications(String userId) async {
+    return await _notificationService.deleteAllNotifications(userId);
+  }
+
+  Future<void> markAllAsRead(String userId) async {
+    return await _notificationService.markAllAsRead(userId);
+  }
+
   Future<bool> canGenerateSmartNotifications(String userId) async {
     return await _notificationService.canGenerateSmartNotifications(userId);
   }
 
   Future<Duration?> getTimeUntilNextGeneration(String userId) async {
     return await _notificationService.getTimeUntilNextGeneration(userId);
+  }
+
+  Future<void> updateLastSmartNotificationGeneration(String userId) async {
+    return await _notificationService.updateLastSmartNotificationGeneration(userId);
   }
 
   // Test notification methods

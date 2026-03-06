@@ -123,6 +123,7 @@ class TrendAnalysisChart extends StatelessWidget {
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: AppColors.textSecondary,
                                 fontWeight: FontWeight.w600,
+                                fontSize: 9, // Reduced font size for consistency
                               ),
                             ),
                           );
@@ -139,12 +140,13 @@ class TrendAnalysisChart extends StatelessWidget {
                       interval: interval,
                       getTitlesWidget: (double value, TitleMeta meta) {
                         return Padding(
-                          padding: const EdgeInsets.only(right: AppTheme.spacing8),
+                          padding: const EdgeInsets.only(right: AppTheme.spacing4),
                           child: Text(
                             CurrencyService().formatAmount(value).replaceAll('.00', ''),
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: AppColors.textSecondary,
                               fontWeight: FontWeight.w600,
+                              fontSize: 9, // Reduced font size to prevent overflow
                             ),
                           ),
                         );
@@ -254,20 +256,26 @@ class TrendAnalysisChart extends StatelessWidget {
     
     double maxAmount = 0;
     for (final data in monthlyData) {
-      final max = data['income'] > data['expense'] ? data['income'] : data['expense'];
+      final max = data['income'] > data['expense'] ? data['income'].toDouble() : data['expense'].toDouble();
       if (max > maxAmount) maxAmount = max;
     }
     
-    return maxAmount * 1.2; // Add 20% padding
+    // Round up to a nice number
+    final interval = _getYAxisInterval(maxAmount);
+    return ((maxAmount / interval).ceil() + 1) * interval;
   }
 
   double _getYAxisInterval(double maxAmount) {
-    if (maxAmount <= 100) return 25;
+    if (maxAmount <= 0) return 100;
     if (maxAmount <= 500) return 100;
-    if (maxAmount <= 1000) return 200;
-    if (maxAmount <= 5000) return 500;
-    if (maxAmount <= 10000) return 1000;
-    return 2000;
+    if (maxAmount <= 1000) return 250;
+    if (maxAmount <= 2500) return 500;
+    if (maxAmount <= 5000) return 1000;
+    if (maxAmount <= 10000) return 2500;
+    if (maxAmount <= 25000) return 5000;
+    if (maxAmount <= 50000) return 10000;
+    if (maxAmount <= 100000) return 25000;
+    return 50000;
   }
 
   Widget _buildLegendItem(String label, Color color) {

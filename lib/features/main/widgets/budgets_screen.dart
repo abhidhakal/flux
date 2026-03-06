@@ -7,8 +7,6 @@ import '../../../shared/widgets/skeleton_components.dart';
 import '../../../core/widgets/app_banner_ad.dart';
 import '../../auth/auth_bloc.dart';
 import '../../budget/budget_bloc.dart';
-import '../../transaction/transaction_bloc.dart';
-import '../../../core/models/transaction_model.dart';
 import '../../budget/screens/add_budget_screen.dart';
 import '../../budget/screens/edit_budget_screen.dart';
 import '../../../shared/widgets/app_snackbar.dart';
@@ -21,9 +19,6 @@ class BudgetsScreen extends StatefulWidget {
 }
 
 class _BudgetsScreenState extends State<BudgetsScreen> {
-  /// Budgets whose stale-deactivation dialog has already been shown this session.
-  final Set<String> _shownStaleBudgetIds = {};
-
   @override
   void initState() {
     super.initState();
@@ -32,72 +27,6 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     if (user is AuthAuthenticated) {
       context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
     }
-  }
-
-  /// Check whether any active budget is at ≥95 % AND has had no transaction
-  /// for the last 3 days. For each matching budget (shown only once per session)
-  /// prompt the user to deactivate it.
-  void _checkStaleBudgets(List<Budget> budgets, List<Transaction> transactions) {
-    final now = DateTime.now();
-    for (final budget in budgets) {
-      if (!budget.isActive) continue;
-      if (_shownStaleBudgetIds.contains(budget.id)) continue;
-
-      final percentage = budget.amount > 0 ? (budget.spent / budget.amount) * 100 : 0.0;
-      if (percentage < 95) continue;
-
-      // Find the most recent transaction linked to this budget
-      DateTime? lastTxDate;
-      for (final tx in transactions) {
-        if (tx.budgetId != budget.id) continue;
-        if (lastTxDate == null || tx.date.isAfter(lastTxDate)) {
-          lastTxDate = tx.date;
-        }
-      }
-
-      final daysSinceTx = lastTxDate == null
-          ? 999
-          : now.difference(lastTxDate).inDays;
-
-      if (daysSinceTx >= 3) {
-        _shownStaleBudgetIds.add(budget.id);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          _showStaleBudgetDialog(budget, percentage.round(), daysSinceTx);
-        });
-      }
-    }
-  }
-
-  void _showStaleBudgetDialog(Budget budget, int percentage, int daysSinceTx) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final daysLabel = daysSinceTx >= 999 ? 'no transactions recorded' : '$daysSinceTx days ago';
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Deactivate Budget?'),
-        content: Text(
-          'Your "${budget.name}" budget is at $percentage% and the last transaction was $daysLabel. '
-          'Would you like to mark it as inactive?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Keep Active', style: TextStyle(color: colorScheme.onSurface)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              context.read<BudgetBloc>().add(
-                    UpdateBudget(budget.copyWith(isActive: false)),
-                  );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Deactivate', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -138,13 +67,6 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       ),
       body: BlocListener<BudgetBloc, BudgetState>(
         listener: (context, state) {
-          if (state is BudgetLoaded) {
-            // Check for stale high-usage budgets once per refresh
-            final txState = context.read<TransactionBloc>().state;
-            final transactions = txState is TransactionLoaded ? txState.transactions : <Transaction>[];
-            _checkStaleBudgets(state.budgets, transactions);
-          }
-
           if (state is BudgetSuccess) {
             AppSnackbar.showSuccess(context, message: state.message);
             // Reload budgets after successful operation

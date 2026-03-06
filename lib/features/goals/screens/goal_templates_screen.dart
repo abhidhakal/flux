@@ -3,12 +3,28 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/goal_template_model.dart';
 import '../../../core/services/enhanced_goal_service.dart';
+import '../../../core/services/currency_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../goals_bloc.dart';
 
 class GoalTemplatesScreen extends StatefulWidget {
   const GoalTemplatesScreen({super.key});
+
+  static String getTemplateEmoji(GoalTemplateCategory category) {
+    switch (category) {
+      case GoalTemplateCategory.retirement: return '🏖️';
+      case GoalTemplateCategory.health: return '🏥';
+      case GoalTemplateCategory.business: return '💼';
+      case GoalTemplateCategory.house: return '🏠';
+      case GoalTemplateCategory.vacation: return '✈️';
+      case GoalTemplateCategory.emergency: return '🚨';
+      case GoalTemplateCategory.car: return '🚗';
+      case GoalTemplateCategory.education: return '🎓';
+      case GoalTemplateCategory.wedding: return '💍';
+      case GoalTemplateCategory.other: return '🎯';
+    }
+  }
 
   @override
   State<GoalTemplatesScreen> createState() => _GoalTemplatesScreenState();
@@ -17,11 +33,7 @@ class GoalTemplatesScreen extends StatefulWidget {
 class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
     with TickerProviderStateMixin {
   final EnhancedGoalService _goalService = EnhancedGoalService();
-  late TabController _tabController;
-  late AnimationController _fadeController;
-  late AnimationController _slideController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+  final CurrencyService _currencyService = CurrencyService();
   
   List<GoalTemplate> _templates = [];
   List<GoalTemplate> _filteredTemplates = [];
@@ -29,46 +41,26 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
   String _searchQuery = '';
   GoalTemplateCategory? _selectedCategory;
 
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    
-    // Initialize animation controllers
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-    
-    // Initialize animations
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
+    _fadeAnimation = CurvedAnimation(
       parent: _fadeController,
-      curve: Curves.easeInOut,
-    ));
-    
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    ));
-    
+      curve: Curves.easeIn,
+    );
     _loadTemplates();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _fadeController.dispose();
-    _slideController.dispose();
     super.dispose();
   }
 
@@ -76,31 +68,28 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
     setState(() => _isLoading = true);
     try {
       final templates = await _goalService.getGoalTemplates();
-      setState(() {
-        _templates = templates;
-        _filteredTemplates = templates;
-        _isLoading = false;
-      });
-      
-      // Start animations after data is loaded
-      _fadeController.forward();
-      _slideController.forward();
+      if (mounted) {
+        setState(() {
+          _templates = templates;
+          _filteredTemplates = templates;
+          _isLoading = false;
+        });
+        _fadeController.forward();
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
-      AppSnackbar.showError(context, message: 'Failed to load templates');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        AppSnackbar.showError(context, message: 'Error loading templates');
+      }
     }
   }
 
   void _filterTemplates() {
     setState(() {
-      _filteredTemplates = _templates.where((template) {
-        final matchesSearch = _searchQuery.isEmpty ||
-            template.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            template.description.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            template.tags.any((tag) => tag.toLowerCase().contains(_searchQuery.toLowerCase()));
-        
-        final matchesCategory = _selectedCategory == null || template.category == _selectedCategory;
-        
+      _filteredTemplates = _templates.where((t) {
+        final matchesSearch = t.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            t.description.toLowerCase().contains(_searchQuery.toLowerCase());
+        final matchesCategory = _selectedCategory == null || t.category == _selectedCategory;
         return matchesSearch && matchesCategory;
       }).toList();
     });
@@ -108,233 +97,94 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
         title: const Text('Goal Templates'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.lightTextInverse,
+        centerTitle: false,
+        backgroundColor: isDark ? Colors.black : Colors.white,
+        foregroundColor: isDark ? Colors.white : Colors.black,
         elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.lightTextInverse,
-          labelColor: AppColors.lightTextInverse,
-          unselectedLabelColor: AppColors.lightTextInverse.withOpacity(0.7),
-          tabs: const [
-            Tab(text: 'Browse Templates'),
-            Tab(text: 'Popular'),
-          ],
+        scrolledUnderElevation: 0,
+        titleTextStyle: theme.textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: isDark ? Colors.white : Colors.black,
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildBrowseTemplatesTab(),
-          _buildPopularTemplatesTab(),
+          _buildSearchAndFilter(context),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _buildTemplatesGrid(),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildBrowseTemplatesTab() {
-    return Column(
-      children: [
-        _buildSearchAndFilter(),
-        Expanded(
-          child: _isLoading
-              ? _buildLoadingState()
-              : FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: _buildTemplatesGrid(),
-                  ),
-                ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPopularTemplatesTab() {
-    return FutureBuilder<List<GoalTemplate>>(
-      future: _goalService.getPopularTemplates(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        
-        if (snapshot.hasError) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading popular templates',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Please check your internet connection and try again.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-        
-        final popularTemplates = snapshot.data ?? [];
-        
-        if (popularTemplates.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.star_outline,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No popular templates yet',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Popular templates will appear here as users create and complete goals',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-        
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.8,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-          ),
-          itemCount: popularTemplates.length,
-          itemBuilder: (context, index) {
-            return _buildTemplateCard(popularTemplates[index]);
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildSearchAndFilter() {
+  Widget _buildSearchAndFilter(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: colorScheme.onSurface.withOpacity(0.05),
+          ),
+        ),
+      ),
       child: Column(
         children: [
-          // Search bar
           TextField(
-            decoration: InputDecoration(
-              hintText: 'Search templates...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
-              fillColor: Theme.of(context).colorScheme.surface,
-            ),
             onChanged: (value) {
-              setState(() => _searchQuery = value);
+              _searchQuery = value;
               _filterTemplates();
             },
+            decoration: InputDecoration(
+              hintText: 'Search templates...',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              filled: true,
+              fillColor: colorScheme.onSurface.withOpacity(0.05),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            ),
           ),
-          const SizedBox(height: 16),
-          // Category filter
+          const SizedBox(height: 12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: [
-                _buildCategoryChip('All', null),
-                const SizedBox(width: 8),
-                ...GoalTemplateCategory.values.map(
-                  (category) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: _buildCategoryChip(_getCategoryDisplayName(category), category),
+              children: GoalTemplateCategory.values.map((category) {
+                final isSelected = _selectedCategory == category;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Text(category.name[0].toUpperCase() + category.name.substring(1)),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      setState(() {
+                        _selectedCategory = selected ? category : null;
+                        _filterTemplates();
+                      });
+                    },
+                    selectedColor: AppColors.primary.withOpacity(0.2),
+                    checkmarkColor: AppColors.primary,
+                    labelStyle: TextStyle(
+                      color: isSelected ? AppColors.primary : colorScheme.onSurface,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryChip(String label, GoalTemplateCategory? category) {
-    final isSelected = _selectedCategory == category;
-    
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        setState(() {
-          _selectedCategory = selected ? category : null;
-          _filterTemplates();
-        });
-      },
-      selectedColor: AppColors.primary.withOpacity(0.2),
-      checkmarkColor: AppColors.primary,
-    );
-  }
-
-  Widget _buildLoadingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Loading Templates...',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Discovering amazing goal templates',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary.withOpacity(0.7),
+                );
+              }).toList(),
             ),
           ),
         ],
@@ -348,191 +198,103 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.search_off,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-            ),
+            Icon(Icons.search_off, size: 64, color: AppColors.primary.withOpacity(0.3)),
             const SizedBox(height: 16),
-            Text(
-              'No templates found',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Try adjusting your search or filter',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-              ),
-            ),
+            const Text('No templates found'),
           ],
         ),
       );
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.8,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.85,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        itemCount: _filteredTemplates.length,
+        itemBuilder: (context, index) {
+          final template = _filteredTemplates[index];
+          return _buildTemplateCard(template);
+        },
       ),
-      itemCount: _filteredTemplates.length,
-      itemBuilder: (context, index) {
-        final template = _filteredTemplates[index];
-        return AnimatedBuilder(
-          animation: _fadeAnimation,
-          builder: (context, child) {
-            return Transform.translate(
-              offset: Offset(0, 20 * (1 - _fadeAnimation.value)),
-              child: Opacity(
-                opacity: _fadeAnimation.value,
-                child: _buildTemplateCard(template),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
   Widget _buildTemplateCard(GoalTemplate template) {
-    return TweenAnimationBuilder<double>(
-      duration: const Duration(milliseconds: 300),
-      tween: Tween(begin: 0.0, end: 1.0),
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: 0.9 + (0.1 * value),
-          child: Card(
-            elevation: 2 + (2 * value),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: InkWell(
-              onTap: () => _showTemplateDetails(template),
-              borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Icon and category
-              Row(
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return GestureDetector(
+      onTap: () => _showTemplateDetails(template),
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: colorScheme.onSurface.withOpacity(0.05)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Center(
+                child: Text(
+                  GoalTemplatesScreen.getTemplateEmoji(template.category),
+                  style: const TextStyle(fontSize: 40),
+                ),
+              ),
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    template.icon,
-                    style: const TextStyle(fontSize: 24),
+                    template.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const Spacer(),
-                  if (template.isPopular)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.success,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'Popular',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.timer_outlined, size: 14, color: colorScheme.onSurface.withOpacity(0.4)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${template.suggestedDurationMonths}m',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.4),
                         ),
                       ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // Title
-              Text(
-                template.name,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              // Description
-              Expanded(
-                child: Text(
-                  template.description,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Difficulty and amount
-              Row(
-                children: [
-                  _buildDifficultyChip(template.difficulty),
-                  const Spacer(),
-                  Text(
-                    '\$${template.suggestedAmount.toStringAsFixed(0)}',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
+                      const Spacer(),
+                      Text(
+                        _currencyService.formatAmount(template.suggestedAmount),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              // Duration
-              Text(
-                '${template.suggestedDurationMonths} months',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ));
-      },
-    );
-  }
-
-  Widget _buildDifficultyChip(GoalTemplateDifficulty difficulty) {
-    Color color;
-    String label;
-    
-    switch (difficulty) {
-      case GoalTemplateDifficulty.easy:
-        color = AppColors.success;
-        label = 'Easy';
-        break;
-      case GoalTemplateDifficulty.medium:
-        color = AppColors.warning;
-        label = 'Medium';
-        break;
-      case GoalTemplateDifficulty.hard:
-        color = AppColors.error;
-        label = 'Hard';
-        break;
-      case GoalTemplateDifficulty.expert:
-        color = AppColors.primary;
-        label = 'Expert';
-        break;
-    }
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
+            ),
+          ],
         ),
       ),
     );
@@ -543,231 +305,240 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _buildTemplateDetailsSheet(template),
+      builder: (context) => _TemplateDetailsSheet(
+        template: template,
+        goalService: _goalService,
+        currencyService: _currencyService,
+      ),
     );
   }
+}
 
-  Widget _buildTemplateDetailsSheet(GoalTemplate template) {
+class _TemplateDetailsSheet extends StatefulWidget {
+  final GoalTemplate template;
+  final EnhancedGoalService goalService;
+  final CurrencyService currencyService;
+
+  const _TemplateDetailsSheet({
+    required this.template,
+    required this.goalService,
+    required this.currencyService,
+  });
+
+  @override
+  State<_TemplateDetailsSheet> createState() => _TemplateDetailsSheetState();
+}
+
+class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
+  late TextEditingController _amountController;
+  int _selectedDurationMonths = 12;
+  bool _isCreating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _amountController = TextEditingController(
+      text: widget.template.suggestedAmount.toStringAsFixed(0),
+    );
+    _selectedDurationMonths = widget.template.suggestedDurationMonths;
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+
     return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        color: colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      child: Column(
-        children: [
-          // Handle bar
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          // Content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Row(
-                    children: [
-                      Text(
-                        template.icon,
-                        style: const TextStyle(fontSize: 48),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              template.name,
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _getCategoryDisplayName(template.category),
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _buildDifficultyChip(template.difficulty),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  // Description
-                  Text(
-                    template.description,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  const SizedBox(height: 24),
-                  // Details
-                  _buildDetailRow('Target Amount', '\$${template.suggestedAmount.toStringAsFixed(0)}'),
-                  _buildDetailRow('Duration', '${template.suggestedDurationMonths} months'),
-                  _buildDetailRow('Difficulty', _getDifficultyDisplayName(template.difficulty)),
-                  _buildDetailRow('Completion Rate', '${(template.completionRate * 100).toStringAsFixed(0)}%'),
-                  const SizedBox(height: 24),
-                  // Tags
-                  if (template.tags.isNotEmpty) ...[
-                    Text(
-                      'Tags',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: template.tags.map((tag) => Chip(
-                        label: Text(tag),
-                        backgroundColor: AppColors.primary.withOpacity(0.1),
-                        labelStyle: TextStyle(color: AppColors.primary),
-                      )).toList(),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                  // Tips
-                  if (template.metadata['tips'] != null) ...[
-                    Text(
-                      'Tips',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...(template.metadata['tips'] as List<dynamic>).map((tip) => 
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('• ', style: TextStyle(fontWeight: FontWeight.bold)),
-                            Expanded(child: Text(tip.toString())),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                  // Action buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => _createGoalFromTemplate(template),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                          ),
-                          child: const Text(
-                            'Create Goal',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + bottomPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Text(
-            '$label:',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.template.name,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        widget.template.description,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.05),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    GoalTemplatesScreen.getTemplateEmoji(widget.template.category),
+                    style: const TextStyle(fontSize: 32),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ],
+            const SizedBox(height: 32),
+            Text(
+              'Target Amount',
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _amountController,
+              keyboardType: TextInputType.number,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+              decoration: InputDecoration(
+                prefixText: '${widget.currencyService.symbol} ',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Timeline',
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: 100,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurface.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ListWheelScrollView.useDelegate(
+                itemExtent: 40,
+                perspective: 0.005,
+                diameterRatio: 1.2,
+                physics: const FixedExtentScrollPhysics(),
+                onSelectedItemChanged: (index) {
+                  setState(() => _selectedDurationMonths = index + 1);
+                },
+                childDelegate: ListWheelChildBuilderDelegate(
+                  childCount: 60,
+                  builder: (context, index) {
+                    final months = index + 1;
+                    final isSelected = _selectedDurationMonths == months;
+                    return Center(
+                      child: Text(
+                        '$months months',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: isSelected ? AppColors.primary : colorScheme.onSurface,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: _isCreating ? null : _createGoal,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                ),
+                child: _isCreating
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Create Goal',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }
 
-  Future<void> _createGoalFromTemplate(GoalTemplate template) async {
+  Future<void> _createGoal() async {
+    final amountText = _amountController.text.replaceAll(',', '');
+    final amount = double.tryParse(amountText) ?? widget.template.suggestedAmount;
+    
+    setState(() => _isCreating = true);
     try {
-      final user = context.read<AuthBloc>().state;
-      if (user is AuthAuthenticated) {
-        await _goalService.createGoalFromTemplate(template, user.user.id);
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthAuthenticated) {
+        await widget.goalService.createGoalFromTemplate(
+          widget.template,
+          authState.user.id,
+          customAmount: amount,
+          customDurationMonths: _selectedDurationMonths,
+        );
         
-        // Dispatch LoadGoals to refresh the goals list in goalsBloc
-        context.read<GoalsBloc>().add(LoadGoals(user.user.id));
-        
-        Navigator.pop(context); // Close template details
-        Navigator.pop(context); // Close templates screen
-        AppSnackbar.showSuccess(context, message: 'Goal created from template!');
+        if (mounted) {
+          context.read<GoalsBloc>().add(LoadGoals(authState.user.id));
+          Navigator.pop(context); // Close sheet
+          Navigator.pop(context); // Close screen
+          AppSnackbar.showSuccess(context, message: 'Goal created successfully!');
+        }
       }
     } catch (e) {
-      AppSnackbar.showError(context, message: 'Failed to create goal: $e');
-    }
-  }
-
-  String _getCategoryDisplayName(GoalTemplateCategory category) {
-    switch (category) {
-      case GoalTemplateCategory.house:
-        return 'House';
-      case GoalTemplateCategory.car:
-        return 'Car';
-      case GoalTemplateCategory.vacation:
-        return 'Vacation';
-      case GoalTemplateCategory.education:
-        return 'Education';
-      case GoalTemplateCategory.emergency:
-        return 'Emergency';
-      case GoalTemplateCategory.retirement:
-        return 'Retirement';
-      case GoalTemplateCategory.wedding:
-        return 'Wedding';
-      case GoalTemplateCategory.business:
-        return 'Business';
-      case GoalTemplateCategory.health:
-        return 'Health';
-      case GoalTemplateCategory.other:
-        return 'Other';
-    }
-  }
-
-  String _getDifficultyDisplayName(GoalTemplateDifficulty difficulty) {
-    switch (difficulty) {
-      case GoalTemplateDifficulty.easy:
-        return 'Easy';
-      case GoalTemplateDifficulty.medium:
-        return 'Medium';
-      case GoalTemplateDifficulty.hard:
-        return 'Hard';
-      case GoalTemplateDifficulty.expert:
-        return 'Expert';
+      if (mounted) {
+        AppSnackbar.showError(context, message: 'Failed to create goal');
+      }
+    } finally {
+      if (mounted) setState(() => _isCreating = false);
     }
   }
 }

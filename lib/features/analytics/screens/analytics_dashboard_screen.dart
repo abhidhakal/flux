@@ -13,6 +13,8 @@ import '../widgets/insights_card.dart';
 import '../widgets/trend_analysis_chart.dart';
 import '../widgets/weekly_spending_chart.dart';
 
+enum _TimelineFilter { lastWeek, lastMonth, last3Months, custom }
+
 class AnalyticsDashboardScreen extends StatefulWidget {
   const AnalyticsDashboardScreen({super.key});
 
@@ -21,8 +23,8 @@ class AnalyticsDashboardScreen extends StatefulWidget {
 }
 
 class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
-  String _selectedPeriod = 'This Month';
-  final List<String> _periods = ['This Month', 'Last 3 Months', 'This Year'];
+  _TimelineFilter _timelineFilter = _TimelineFilter.lastMonth;
+  DateTimeRange? _customRange;
 
   @override
   void initState() {
@@ -32,6 +34,62 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       context.read<TransactionBloc>().add(LoadTransactions(user.user.id));
       context.read<IncomeBloc>().add(LoadIncome(user.user.id));
     }
+  }
+
+  DateTimeRange _getActiveRange() {
+    if (_timelineFilter == _TimelineFilter.custom && _customRange != null) {
+      return _customRange!;
+    }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    switch (_timelineFilter) {
+      case _TimelineFilter.lastWeek:
+        return DateTimeRange(start: today.subtract(const Duration(days: 6)), end: today);
+      case _TimelineFilter.lastMonth:
+        return DateTimeRange(start: DateTime(now.year, now.month - 1, now.day), end: today);
+      case _TimelineFilter.last3Months:
+        return DateTimeRange(start: DateTime(now.year, now.month - 3, now.day), end: today);
+      case _TimelineFilter.custom:
+        return DateTimeRange(start: DateTime(now.year, now.month - 1, now.day), end: today);
+    }
+  }
+
+  Future<void> _pickCustomRange() async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: now,
+      initialDateRange: _customRange ??
+          DateTimeRange(
+            start: now.subtract(const Duration(days: 30)),
+            end: now,
+          ),
+      builder: (context, child) => Theme(
+        data: Theme.of(context),
+        child: child!,
+      ),
+    );
+    if (picked != null) {
+      setState(() {
+        _customRange = picked;
+        _timelineFilter = _TimelineFilter.custom;
+      });
+    }
+  }
+
+  List<Transaction> _filterTransactions(List<Transaction> transactions) {
+    final range = _getActiveRange();
+    return transactions.where((t) {
+      return !t.date.isBefore(range.start) && !t.date.isAfter(range.end);
+    }).toList();
+  }
+
+  List<Income> _filterIncomes(List<Income> incomes) {
+    final range = _getActiveRange();
+    return incomes.where((i) {
+      return !i.date.isBefore(range.start) && !i.date.isAfter(range.end);
+    }).toList();
   }
 
   @override
@@ -93,6 +151,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                 }
 
                 if (transactionState is TransactionLoaded && incomeState is IncomeLoaded) {
+                  final transactions = _filterTransactions(transactionState.transactions);
+                  final incomes = _filterIncomes(incomeState.incomes);
+
                   return BlocBuilder<AnalyticsBloc, AnalyticsState>(
                     builder: (context, analyticsState) {
                       final analysis = analyticsState is SpendingAnalysisLoaded ? analyticsState.analysis : null;
@@ -117,7 +178,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                               const SizedBox(height: 32),
                               
                               // 2. Quick Stats Row
-                              _buildQuickStats(transactionState.transactions, incomeState.incomes),
+                              _buildQuickStats(transactions, incomes),
                               
                               const SizedBox(height: 32),
 
@@ -126,8 +187,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
 
                               const SizedBox(height: 32),
                               
-                              // 4. AI Insights Section
-                              _buildInsightsSection(analyticsState),
+                              // 4. Smart Insights Section
+                              _buildSmartInsightsSection(analyticsState),
 
                               const SizedBox(height: 32),
 
@@ -139,7 +200,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                               // Main Spending Chart
                               _buildSectionHeader('Spending Trend', 'Your weekly expense activity'),
                               const SizedBox(height: 16),
-                              WeeklySpendingChart(transactions: transactionState.transactions),
+                              WeeklySpendingChart(transactions: transactions),
 
                               const SizedBox(height: 32),
 
@@ -152,8 +213,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                               _buildSectionHeader('Monthly Comparison', 'Income vs Expenses'),
                               const SizedBox(height: 16),
                               TrendAnalysisChart(
-                                transactions: transactionState.transactions,
-                                incomes: incomeState.incomes,
+                                transactions: transactions,
+                                incomes: incomes,
                               ),
 
                               const SizedBox(height: 32),
@@ -161,7 +222,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                               // Category Breakdown Section
                               _buildSectionHeader('Category Breakdown', 'Where your money goes'),
                               const SizedBox(height: 16),
-                              CategoryBreakdownChart(transactions: transactionState.transactions),
+                              CategoryBreakdownChart(transactions: transactions),
                               
                               const SizedBox(height: 32),
                               
@@ -535,14 +596,14 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     );
   }
 
-  Widget _buildInsightsSection(AnalyticsState state) {
+  Widget _buildSmartInsightsSection(AnalyticsState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildSectionHeader('AI Intelligence', 'Smart analysis of your habits'),
+            _buildSectionHeader('Smart Intelligence', 'Smart analysis of your habits'),
             Icon(Icons.auto_awesome, color: AppColors.primary, size: 24),
           ],
         ),
@@ -594,35 +655,62 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   }
 
   Widget _buildPeriodSelector(ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _selectedPeriod,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-          onChanged: (String? newValue) {
-            if (newValue != null) {
-              setState(() => _selectedPeriod = newValue);
-            }
-          },
-          items: _periods.map<DropdownMenuItem<String>>((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            );
-          }).toList(),
+    return PopupMenuButton<_TimelineFilter>(
+      initialValue: _timelineFilter,
+      onSelected: (filter) {
+        if (filter == _TimelineFilter.custom) {
+          _pickCustomRange();
+        } else {
+          setState(() => _timelineFilter = filter);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _timelineFilter == _TimelineFilter.lastWeek
+                  ? 'Last Week'
+                  : _timelineFilter == _TimelineFilter.lastMonth
+                      ? 'Last Month'
+                      : _timelineFilter == _TimelineFilter.last3Months
+                          ? 'Last 3 Months'
+                          : 'Custom',
+              style: TextStyle(
+                color: colorScheme.onSurface,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+          ],
         ),
       ),
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: _TimelineFilter.lastWeek,
+          child: Text('Last Week'),
+        ),
+        const PopupMenuItem(
+          value: _TimelineFilter.lastMonth,
+          child: Text('Last Month'),
+        ),
+        const PopupMenuItem(
+          value: _TimelineFilter.last3Months,
+          child: Text('Last 3 Months'),
+        ),
+        const PopupMenuItem(
+          value: _TimelineFilter.custom,
+          child: Text('Custom Range'),
+        ),
+      ],
     );
   }
 

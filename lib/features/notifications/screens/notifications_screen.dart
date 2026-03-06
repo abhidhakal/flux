@@ -70,6 +70,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           }
                         },
                       ),
+                    IconButton(
+                      icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.onBackground),
+                      onPressed: () => _showNotificationOptions(context),
+                    ),
                   ],
                 );
               }
@@ -315,5 +319,84 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   void _handleDismissNotification(app_notification.Notification notification) {
     context.read<NotificationsBloc>().add(DismissNotification(notification.id));
+  }
+
+  void _showNotificationOptions(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurface.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.delete_sweep_outlined, color: Colors.red),
+              ),
+              title: const Text(
+                'Clear All Notifications',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red,
+                ),
+              ),
+              subtitle: const Text('This will permanently delete all notifications'),
+              onTap: () {
+                Navigator.pop(context);
+                _showClearAllDialog(this.context);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showClearAllDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear All Notifications'),
+        content: const Text('Are you sure you want to delete all notifications? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final user = this.context.read<AuthBloc>().state;
+              if (user is AuthAuthenticated) {
+                this.context.read<NotificationsBloc>().add(ClearAllNotifications(user.user.id));
+              }
+              Navigator.pop(context);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Clear All'),
+          ),
+        ],
+      ),
+    );
   }
 }

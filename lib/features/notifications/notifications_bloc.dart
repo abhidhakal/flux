@@ -214,18 +214,14 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     Emitter<NotificationsState> emit,
   ) async {
     try {
-      final unreadNotifications = await _notificationService.getUnreadNotifications(event.userId);
-      
-      for (final notification in unreadNotifications) {
-        await _notificationService.markAsRead(notification.id);
-      }
+      await _notificationService.markAllAsRead(event.userId);
       
       // Reload to show updated state
       final notifications = await _notificationService.getUserNotifications(event.userId);
       emit(NotificationsLoaded(notifications));
       emit(const NotificationsSuccess('All marked as read'));
     } catch (e) {
-      emit(NotificationsError('Failed to mark all as read'));
+      emit(const NotificationsError('Failed to mark all as read'));
     }
   }
 
@@ -234,16 +230,12 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     Emitter<NotificationsState> emit,
   ) async {
     try {
-      final notifications = await _notificationService.getUserNotifications(event.userId);
-      
-      for (final notification in notifications) {
-        await _notificationService.deleteNotification(notification.id);
-      }
+      await _notificationService.deleteAllNotifications(event.userId);
       
       emit(const NotificationsLoaded([]));
       emit(const NotificationsSuccess('All notifications cleared'));
     } catch (e) {
-      emit(NotificationsError('Failed to clear notifications'));
+      emit(const NotificationsError('Failed to clear notifications'));
     }
   }
 }
