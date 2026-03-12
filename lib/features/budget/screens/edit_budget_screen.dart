@@ -4,6 +4,7 @@ import '../../../core/constants/app_theme.dart';
 import '../../../core/constants/categories.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/services/currency_service.dart';
+import '../../../core/services/transaction_service.dart';
 import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 
@@ -41,7 +42,7 @@ class EditBudgetScreen {
                     height: 4,
                     margin: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      color: colorScheme.outline.withOpacity(0.3),
+                      color: colorScheme.outline.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -92,6 +93,7 @@ class _EditBudgetForm extends StatefulWidget {
 }
 
 class _EditBudgetFormState extends State<_EditBudgetForm> {
+  final TransactionService _transactionService = TransactionService();
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _amountController;
@@ -106,7 +108,8 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.budget.name);
-    _amountController = TextEditingController(text: widget.budget.amount.toStringAsFixed(2));
+    _amountController =
+        TextEditingController(text: widget.budget.amount.toStringAsFixed(2));
     _selectedPeriod = widget.budget.period;
     _selectedCategory = widget.budget.category;
     _enableRollover = widget.budget.enableRollover;
@@ -153,7 +156,8 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                 decoration: InputDecoration(
                   hintText: 'e.g., Monthly Food Budget',
                   prefixIcon: const Icon(Icons.label_rounded),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -163,7 +167,6 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                 },
               ),
               const SizedBox(height: 20),
-
               _buildSectionTitle('Amount'),
               const SizedBox(height: 8),
               TextFormField(
@@ -173,7 +176,8 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                   hintText: 'Enter amount',
                   prefixIcon: const Icon(Icons.attach_money_rounded),
                   prefixText: '${CurrencyService().symbol} ',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -187,14 +191,14 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                 },
               ),
               const SizedBox(height: 20),
-
               _buildSectionTitle('Category'),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.category_rounded),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
                 items: AppCategories.expenseCategories.map((category) {
                   return DropdownMenuItem(
@@ -212,15 +216,14 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                     ),
                   );
                 }).toList(),
-                onChanged: (value) => setState(() => _selectedCategory = value!),
+                onChanged: (value) =>
+                    setState(() => _selectedCategory = value!),
               ),
               const SizedBox(height: 20),
-
               _buildSectionTitle('Period'),
               const SizedBox(height: 8),
               _buildPeriodSelector(),
               const SizedBox(height: 20),
-
               _buildToggle(
                 title: 'Active',
                 subtitle: 'Inactive budgets are hidden from most lists',
@@ -235,19 +238,20 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                 onChanged: (v) => setState(() => _enableRollover = v),
               ),
               const SizedBox(height: 32),
-
               ElevatedButton(
                 onPressed: _isLoading ? null : _handleSave,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
                 child: _isLoading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
                       )
                     : const Text(
                         'Save Changes',
@@ -271,7 +275,7 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
       style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.bold,
-        color: Theme.of(context).colorScheme.onBackground,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }
@@ -287,11 +291,16 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+                color: isSelected
+                    ? AppColors.primary.withValues(alpha: 0.1)
+                    : Colors.transparent,
                 border: Border.all(
                   color: isSelected
                       ? AppColors.primary
-                      : Theme.of(context).colorScheme.outline.withOpacity(0.4),
+                      : Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withValues(alpha: 0.4),
                   width: isSelected ? 2 : 1,
                 ),
                 borderRadius: BorderRadius.circular(8),
@@ -302,7 +311,9 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
-                  color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.onBackground,
+                  color: isSelected
+                      ? AppColors.primary
+                      : Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -321,27 +332,59 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: SwitchListTile(
         title: Text(
           title,
-          style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onBackground),
+          style: TextStyle(
+              fontWeight: FontWeight.w600, color: colorScheme.onSurface),
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(color: colorScheme.onBackground.withOpacity(0.6)),
+          style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
         ),
         value: value,
         onChanged: onChanged,
-        activeColor: AppColors.primary,
+        activeThumbColor: AppColors.primary,
       ),
     );
   }
 
-  void _handleSave() {
+  Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final selectedStatus = _isActive;
+    final wasActive = widget.budget.isActive;
+
+    bool keepLinkedTransactions = true;
+    if (wasActive && !selectedStatus) {
+      final decision = await _showTransactionSyncSheet();
+      if (decision == null) return;
+      keepLinkedTransactions = decision == _BudgetTransactionChoice.keepLinked;
+    }
+
+    if (wasActive != selectedStatus) {
+      setState(() => _isLoading = true);
+      try {
+        await _transactionService.syncBudgetTransactionLinks(
+          userId: widget.budget.userId,
+          budgetId: widget.budget.id,
+          newBudgetIsActive: selectedStatus,
+          keepLinkedToBudget: selectedStatus ? true : keepLinkedTransactions,
+        );
+      } catch (e) {
+        if (mounted) {
+          AppSnackbar.showError(
+            context,
+            message: 'Failed to update linked transactions: $e',
+          );
+          setState(() => _isLoading = false);
+        }
+        return;
+      }
+    }
 
     final updated = widget.budget.copyWith(
       name: _nameController.text.trim(),
@@ -350,8 +393,114 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
       category: _selectedCategory,
       enableRollover: _enableRollover,
       isActive: _isActive,
+      spent: (!selectedStatus && !keepLinkedTransactions)
+          ? 0
+          : widget.budget.spent,
     );
 
+    if (!mounted) return;
     context.read<BudgetBloc>().add(UpdateBudget(updated));
   }
+
+  Future<_BudgetTransactionChoice?> _showTransactionSyncSheet() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+
+    return showModalBottomSheet<_BudgetTransactionChoice>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: Container(
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colorScheme.outline.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Linked Transactions',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Do you want transactions linked to this budget to become inactive too?',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface.withValues(alpha: 0.8),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'If not, transaction-to-budget links will be removed and that connection data is lost.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurface.withValues(alpha: 0.65),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(
+                    sheetContext,
+                    _BudgetTransactionChoice.keepLinked,
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                  ),
+                  child:
+                      const Text('Yes, keep links and inactivate transactions'),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(
+                    sheetContext,
+                    _BudgetTransactionChoice.removeLinks,
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                  ),
+                  child:
+                      const Text('No, remove budget links from transactions'),
+                ),
+              ),
+              const SizedBox(height: 6),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(sheetContext),
+                  child: const Text('Cancel'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
+
+enum _BudgetTransactionChoice { keepLinked, removeLinks }

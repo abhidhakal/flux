@@ -17,6 +17,8 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
+  List<app_notification.Notification> _lastLoadedNotifications = const [];
+
   @override
   void initState() {
     super.initState();
@@ -25,9 +27,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void _loadNotificationsIfNeeded(BuildContext context) {
     final notificationsState = context.read<NotificationsBloc>().state;
     final user = context.read<AuthBloc>().state;
-    
-    if (user is AuthAuthenticated && 
-        notificationsState is! NotificationsLoaded && 
+
+    if (user is AuthAuthenticated &&
+        notificationsState is! NotificationsLoaded &&
         notificationsState is! NotificationsLoading) {
       context.read<NotificationsBloc>().add(LoadNotifications(user.user.id));
     }
@@ -54,24 +56,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         actions: [
           BlocBuilder<NotificationsBloc, NotificationsState>(
             builder: (context, state) {
-              if (state is NotificationsLoaded && state.notifications.isNotEmpty) {
-                final hasUnread = state.notifications.any((n) => n.isUnread);
+              final notifications = _notificationsFromState(state);
+              if (notifications.isNotEmpty) {
+                final hasUnread = notifications.any((n) => n.isUnread);
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (hasUnread)
                       IconButton(
-                        icon: Icon(Icons.done_all, color: Theme.of(context).colorScheme.onBackground),
+                        icon: Icon(Icons.done_all,
+                            color: Theme.of(context).colorScheme.onBackground),
                         tooltip: 'Mark All as Read',
                         onPressed: () {
                           final user = context.read<AuthBloc>().state;
                           if (user is AuthAuthenticated) {
-                            context.read<NotificationsBloc>().add(MarkAllAsRead(user.user.id));
+                            context
+                                .read<NotificationsBloc>()
+                                .add(MarkAllAsRead(user.user.id));
                           }
                         },
                       ),
                     IconButton(
-                      icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.onBackground),
+                      icon: Icon(Icons.more_vert,
+                          color: Theme.of(context).colorScheme.onBackground),
                       onPressed: () => _showNotificationOptions(context),
                     ),
                   ],
@@ -93,7 +100,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             if (state is NotificationsSuccess) {
               AppSnackbar.showSuccess(context, message: state.message);
             }
-            
+
             if (state is NotificationsError) {
               AppSnackbar.showError(context, message: state.message);
             }
@@ -112,11 +119,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               }
 
               if (state is NotificationsLoaded) {
+                _lastLoadedNotifications = state.notifications;
                 if (state.notifications.isEmpty) {
                   return _buildEmptyState();
                 }
 
                 return _buildNotificationsList(state.notifications);
+              }
+
+              if (state is NotificationsSuccess) {
+                if (_lastLoadedNotifications.isEmpty) {
+                  return _buildEmptyState();
+                }
+                return _buildNotificationsList(_lastLoadedNotifications);
               }
 
               if (state is NotificationsError) {
@@ -141,7 +156,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primaryContainer
+                    .withOpacity(0.3),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -164,7 +182,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               'You\'ll receive notifications when:\n• Your budget reaches 80%, 90%, or is exceeded\n• You hit goal milestones (25%, 50%, 90%)\n• Unusual spending is detected',
               style: TextStyle(
                 fontSize: 14,
-                color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+                color:
+                    Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
@@ -199,7 +218,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             message,
             style: TextStyle(
               fontSize: 14,
-              color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+              color:
+                  Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
             ),
             textAlign: TextAlign.center,
           ),
@@ -208,7 +228,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             onPressed: () {
               final user = context.read<AuthBloc>().state;
               if (user is AuthAuthenticated) {
-                context.read<NotificationsBloc>().add(LoadNotifications(user.user.id));
+                context
+                    .read<NotificationsBloc>()
+                    .add(LoadNotifications(user.user.id));
               }
             },
             child: const Text('Retry'),
@@ -218,7 +240,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildNotificationsList(List<app_notification.Notification> notifications) {
+  Widget _buildNotificationsList(
+      List<app_notification.Notification> notifications) {
     final unreadNotifications = notifications.where((n) => n.isUnread).toList();
     final readNotifications = notifications.where((n) => n.isRead).toList();
 
@@ -228,24 +251,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         if (unreadNotifications.isNotEmpty) ...[
           _buildSectionHeader('New', unreadNotifications.length),
           ...unreadNotifications.map((notification) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: NotificationCard(
-              notification: notification,
-              onTap: () => _handleNotificationTap(notification),
-              onDismiss: () => _handleDismissNotification(notification),
-            ),
-          )),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: NotificationCard(
+                  notification: notification,
+                  onTap: () => _handleNotificationTap(notification),
+                  onDismiss: () => _handleDismissNotification(notification),
+                ),
+              )),
         ],
         if (readNotifications.isNotEmpty) ...[
           _buildSectionHeader('Earlier', readNotifications.length),
           ...readNotifications.map((notification) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: NotificationCard(
-              notification: notification,
-              onTap: () => _handleNotificationTap(notification),
-              onDismiss: () => _handleDismissNotification(notification),
-            ),
-          )),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: NotificationCard(
+                  notification: notification,
+                  onTap: () => _handleNotificationTap(notification),
+                  onDismiss: () => _handleDismissNotification(notification),
+                ),
+              )),
         ],
       ],
     );
@@ -261,7 +286,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onBackground.withOpacity(0.6),
+              color:
+                  Theme.of(context).colorScheme.onBackground.withOpacity(0.6),
             ),
           ),
           const SizedBox(width: 8),
@@ -285,6 +311,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
+  List<app_notification.Notification> _notificationsFromState(
+      NotificationsState state) {
+    if (state is NotificationsLoaded) {
+      return state.notifications;
+    }
+    return _lastLoadedNotifications;
+  }
+
   void _handleNotificationTap(app_notification.Notification notification) {
     // Mark as read if unread
     if (notification.isUnread) {
@@ -294,7 +328,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     // Handle actionable notifications
     if (notification.isActionable && notification.actionRoute != null) {
       final navCubit = context.read<NavigationCubit>();
-      
+
       switch (notification.actionRoute) {
         case '/budgets':
           navCubit.setTab(1);
@@ -312,7 +346,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           navCubit.setTab(3);
           break;
       }
-      
+
       Navigator.pop(context);
     }
   }
@@ -323,7 +357,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   void _showNotificationOptions(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: colorScheme.surface,
@@ -351,7 +385,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   color: Colors.red.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.delete_sweep_outlined, color: Colors.red),
+                child:
+                    const Icon(Icons.delete_sweep_outlined, color: Colors.red),
               ),
               title: const Text(
                 'Clear All Notifications',
@@ -360,7 +395,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   color: Colors.red,
                 ),
               ),
-              subtitle: const Text('This will permanently delete all notifications'),
+              subtitle:
+                  const Text('This will permanently delete all notifications'),
               onTap: () {
                 Navigator.pop(context);
                 _showClearAllDialog(this.context);
@@ -378,7 +414,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear All Notifications'),
-        content: const Text('Are you sure you want to delete all notifications? This action cannot be undone.'),
+        content: const Text(
+            'Are you sure you want to delete all notifications? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -388,7 +425,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             onPressed: () {
               final user = this.context.read<AuthBloc>().state;
               if (user is AuthAuthenticated) {
-                this.context.read<NotificationsBloc>().add(ClearAllNotifications(user.user.id));
+                this
+                    .context
+                    .read<NotificationsBloc>()
+                    .add(ClearAllNotifications(user.user.id));
               }
               Navigator.pop(context);
             },

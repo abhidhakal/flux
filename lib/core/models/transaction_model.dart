@@ -2,15 +2,17 @@ import 'package:equatable/equatable.dart';
 
 // Note: TransactionType.income is DEPRECATED. Use Income model for incomes.
 // This is kept for backward compatibility during migration.
-enum TransactionType { 
+enum TransactionType {
   @Deprecated('Use Income model instead')
-  income, 
-  expense 
+  income,
+  expense
 }
 
 /// Represents an Expense Transaction.
 /// Note: Income has been moved to a separate [Income] entity.
 class Transaction extends Equatable {
+  static const Object _unset = Object();
+
   final String id;
   final String userId;
   final String title;
@@ -19,7 +21,9 @@ class Transaction extends Equatable {
   final TransactionType type;
   final String category; // Direct category name - no complex mapping
   final String? budgetId; // Optional budget assignment
-  final bool isEssential; // User-defined essential status (Needs vs Wants) - NEW FIELD
+  final bool isActive;
+  final bool
+      isEssential; // User-defined essential status (Needs vs Wants) - NEW FIELD
   final DateTime date;
   final DateTime createdAt;
   final Map<String, dynamic> metadata;
@@ -33,6 +37,7 @@ class Transaction extends Equatable {
     required this.type,
     required this.category,
     this.budgetId,
+    this.isActive = true,
     this.isEssential = false,
     required this.date,
     required this.createdAt,
@@ -42,7 +47,7 @@ class Transaction extends Equatable {
   // Helper getters for easy access
   bool get isExpense => type == TransactionType.expense;
   bool get isIncome => type == TransactionType.income;
-  
+
   // For budget matching - exact category comparison
   String get categoryForBudget => category;
 
@@ -54,7 +59,8 @@ class Transaction extends Equatable {
     double? amount,
     TransactionType? type,
     String? category,
-    String? budgetId,
+    Object? budgetId = _unset,
+    bool? isActive,
     bool? isEssential,
     DateTime? date,
     DateTime? createdAt,
@@ -68,7 +74,9 @@ class Transaction extends Equatable {
       amount: amount ?? this.amount,
       type: type ?? this.type,
       category: category ?? this.category,
-      budgetId: budgetId ?? this.budgetId,
+      budgetId:
+          identical(budgetId, _unset) ? this.budgetId : budgetId as String?,
+      isActive: isActive ?? this.isActive,
       isEssential: isEssential ?? this.isEssential,
       date: date ?? this.date,
       createdAt: createdAt ?? this.createdAt,
@@ -86,6 +94,7 @@ class Transaction extends Equatable {
       'type': type.name,
       'category': category,
       'budgetId': budgetId,
+      'isActive': isActive,
       'isEssential': isEssential,
       'date': date.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
@@ -106,9 +115,14 @@ class Transaction extends Equatable {
       ),
       category: json['category'] as String? ?? 'Other',
       budgetId: json['budgetId'] as String?,
+      isActive: json['isActive'] as bool? ?? true,
       isEssential: json['isEssential'] as bool? ?? false,
-      date: json['date'] != null ? DateTime.parse(json['date'] as String) : DateTime.now(),
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : DateTime.now(),
+      date: json['date'] != null
+          ? DateTime.parse(json['date'] as String)
+          : DateTime.now(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
       metadata: Map<String, dynamic>.from(json['metadata'] ?? {}),
     );
   }
@@ -123,6 +137,7 @@ class Transaction extends Equatable {
         type,
         category,
         budgetId,
+        isActive,
         isEssential,
         date,
         createdAt,

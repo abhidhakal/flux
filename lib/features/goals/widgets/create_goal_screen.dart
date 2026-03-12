@@ -22,7 +22,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _targetAmountController = TextEditingController();
-  
+
   GoalType _selectedType = GoalType.savings;
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 365));
   int _selectedColor = 0xFF0079DC;
@@ -54,7 +54,8 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
       _descriptionController.text = data['description'] ?? '';
       _targetAmountController.text = data['targetAmount']?.toString() ?? '';
       _selectedType = data['type'] ?? GoalType.savings;
-      _selectedDate = data['targetDate'] ?? DateTime.now().add(const Duration(days: 365));
+      _selectedDate =
+          data['targetDate'] ?? DateTime.now().add(const Duration(days: 365));
       _selectedColor = data['color'] ?? 0xFF0079DC;
     }
   }
@@ -72,18 +73,19 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    
+    final saveIconColor = isDark ? Colors.white : colorScheme.onSurface;
+
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('Create Goal'),
         centerTitle: false,
-        backgroundColor: isDark ? Colors.black : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black,
-        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
         titleTextStyle: theme.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: isDark ? Colors.white : Colors.black,
+          color: colorScheme.onSurface,
+          fontWeight: FontWeight.w600,
         ),
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -91,20 +93,19 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
           TextButton(
             onPressed: _isLoading ? null : _handleCreateGoal,
             child: _isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppColors.primary,
+                      color: saveIconColor,
                     ),
                   )
-                : const Text(
+                : Text(
                     'Create',
                     style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      color: saveIconColor,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
           ),
@@ -113,7 +114,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
       ),
       body: BlocListener<GoalsBloc, GoalsState>(
         listener: (context, state) {
-           if (state is GoalsLoading) {
+          if (state is GoalsLoading) {
             setState(() => _isLoading = true);
           } else {
             setState(() => _isLoading = false);
@@ -127,111 +128,100 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
           }
         },
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Goal Name
-                TextField(
+                _buildSectionTitle('Goal Name'),
+                const SizedBox(height: 8),
+                TextFormField(
                   controller: _nameController,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black,
+                  decoration: _inputDecoration(
+                    hintText: 'e.g., Emergency Fund',
+                    icon: Icons.flag_rounded,
                   ),
-                  decoration: InputDecoration(
-                    hintText: 'Goal Name',
-                    hintStyle: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface.withOpacity(0.2),
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a goal name';
+                    }
+                    return null;
+                  },
                 ),
-                
-                const SizedBox(height: 32),
+
+                const SizedBox(height: 20),
 
                 // Target Amount
-                _buildSectionLabel('Target Amount'),
-                const SizedBox(height: 12),
+                _buildSectionTitle('Target Amount'),
+                const SizedBox(height: 8),
                 TextFormField(
-                    controller: _targetAmountController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                    ),
-                    decoration: _inputDecoration(
-                        hintText: '0',
-                        icon: Icons.account_balance_wallet_outlined,
-                        prefixText: '${CurrencyService().symbol} ',
-                    ),
-                    validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                            return 'Please enter target amount';
-                        }
-                        final amount = double.tryParse(value.replaceAll(',', ''));
-                        if (amount == null || amount <= 0) {
-                            return 'Please enter a valid amount';
-                        }
-                        return null;
-                    },
+                  controller: _targetAmountController,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: _inputDecoration(
+                    hintText: 'Enter target amount',
+                    icon: Icons.account_balance_wallet_outlined,
+                    prefixText: '${CurrencyService().symbol} ',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter target amount';
+                    }
+                    final amount = double.tryParse(value.replaceAll(',', ''));
+                    if (amount == null || amount <= 0) {
+                      return 'Please enter a valid amount';
+                    }
+                    return null;
+                  },
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
 
                 // Target Date
-                _buildSectionLabel('Deadline'),
-                const SizedBox(height: 12),
+                _buildSectionTitle('Deadline'),
+                const SizedBox(height: 8),
                 _buildDateSelector(colorScheme),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
 
-                 // Goal Type
-                _buildSectionLabel('Category'),
-                const SizedBox(height: 12),
+                // Goal Type
+                _buildSectionTitle('Goal Type'),
+                const SizedBox(height: 8),
                 _buildGoalTypeSelector(colorScheme),
 
-                const SizedBox(height: 32),
-                
+                const SizedBox(height: 20),
+
                 // Description
-                _buildSectionLabel('Reasoning'),
-                const SizedBox(height: 12),
+                _buildSectionTitle('Description'),
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: _descriptionController,
                   maxLines: 2,
-                  style: theme.textTheme.bodyLarge,
                   decoration: _inputDecoration(
-                    hintText: 'Why is this goal important?',
-                    icon: Icons.lightbulb_outline_rounded,
+                    hintText: 'Add details (optional)',
+                    icon: Icons.description_rounded,
                   ),
                 ),
-                
-                const SizedBox(height: 32),
 
-                 // Color Selection
-                _buildSectionLabel('Visual Theme'),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
+
+                // Color Selection
+                _buildSectionTitle('Color'),
+                const SizedBox(height: 8),
                 _buildColorSelector(colorScheme),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
 
                 // Recurring Toggle
                 _buildRecurringToggle(colorScheme),
 
-                const SizedBox(height: 48),
-                
+                const SizedBox(height: 32),
+
                 // Create Button (Bottom)
                 _buildCreateButton(colorScheme),
 
-                const SizedBox(height: 16),
-                
-                 // Cancel Button
-                _buildCancelButton(colorScheme),
-                
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -240,17 +230,13 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     );
   }
 
-  Widget _buildSectionLabel(String label) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Text(
-        label.toUpperCase(),
-        style: theme.textTheme.labelSmall?.copyWith(
-          letterSpacing: 1.2,
-          fontWeight: FontWeight.bold,
-          color: theme.colorScheme.onSurface.withOpacity(0.5),
-        ),
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }
@@ -265,63 +251,65 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     return InputDecoration(
       hintText: hintText,
       hintStyle: theme.textTheme.bodyLarge?.copyWith(
-        color: colorScheme.onSurface.withOpacity(0.3),
+        color: colorScheme.onSurface.withValues(alpha: 0.45),
       ),
-      prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
+      prefixIcon: Icon(icon),
       prefixText: prefixText,
-      prefixStyle: theme.textTheme.headlineSmall?.copyWith(
-        color: AppColors.primary,
-        fontWeight: FontWeight.bold,
+      prefixStyle: theme.textTheme.bodyLarge?.copyWith(
+        color: colorScheme.onSurface,
+        fontWeight: FontWeight.w500,
       ),
-      filled: true,
-      fillColor: colorScheme.onSurface.withOpacity(0.04),
+      filled: false,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(8),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(
+          color: colorScheme.outline.withValues(alpha: 0.4),
+          width: 1,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide(color: colorScheme.error, width: 1),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide(color: colorScheme.error, width: 2),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 
-    Widget _buildDateSelector(ColorScheme colorScheme) {
+  Widget _buildDateSelector(ColorScheme colorScheme) {
     final daysRemaining = _selectedDate.difference(DateTime.now()).inDays;
-    
+
     return InkWell(
       onTap: _selectDate,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: colorScheme.onSurface.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.4)),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                shape: BoxShape.circle,
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.calendar_today_rounded, size: 20, color: AppColors.primary),
+              child: const Icon(Icons.calendar_today_rounded,
+                  size: 18, color: AppColors.primary),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,13 +324,13 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    daysRemaining > 0 
+                    daysRemaining > 0
                         ? '$daysRemaining days until goal reached'
                         : 'Deadline has passed',
                     style: TextStyle(
                       fontSize: 13,
-                      color: daysRemaining > 0 
-                          ? colorScheme.onSurface.withOpacity(0.5) 
+                      color: daysRemaining > 0
+                          ? colorScheme.onSurface.withValues(alpha: 0.6)
                           : AppColors.error,
                     ),
                   ),
@@ -351,7 +339,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: colorScheme.onSurface.withOpacity(0.3),
+              color: colorScheme.onSurface.withValues(alpha: 0.4),
             ),
           ],
         ),
@@ -369,28 +357,37 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
           onTap: () => setState(() => _selectedType = type),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: isSelected 
-                  ? AppColors.primary 
-                  : colorScheme.onSurface.withOpacity(0.04),
-              borderRadius: BorderRadius.circular(16),
+              color: isSelected
+                  ? AppColors.primary.withValues(alpha: 0.1)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isSelected
+                    ? AppColors.primary
+                    : colorScheme.outline.withValues(alpha: 0.4),
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   _getGoalTypeIcon(type),
-                  size: 18,
-                  color: isSelected ? Colors.white : colorScheme.onSurface.withOpacity(0.4),
+                  size: 17,
+                  color: isSelected
+                      ? AppColors.primary
+                      : colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   type.typeDisplayName,
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected ? Colors.white : colorScheme.onSurface.withOpacity(0.6),
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected
+                        ? AppColors.primary
+                        : colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -408,7 +405,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
       children: _colorOptions.map((option) {
         final colorValue = option['color'] as int;
         final isSelected = _selectedColor == colorValue;
-        
+
         return GestureDetector(
           onTap: () => setState(() => _selectedColor = colorValue),
           child: AnimatedContainer(
@@ -422,15 +419,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                 color: isSelected ? colorScheme.onSurface : Colors.transparent,
                 width: 3,
               ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: Color(colorValue).withOpacity(0.4),
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                      ),
-                    ]
-                  : null,
             ),
             child: isSelected
                 ? const Icon(Icons.check_rounded, color: Colors.white, size: 22)
@@ -444,8 +432,8 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
   Widget _buildRecurringToggle(ColorScheme colorScheme) {
     return Container(
       decoration: BoxDecoration(
-        color: colorScheme.onSurface.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         children: [
@@ -461,7 +449,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
               'Reset progress automatically after completion',
               style: TextStyle(
                 fontSize: 13,
-                color: colorScheme.onSurface.withOpacity(0.5),
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             value: _isRecurring,
@@ -471,8 +459,9 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                 if (!value) _recurringPeriod = null;
               });
             },
-            activeColor: AppColors.primary,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            activeThumbColor: AppColors.primary,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           ),
           if (_isRecurring) ...[
             Padding(
@@ -480,7 +469,8 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
               child: Row(
                 children: [
                   Expanded(
-                    child: _buildPeriodOption('monthly', 'Monthly', colorScheme),
+                    child:
+                        _buildPeriodOption('monthly', 'Monthly', colorScheme),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -495,7 +485,8 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     );
   }
 
-  Widget _buildPeriodOption(String value, String label, ColorScheme colorScheme) {
+  Widget _buildPeriodOption(
+      String value, String label, ColorScheme colorScheme) {
     final isSelected = _recurringPeriod == value;
     return GestureDetector(
       onTap: () => setState(() => _recurringPeriod = value),
@@ -503,10 +494,14 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? AppColors.primary : colorScheme.onSurface.withOpacity(0.1),
+            color: isSelected
+                ? AppColors.primary
+                : colorScheme.outline.withValues(alpha: 0.35),
             width: 1,
           ),
         ),
@@ -514,8 +509,10 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
           child: Text(
             label,
             style: TextStyle(
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              color: isSelected ? Colors.white : colorScheme.onSurface.withOpacity(0.6),
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected
+                  ? AppColors.primary
+                  : colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
         ),
@@ -526,21 +523,20 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
   Widget _buildCreateButton(ColorScheme colorScheme) {
     return SizedBox(
       width: double.infinity,
-      height: 56,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _handleCreateGoal,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
+          backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(8),
           ),
-          elevation: 0,
         ),
         child: _isLoading
             ? const SizedBox(
-                width: 24,
-                height: 24,
+                width: 20,
+                height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   color: Colors.white,
@@ -550,31 +546,9 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                 'Create Goal',
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-      ),
-    );
-  }
-
-  Widget _buildCancelButton(ColorScheme colorScheme) {
-    return SizedBox(
-      width: double.infinity,
-      child: TextButton(
-        onPressed: () => Navigator.pop(context),
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: Text(
-          'Cancel',
-          style: TextStyle(
-            fontSize: 16,
-            color: colorScheme.onSurface.withOpacity(0.6),
-          ),
-        ),
       ),
     );
   }
@@ -582,7 +556,8 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
   void _handleCreateGoal() {
     if (_formKey.currentState!.validate()) {
       if (_isRecurring && _recurringPeriod == null) {
-        AppSnackbar.showError(context, message: 'Please select a recurring period');
+        AppSnackbar.showError(context,
+            message: 'Please select a recurring period');
         return;
       }
 
@@ -594,7 +569,8 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim(),
           type: _selectedType,
-          targetAmount: double.parse(_targetAmountController.text.replaceAll(',', '')),
+          targetAmount:
+              double.parse(_targetAmountController.text.replaceAll(',', '')),
           currentAmount: 0.0,
           status: GoalStatus.active,
           targetDate: _selectedDate,
@@ -632,8 +608,18 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
@@ -648,8 +634,8 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: AppColors.primary,
-            ),
+                  primary: AppColors.primary,
+                ),
           ),
           child: child!,
         );

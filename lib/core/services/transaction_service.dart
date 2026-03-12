@@ -4,7 +4,8 @@ import '../models/transaction_model.dart';
 import '../models/budget_model.dart';
 
 class TransactionService {
-  final firestore.FirebaseFirestore _firestore = firestore.FirebaseFirestore.instance;
+  final firestore.FirebaseFirestore _firestore =
+      firestore.FirebaseFirestore.instance;
   final Uuid _uuid = const Uuid();
 
   // Add transaction with automatic budget update
@@ -16,27 +17,28 @@ class TransactionService {
       print('🔵 Type: ${transaction.type.name}');
 
       // Generate ID if not provided
-      final transactionId = transaction.id.isEmpty ? _uuid.v4() : transaction.id;
+      final transactionId =
+          transaction.id.isEmpty ? _uuid.v4() : transaction.id;
       final transactionToSave = transaction.copyWith(id: transactionId);
 
       // Use a batch to ensure atomic operations
       final batch = _firestore.batch();
-      
+
       // Add transaction to Firestore
-      final transactionRef = _firestore.collection('transactions').doc(transactionId);
+      final transactionRef =
+          _firestore.collection('transactions').doc(transactionId);
       batch.set(transactionRef, transactionToSave.toJson());
-      
+
       // If it's an expense, update the corresponding budget
-      if (transactionToSave.isExpense) {
+      if (transactionToSave.isExpense && transactionToSave.isActive) {
         await _updateBudgetForTransaction(transactionToSave, batch);
       }
-      
+
       // Commit the batch
       await batch.commit();
-      
+
       print('✅ TRANSACTION SERVICE: Transaction added successfully');
       print('✅ Budget updated (if expense)');
-      
     } catch (e) {
       print('❌ TRANSACTION SERVICE: Error adding transaction: $e');
       throw Exception('Failed to add transaction: $e');
@@ -48,34 +50,35 @@ class TransactionService {
     try {
       print('🔵 TRANSACTION SERVICE: Updating transaction');
       print('🔵 Transaction ID: ${newTransaction.id}');
-      
+
       // Get the old transaction
       final oldTransactionDoc = await _firestore
           .collection('transactions')
           .doc(newTransaction.id)
           .get();
-      
+
       if (!oldTransactionDoc.exists) {
         throw Exception('Transaction not found');
       }
-      
+
       final oldTransaction = Transaction.fromJson(oldTransactionDoc.data()!);
-      
+
       // Use a batch for atomic operations
       final batch = _firestore.batch();
-      
+
       // Update transaction
-      final transactionRef = _firestore.collection('transactions').doc(newTransaction.id);
+      final transactionRef =
+          _firestore.collection('transactions').doc(newTransaction.id);
       batch.update(transactionRef, newTransaction.toJson());
-      
+
       // Handle budget updates
-      await _handleBudgetUpdateForTransactionChange(oldTransaction, newTransaction, batch);
-      
+      await _handleBudgetUpdateForTransactionChange(
+          oldTransaction, newTransaction, batch);
+
       // Commit the batch
       await batch.commit();
-      
+
       print('✅ TRANSACTION SERVICE: Transaction updated successfully');
-      
     } catch (e) {
       print('❌ TRANSACTION SERVICE: Error updating transaction: $e');
       throw Exception('Failed to update transaction: $e');
@@ -87,36 +90,34 @@ class TransactionService {
     try {
       print('🔵 TRANSACTION SERVICE: Deleting transaction');
       print('🔵 Transaction ID: $transactionId');
-      
+
       // Get the transaction before deleting
-      final transactionDoc = await _firestore
-          .collection('transactions')
-          .doc(transactionId)
-          .get();
-      
+      final transactionDoc =
+          await _firestore.collection('transactions').doc(transactionId).get();
+
       if (!transactionDoc.exists) {
         throw Exception('Transaction not found');
       }
-      
+
       final transaction = Transaction.fromJson(transactionDoc.data()!);
-      
+
       // Use a batch for atomic operations
       final batch = _firestore.batch();
-      
+
       // Delete transaction
-      final transactionRef = _firestore.collection('transactions').doc(transactionId);
+      final transactionRef =
+          _firestore.collection('transactions').doc(transactionId);
       batch.delete(transactionRef);
-      
+
       // If it was an expense, adjust the budget
-      if (transaction.isExpense) {
+      if (transaction.isExpense && transaction.isActive) {
         await _adjustBudgetForDeletedTransaction(transaction, batch);
       }
-      
+
       // Commit the batch
       await batch.commit();
-      
+
       print('✅ TRANSACTION SERVICE: Transaction deleted successfully');
-      
     } catch (e) {
       print('❌ TRANSACTION SERVICE: Error deleting transaction: $e');
       throw Exception('Failed to delete transaction: $e');
@@ -127,10 +128,10 @@ class TransactionService {
   Future<List<Transaction>> getUserTransactions(String userId) async {
     try {
       print('🔵 TRANSACTION SERVICE: Getting transactions for user: $userId');
-      
+
       // Ensure user document exists
       await _ensureUserExists(userId);
-      
+
       final querySnapshot = await _firestore
           .collection('transactions')
           .where('userId', isEqualTo: userId)
@@ -140,11 +141,11 @@ class TransactionService {
 
       final transactions = querySnapshot.docs
           .map((doc) => Transaction.fromJson(doc.data()))
+          .where((tx) => tx.isActive)
           .toList();
-      
+
       print('✅ TRANSACTION SERVICE: Found ${transactions.length} transactions');
       return transactions;
-      
     } catch (e) {
       print('❌ TRANSACTION SERVICE: Error getting transactions: $e');
       return [];
@@ -157,7 +158,7 @@ class TransactionService {
       final now = DateTime.now();
       final startOfDay = DateTime(now.year, now.month, now.day);
       final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
-      
+
       // Fetch recent transactions for user (filtering in Dart to avoid index issues)
       // We sort by date descending to get the latest ones effectively
       final querySnapshot = await _firestore
@@ -169,7 +170,7 @@ class TransactionService {
       final hasToday = querySnapshot.docs.any((doc) {
         final data = doc.data();
         if (data['date'] == null) return false;
-        
+
         final date = DateTime.parse(data['date']);
         return date.isAfter(startOfDay) && date.isBefore(endOfDay);
       });
@@ -182,18 +183,19 @@ class TransactionService {
   }
 
   // Private method to update budget for new transaction
-  Future<void> _updateBudgetForTransaction(Transaction transaction, firestore.WriteBatch batch) async {
+  Future<void> _updateBudgetForTransaction(
+      Transaction transaction, firestore.WriteBatch batch) async {
     try {
       print('🔵 TRANSACTION SERVICE: Updating budget for transaction');
-      
+
       // If no budgetId assigned, skip budget update
       if (transaction.budgetId == null || transaction.budgetId!.isEmpty) {
         print('⚠️ TRANSACTION SERVICE: No budget assigned to transaction');
         return;
       }
-      
+
       print('🔵 Looking for budget with ID: ${transaction.budgetId}');
-      
+
       // Find budget by ID
       final budgetDoc = await _firestore
           .collection('budgets')
@@ -201,31 +203,32 @@ class TransactionService {
           .get();
 
       if (!budgetDoc.exists) {
-        print('⚠️ TRANSACTION SERVICE: Budget not found with ID: ${transaction.budgetId}');
+        print(
+            '⚠️ TRANSACTION SERVICE: Budget not found with ID: ${transaction.budgetId}');
         return;
       }
 
       final budget = Budget.fromJson(budgetDoc.data()!);
-      
+
       // Verify budget belongs to user and is active
       if (budget.userId != transaction.userId || !budget.isActive) {
-        print('⚠️ TRANSACTION SERVICE: Budget not active or belongs to different user');
+        print(
+            '⚠️ TRANSACTION SERVICE: Budget not active or belongs to different user');
         return;
       }
-      
+
       print('✅ TRANSACTION SERVICE: Found budget: ${budget.name}');
       print('✅ Current spent: \$${budget.spent}');
       print('✅ Adding amount: \$${transaction.amount}');
-      
+
       // Calculate new spent amount
       final newSpent = budget.spent + transaction.amount;
-      
+
       // Update budget
       final budgetRef = _firestore.collection('budgets').doc(budget.id);
       batch.update(budgetRef, {'spent': newSpent});
-      
+
       print('✅ TRANSACTION SERVICE: Budget updated - new spent: \$$newSpent');
-      
     } catch (e) {
       print('❌ TRANSACTION SERVICE: Error updating budget: $e');
       throw Exception('Failed to update budget: $e');
@@ -239,11 +242,18 @@ class TransactionService {
     firestore.WriteBatch batch,
   ) async {
     try {
-      print('🔵 TRANSACTION SERVICE: Handling budget update for transaction change');
+      print(
+          '🔵 TRANSACTION SERVICE: Handling budget update for transaction change');
 
       // 1. Identify affected budget IDs
-      final String? oldBudgetId = oldTransaction.isExpense ? oldTransaction.budgetId : null;
-      final String? newBudgetId = newTransaction.isExpense ? newTransaction.budgetId : null;
+      final String? oldBudgetId =
+          oldTransaction.isExpense && oldTransaction.isActive
+              ? oldTransaction.budgetId
+              : null;
+      final String? newBudgetId =
+          newTransaction.isExpense && newTransaction.isActive
+              ? newTransaction.budgetId
+              : null;
 
       // Case 1: No budgets involved
       if (oldBudgetId == null && newBudgetId == null) {
@@ -253,15 +263,17 @@ class TransactionService {
 
       // Case 2: Same budget - recalculate with net difference
       if (oldBudgetId == newBudgetId && oldBudgetId != null) {
-        final budgetDoc = await _firestore.collection('budgets').doc(oldBudgetId).get();
+        final budgetDoc =
+            await _firestore.collection('budgets').doc(oldBudgetId).get();
         if (budgetDoc.exists) {
           final budget = Budget.fromJson(budgetDoc.data()!);
           if (budget.userId == newTransaction.userId && budget.isActive) {
             final netChange = newTransaction.amount - oldTransaction.amount;
             final newSpent = budget.spent + netChange;
-            
+
             batch.update(budgetDoc.reference, {'spent': newSpent});
-            print('✅ TRANSACTION SERVICE: Updated single budget ${budget.name} with net change: \$$netChange');
+            print(
+                '✅ TRANSACTION SERVICE: Updated single budget ${budget.name} with net change: \$$netChange');
           }
         }
         return;
@@ -270,28 +282,33 @@ class TransactionService {
       // Case 3: Different budgets or moving to/from no budget
       // Handle subtraction from old budget
       if (oldBudgetId != null) {
-        final oldBudgetDoc = await _firestore.collection('budgets').doc(oldBudgetId).get();
+        final oldBudgetDoc =
+            await _firestore.collection('budgets').doc(oldBudgetId).get();
         if (oldBudgetDoc.exists) {
           final oldBudget = Budget.fromJson(oldBudgetDoc.data()!);
           if (oldBudget.userId == oldTransaction.userId && oldBudget.isActive) {
-            batch.update(oldBudgetDoc.reference, {'spent': oldBudget.spent - oldTransaction.amount});
-            print('✅ TRANSACTION SERVICE: Subtracted amount from OLD budget: ${oldBudget.name}');
+            batch.update(oldBudgetDoc.reference,
+                {'spent': oldBudget.spent - oldTransaction.amount});
+            print(
+                '✅ TRANSACTION SERVICE: Subtracted amount from OLD budget: ${oldBudget.name}');
           }
         }
       }
 
       // Handle addition to new budget
       if (newBudgetId != null) {
-        final newBudgetDoc = await _firestore.collection('budgets').doc(newBudgetId).get();
+        final newBudgetDoc =
+            await _firestore.collection('budgets').doc(newBudgetId).get();
         if (newBudgetDoc.exists) {
           final newBudget = Budget.fromJson(newBudgetDoc.data()!);
           if (newBudget.userId == newTransaction.userId && newBudget.isActive) {
-            batch.update(newBudgetDoc.reference, {'spent': newBudget.spent + newTransaction.amount});
-            print('✅ TRANSACTION SERVICE: Added amount to NEW budget: ${newBudget.name}');
+            batch.update(newBudgetDoc.reference,
+                {'spent': newBudget.spent + newTransaction.amount});
+            print(
+                '✅ TRANSACTION SERVICE: Added amount to NEW budget: ${newBudget.name}');
           }
         }
       }
-      
     } catch (e) {
       print('❌ TRANSACTION SERVICE: Error handling budget update: $e');
       throw Exception('Failed to handle budget update: $e');
@@ -299,13 +316,14 @@ class TransactionService {
   }
 
   // Private method to adjust budget for deleted transaction
-  Future<void> _adjustBudgetForDeletedTransaction(Transaction transaction, firestore.WriteBatch batch) async {
+  Future<void> _adjustBudgetForDeletedTransaction(
+      Transaction transaction, firestore.WriteBatch batch) async {
     try {
       // If no budgetId assigned, skip budget update
       if (transaction.budgetId == null || transaction.budgetId!.isEmpty) {
         return;
       }
-      
+
       final budgetDoc = await _firestore
           .collection('budgets')
           .doc(transaction.budgetId!)
@@ -313,15 +331,16 @@ class TransactionService {
 
       if (budgetDoc.exists) {
         final budget = Budget.fromJson(budgetDoc.data()!);
-        
+
         // Verify budget belongs to user and is active
         if (budget.userId == transaction.userId && budget.isActive) {
           final newSpent = budget.spent - transaction.amount;
-        
-        final budgetRef = _firestore.collection('budgets').doc(budget.id);
-        batch.update(budgetRef, {'spent': newSpent});
-        
-        print('✅ TRANSACTION SERVICE: Adjusted budget for deleted transaction');
+
+          final budgetRef = _firestore.collection('budgets').doc(budget.id);
+          batch.update(budgetRef, {'spent': newSpent});
+
+          print(
+              '✅ TRANSACTION SERVICE: Adjusted budget for deleted transaction');
         }
       }
     } catch (e) {
@@ -334,21 +353,68 @@ class TransactionService {
     return _uuid.v4();
   }
 
+  /// Synchronize transactions linked to a budget when its active status changes.
+  ///
+  /// - If [keepLinkedToBudget] is true, linked transactions keep `budgetId` and
+  ///   their `isActive` follows [newBudgetIsActive].
+  /// - If false, linked transactions are detached from the budget (`budgetId = null`)
+  ///   and left active.
+  Future<void> syncBudgetTransactionLinks({
+    required String userId,
+    required String budgetId,
+    required bool newBudgetIsActive,
+    required bool keepLinkedToBudget,
+  }) async {
+    try {
+      final query = await _firestore
+          .collection('transactions')
+          .where('userId', isEqualTo: userId)
+          .where('budgetId', isEqualTo: budgetId)
+          .get();
+
+      if (query.docs.isEmpty) {
+        return;
+      }
+
+      const maxBatchSize = 400;
+      var currentBatch = _firestore.batch();
+      var count = 0;
+
+      for (final doc in query.docs) {
+        if (keepLinkedToBudget) {
+          currentBatch.update(doc.reference, {'isActive': newBudgetIsActive});
+        } else {
+          currentBatch.update(doc.reference, {
+            'budgetId': null,
+            'isActive': true,
+          });
+        }
+
+        count++;
+        if (count >= maxBatchSize) {
+          await currentBatch.commit();
+          currentBatch = _firestore.batch();
+          count = 0;
+        }
+      }
+
+      if (count > 0) {
+        await currentBatch.commit();
+      }
+    } catch (e) {
+      throw Exception('Failed to sync budget transactions: $e');
+    }
+  }
+
   // Private method to ensure user document exists
   Future<void> _ensureUserExists(String userId) async {
     try {
-      final userDoc = await _firestore
-          .collection('users')
-          .doc(userId)
-          .get();
-      
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+
       if (!userDoc.exists) {
         print('⚠️ TRANSACTION SERVICE: User not found, creating user document');
         // Create basic user document if it doesn't exist
-        await _firestore
-            .collection('users')
-            .doc(userId)
-            .set({
+        await _firestore.collection('users').doc(userId).set({
           'id': userId,
           'createdAt': DateTime.now().toIso8601String(),
           'lastLoginAt': DateTime.now().toIso8601String(),
