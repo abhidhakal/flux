@@ -314,6 +314,89 @@ class AppTheme {
   static const double radius24 = 24.0;
   static const double radius32 = 32.0;
 
+  static Color pageBackground(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.brightness == Brightness.dark
+        ? const Color(0xFF0E1013)
+        : const Color(0xFFF5F7FA);
+  }
+
+  static Color cardSurface(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.brightness == Brightness.dark
+        ? const Color(0xFF171A1F)
+        : Colors.white;
+  }
+
+  static Color mutedSurface(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.brightness == Brightness.dark
+        ? const Color(0xFF1D2128)
+        : const Color(0xFFF0F4F8);
+  }
+
+  static BoxDecoration surfaceDecoration(
+    BuildContext context, {
+    double radius = radius24,
+    bool subtle = false,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return BoxDecoration(
+      color: subtle ? mutedSurface(context) : cardSurface(context),
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: colorScheme.outline.withValues(alpha: theme.brightness == Brightness.dark ? 0.34 : 0.10),
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: theme.brightness == Brightness.dark ? 0.18 : 0.05),
+          blurRadius: subtle ? 12 : 20,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    );
+  }
+
+  static BoxDecoration tintedSurfaceDecoration(
+    BuildContext context, {
+    required Color tint,
+    double radius = radius24,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return BoxDecoration(
+      color: tint.withValues(alpha: theme.brightness == Brightness.dark ? 0.14 : 0.10),
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: colorScheme.outline.withValues(alpha: theme.brightness == Brightness.dark ? 0.32 : 0.10),
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: theme.brightness == Brightness.dark ? 0.14 : 0.04),
+          blurRadius: 18,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    );
+  }
+
+  static TextStyle sectionTitleStyle(BuildContext context) {
+    return Theme.of(context).textTheme.headlineSmall!.copyWith(
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.5,
+        );
+  }
+
+  static TextStyle sectionSubtitleStyle(BuildContext context) {
+    return Theme.of(context).textTheme.bodyMedium!.copyWith(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.62),
+          fontWeight: FontWeight.w500,
+        );
+  }
+
   // Shadows
   static const List<BoxShadow> shadowLight = [
     BoxShadow(
@@ -346,6 +429,7 @@ class AppTheme {
       fontFamily: fontFamily,
       brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.lightBackground,
+      canvasColor: AppColors.lightBackground,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         primaryContainer: AppColors.primaryUltraLight,
@@ -365,18 +449,18 @@ class AppTheme {
       ),
       textTheme: lightTextTheme,
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.lightTextInverse,
+        backgroundColor: AppColors.lightBackground,
+        foregroundColor: AppColors.lightTextPrimary,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
         titleTextStyle: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: AppColors.lightTextInverse,
+          fontSize: 24,
+          fontWeight: FontWeight.w800,
+          color: AppColors.lightTextPrimary,
           fontFamily: fontFamily,
         ),
         iconTheme: const IconThemeData(
-          color: AppColors.lightTextInverse,
+          color: AppColors.lightTextPrimary,
           size: 24,
         ),
         systemOverlayStyle: const SystemUiOverlayStyle(
@@ -564,6 +648,7 @@ class AppTheme {
       fontFamily: fontFamily,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.darkBackground,
+      canvasColor: AppColors.darkBackground,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         primaryContainer: AppColors.primaryDark,
@@ -583,13 +668,13 @@ class AppTheme {
       ),
       textTheme: darkTextTheme,
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.darkSurface,
+        backgroundColor: AppColors.darkBackground,
         foregroundColor: AppColors.darkTextPrimary,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
         titleTextStyle: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontSize: 24,
+          fontWeight: FontWeight.w800,
           color: AppColors.darkTextPrimary,
           fontFamily: fontFamily,
         ),

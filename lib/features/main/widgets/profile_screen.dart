@@ -9,6 +9,7 @@ import '../../../core/services/profile_picture_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/data_export_service.dart';
 import '../../../core/models/user_model.dart';
+import '../../../core/models/user_progress_model.dart';
 import '../../../shared/widgets/skeleton_components.dart';
 import '../../auth/auth_bloc.dart';
 import '../../goals/goals_bloc.dart';
@@ -26,6 +27,7 @@ import '../../budget/budget_bloc.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/models/income_model.dart';
+import '../../../core/services/user_progress_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -42,6 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   String _selectedCountry = 'United States';
   final ImagePicker _picker = ImagePicker();
   final ProfilePictureService _profilePictureService = ProfilePictureService();
+  final UserProgressService _userProgressService = UserProgressService();
 
   final List<Map<String, String>> _countries = [
     {'name': 'United States', 'currency': 'USD', 'symbol': '\$'},
@@ -101,11 +104,8 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: AppTheme.pageBackground(context),
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is AuthAuthenticated) {
@@ -123,13 +123,17 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildProfileContent(BuildContext context, User user) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final transactionState = context.watch<TransactionBloc>().state;
+    final progressSnapshot = transactionState is TransactionLoaded
+        ? _userProgressService.calculateProgress(transactionState.transactions)
+        : UserProgressSnapshot.empty();
 
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
       slivers: [
         // Modern Header
         SliverToBoxAdapter(
-          child: _buildModernHeader(user, colorScheme, theme),
+          child: _buildModernHeader(user, colorScheme, theme, progressSnapshot),
         ),
         // Stats Row
         SliverToBoxAdapter(
@@ -137,7 +141,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: BlocBuilder<GoalsBloc, GoalsState>(
               builder: (context, goalsState) {
-                return _buildStatsRow(user, goalsState, colorScheme);
+                return _buildStatsRow(goalsState, colorScheme, progressSnapshot);
               },
             ),
           ),
@@ -248,7 +252,12 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildModernHeader(User user, ColorScheme colorScheme, ThemeData theme) {
+  Widget _buildModernHeader(
+    User user,
+    ColorScheme colorScheme,
+    ThemeData theme,
+    UserProgressSnapshot progressSnapshot,
+  ) {
     return Container(
       margin: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + 10,
@@ -257,113 +266,160 @@ class _ProfileScreenState extends State<ProfileScreen>
         bottom: 20,
       ),
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colorScheme.surface,
-            colorScheme.primary.withOpacity(0.1),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colorScheme.outline.withOpacity(0.08),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+      decoration: AppTheme.surfaceDecoration(context, radius: 28),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Profile Picture
-          GestureDetector(
-            onTap: _showImagePickerOptions,
-            child: Stack(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4), // Ring width
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        colorScheme.primary.withOpacity(0.5),
-                        colorScheme.tertiary.withOpacity(0.5),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.primary.withOpacity(0.2),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: _showImagePickerOptions,
+                child: Stack(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            colorScheme.primary.withOpacity(0.45),
+                            colorScheme.tertiary.withOpacity(0.25),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                       ),
-                    ],
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: colorScheme.background, width: 2),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppTheme.cardSurface(context),
+                            width: 2,
+                          ),
+                        ),
+                        child: _profilePictureService.buildProfileAvatar(
+                          displayName: user.displayName,
+                          colorScheme: colorScheme,
+                          radius: 42,
+                        ),
+                      ),
                     ),
-                    child: _profilePictureService.buildProfileAvatar(
-                      displayName: user.displayName,
-                      colorScheme: colorScheme,
-                      radius: 48,
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppTheme.cardSurface(context),
+                            width: 3,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.camera_alt_rounded,
+                          color: colorScheme.onPrimary,
+                          size: 13,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: colorScheme.background, width: 3),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.displayName ?? 'User',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.camera_alt_rounded,
-                      color: colorScheme.onPrimary,
-                      size: 14,
+                    const SizedBox(height: 6),
+                    Text(
+                      user.email,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 14),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        _buildHeaderPill(
+                          icon: Icons.local_fire_department_rounded,
+                          label: UserProgressService.formatStreakLabel(
+                            progressSnapshot.currentStreak,
+                          ),
+                          colorScheme: colorScheme,
+                          emphasized: true,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          // Name
-          Text(
-            user.displayName ?? 'User',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 4),
-          // Email
-          Text(
-            user.email,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-
         ],
       ),
     );
   }
 
-  Widget _buildStatsRow(User user, GoalsState goalsState, ColorScheme colorScheme) {
+  Widget _buildHeaderPill({
+    required IconData icon,
+    required String label,
+    required ColorScheme colorScheme,
+    bool emphasized = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: emphasized
+            ? colorScheme.primary.withOpacity(0.1)
+            : AppTheme.mutedSurface(context),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: emphasized
+              ? colorScheme.primary.withOpacity(0.18)
+              : colorScheme.outline.withOpacity(0.08),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 15,
+            color: emphasized ? colorScheme.primary : colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: emphasized ? colorScheme.primary : colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsRow(
+    GoalsState goalsState,
+    ColorScheme colorScheme,
+    UserProgressSnapshot progressSnapshot,
+  ) {
     int transactionCount = 0;
     int goalsCount = 0;
-    final daysActive = DateTime.now().difference(user.createdAt).inDays + 1;
 
     final transactionState = context.watch<TransactionBloc>().state;
     if (transactionState is TransactionLoaded) {
@@ -373,54 +429,53 @@ class _ProfileScreenState extends State<ProfileScreen>
       goalsCount = goalsState.goals.where((g) => g.status == GoalStatus.active).length;
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatItem('$transactionCount', 'Transactions', colorScheme),
-          Container(
-            width: 1,
-            height: 40,
-            color: colorScheme.outline.withOpacity(0.1),
-          ),
-          _buildStatItem('$goalsCount', 'Goals', colorScheme),
-          Container(
-            width: 1,
-            height: 40,
-            color: colorScheme.outline.withOpacity(0.1),
-          ),
-          _buildStatItem('$daysActive', 'Days Active', colorScheme),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String value, String label, ColorScheme colorScheme) {
-    return Column(
+    return Row(
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
-          ),
+        Expanded(
+          child: _buildStatCard('$transactionCount', 'Transactions', colorScheme),
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: colorScheme.onSurfaceVariant,
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildStatCard('$goalsCount', 'Active goals', colorScheme),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildStatCard(
+            '${progressSnapshot.activeDays}',
+            'Active days',
+            colorScheme,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildStatCard(String value, String label, ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      decoration: AppTheme.surfaceDecoration(context, radius: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 21,
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -428,12 +483,11 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: 12, left: 4),
       child: Text(
-        title.toUpperCase(),
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1,
-          color: colorScheme.onSurfaceVariant,
+        title,
+        style: AppTheme.sectionTitleStyle(context).copyWith(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: colorScheme.onSurface,
         ),
       ),
     );
@@ -441,11 +495,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildSettingsGroup(List<_SettingsItem> items, ColorScheme colorScheme) {
     return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
-      ),
+      decoration: AppTheme.surfaceDecoration(context, radius: 20),
       child: Column(
         children: items.asMap().entries.map((entry) {
           final index = entry.key;
@@ -469,12 +519,12 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildSettingsTile(_SettingsItem item, ColorScheme colorScheme) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
       leading: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: colorScheme.primary.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(item.icon, color: colorScheme.primary, size: 20),
       ),
@@ -505,15 +555,16 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildSignOutButton(ColorScheme colorScheme) {
     return OutlinedButton.icon(
       onPressed: () => _showSignOutDialog(),
-      icon: Icon(Icons.logout_rounded, color: colorScheme.error),
+      icon: Icon(Icons.logout_rounded, color: colorScheme.onError),
       label: Text(
         'Sign Out',
-        style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.w600),
+        style: TextStyle(color: colorScheme.onError, fontWeight: FontWeight.w600),
       ),
       style: OutlinedButton.styleFrom(
-        side: BorderSide(color: colorScheme.error.withOpacity(0.5)),
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: colorScheme.error,
+        side: BorderSide(color: colorScheme.error),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
     );
   }

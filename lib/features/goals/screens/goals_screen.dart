@@ -60,11 +60,11 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
     final colorScheme = theme.colorScheme;
     
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: AppTheme.pageBackground(context),
       appBar: AppBar(
         title: const Text('Financial Goals'),
         centerTitle: false,
-        backgroundColor: colorScheme.background,
+        backgroundColor: AppTheme.pageBackground(context),
         foregroundColor: colorScheme.onBackground,
         iconTheme: IconThemeData(color: colorScheme.onBackground),
         titleTextStyle: theme.textTheme.displaySmall?.copyWith(
@@ -275,29 +275,32 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          // Filter Pills
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Row(
-                children: [
-                  _buildFilterChip('All', colorScheme),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Active', colorScheme),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Paused', colorScheme),
-                ],
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: AppTheme.surfaceDecoration(context, radius: 20, subtle: true),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: _buildFilterChip('All', colorScheme)),
+                        const SizedBox(width: 8),
+                        Expanded(child: _buildFilterChip('Active', colorScheme)),
+                        const SizedBox(width: 8),
+                        Expanded(child: _buildFilterChip('Paused', colorScheme)),
+                      ],
+                    ),
+                    if (filteredGoals.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      _buildGoalsOverview(filteredGoals, colorScheme),
+                    ],
+                  ],
+                ),
               ),
             ),
           ),
-          // Overview
-          if (filteredGoals.isNotEmpty)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: _buildGoalsOverview(filteredGoals, colorScheme),
-              ),
-            ),
           // Goals List
           if (filteredGoals.isEmpty)
             SliverFillRemaining(
@@ -362,9 +365,9 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
         color: isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
       ),
-      backgroundColor: colorScheme.surfaceVariant.withOpacity(0.5),
+      backgroundColor: AppTheme.cardSurface(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      side: BorderSide.none,
+      side: BorderSide(color: colorScheme.outline.withOpacity(isSelected ? 0 : 0.08)),
     );
   }
 
@@ -376,11 +379,7 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
 
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
-      ),
+      decoration: AppTheme.surfaceDecoration(context, radius: 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
@@ -439,11 +438,7 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
                     padding: const EdgeInsets.all(20),
                     child: Container(
                       padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
-                      ),
+                      decoration: AppTheme.surfaceDecoration(context, radius: 20),
                       child: Row(
                         children: [
                           Container(
@@ -515,7 +510,7 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Statistics', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+            Text('Statistics', style: AppTheme.sectionTitleStyle(context).copyWith(fontSize: 18)),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -533,15 +528,11 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
               ],
             ),
             const SizedBox(height: 24),
-            Text('Progress Chart', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+            Text('Progress Chart', style: AppTheme.sectionTitleStyle(context).copyWith(fontSize: 18)),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
-              ),
+              decoration: AppTheme.surfaceDecoration(context, radius: 20),
               child: SizedBox(height: 200, child: GoalProgressChart(goals: allGoals)),
             ),
             const SizedBox(height: 100),
@@ -554,11 +545,7 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
   Widget _buildStatCard(String title, String value, IconData icon, Color color, ColorScheme colorScheme) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
-      ),
+      decoration: AppTheme.surfaceDecoration(context, radius: 20, subtle: true),
       child: Column(
         children: [
           Container(

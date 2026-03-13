@@ -98,12 +98,12 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     final colorScheme = theme.colorScheme;
     
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: AppTheme.pageBackground(context),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: const Text('Insights'),
         centerTitle: false,
-        backgroundColor: colorScheme.background,
+        backgroundColor: AppTheme.pageBackground(context),
         elevation: 0,
         scrolledUnderElevation: 0,
         titleTextStyle: theme.textTheme.displaySmall?.copyWith(
@@ -172,44 +172,25 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // 1. Financial Health Score (Premium Highlight)
                               _buildHealthScoreSection(analysis),
-                              
-                              const SizedBox(height: 32),
-                              
-                              // 2. Quick Stats Row
+                              const SizedBox(height: 24),
                               _buildQuickStats(transactions, incomes),
-                              
-                              const SizedBox(height: 32),
-
-                              // 3. Budget Efficiency (50/30/20 Rule)
+                              const SizedBox(height: 24),
                               _buildEfficiencySection(analysis),
-
-                              const SizedBox(height: 32),
-                              
-                              // 4. Smart Insights Section
+                              const SizedBox(height: 24),
                               _buildSmartInsightsSection(analyticsState),
-
-                              const SizedBox(height: 32),
-
-                              // 5. Detected Subscriptions
+                              const SizedBox(height: 24),
                               _buildSubscriptionsSection(analysis),
-
-                              const SizedBox(height: 32),
+                              const SizedBox(height: 24),
 
                               // Main Spending Chart
                               _buildSectionHeader('Spending Trend', 'Your weekly expense activity'),
                               const SizedBox(height: 16),
                               WeeklySpendingChart(transactions: transactions),
 
-                              const SizedBox(height: 32),
-
-                              // 6. Projected Wealth
+                              const SizedBox(height: 24),
                               _buildWealthProjectionSection(analysis),
-
-                              const SizedBox(height: 32),
-
-                              // Monthly Comparison Chart
+                              const SizedBox(height: 24),
                               _buildSectionHeader('Monthly Comparison', 'Income vs Expenses'),
                               const SizedBox(height: 16),
                               TrendAnalysisChart(
@@ -217,16 +198,11 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                                 incomes: incomes,
                               ),
 
-                              const SizedBox(height: 32),
-
-                              // Category Breakdown Section
+                              const SizedBox(height: 24),
                               _buildSectionHeader('Category Breakdown', 'Where your money goes'),
                               const SizedBox(height: 16),
                               CategoryBreakdownChart(transactions: transactions),
-                              
-                              const SizedBox(height: 32),
-                              
-                              // Recommendations Section
+                              const SizedBox(height: 24),
                               _buildRecommendationsSection(analysis),
 
                               const SizedBox(height: 40),
@@ -254,9 +230,6 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    final cardBackground = isDark
-      ? colorScheme.surfaceContainerLow
-      : colorScheme.primaryContainer.withOpacity(0.1);
     final cardBorderColor = isDark
       ? colorScheme.outline.withOpacity(0.45)
       : color.withOpacity(0.2);
@@ -267,9 +240,11 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cardBackground,
-        borderRadius: BorderRadius.circular(32),
+      decoration: AppTheme.tintedSurfaceDecoration(
+        context,
+        tint: color,
+        radius: 32,
+      ).copyWith(
         border: Border.all(color: cardBorderColor),
       ),
       child: Row(
@@ -291,8 +266,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
               Text(
                 '$score',
                 style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
                   color: color,
                 ),
               ),
@@ -307,7 +282,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                   'Financial Health Score',
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -352,11 +327,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
-          ),
+          decoration: AppTheme.surfaceDecoration(context),
           child: Column(
             children: [
               _buildEfficiencyRow('Needs (Fixed)', efficiency['needs'], 50, AppColors.primary),
@@ -400,6 +371,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   Widget _buildSubscriptionsSection(Map<String, dynamic>? analysis) {
     final subscriptions = analysis?['subscriptions'] as List<dynamic>? ?? [];
     if (subscriptions.isEmpty) return const SizedBox.shrink();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -418,9 +390,20 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                 margin: const EdgeInsets.only(right: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: isDark ? AppTheme.mutedSurface(context) : Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline.withOpacity(
+                      isDark ? 0.14 : 0.08,
+                    ),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDark ? 0.10 : 0.04),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,27 +439,24 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
 
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.indigo.shade700, Colors.indigo.shade500],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(32),
+      decoration: AppTheme.tintedSurfaceDecoration(
+        context,
+        tint: Colors.indigo,
+        radius: 32,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 32),
+          Icon(Icons.rocket_launch_rounded, color: Theme.of(context).colorScheme.onSurface, size: 32),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Wealth Projection',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             'Keep up your current habits, and you\'ll have an extra ${CurrencyService().formatAmount(projected)} in 6 months.',
-            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.72), fontSize: 14),
           ),
           const SizedBox(height: 16),
           _buildProjectionComparison()
@@ -489,7 +469,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: AppTheme.cardSurface(context).withOpacity(0.78),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -540,24 +520,11 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+      decoration: AppTheme.surfaceDecoration(context, radius: 24).copyWith(
         border: Border.all(
-          color: isDark
-              ? color.withOpacity(0.12)
-              : colorScheme.outline.withOpacity(0.35),
+          color: isDark ? color.withOpacity(0.12) : colorScheme.outline.withOpacity(0.10),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? color.withOpacity(0.05)
-                : Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -599,18 +566,11 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.5,
-          ),
+          style: AppTheme.sectionTitleStyle(context).copyWith(fontSize: 20),
         ),
         Text(
           subtitle,
-          style: TextStyle(
-            fontSize: 14,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-          ),
+          style: AppTheme.sectionSubtitleStyle(context),
         ),
       ],
     );
@@ -663,11 +623,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
           Container(
             padding: const EdgeInsets.all(24),
             width: double.infinity,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
-            ),
+            decoration: AppTheme.surfaceDecoration(context),
             child: const Text('Add more transactions to receive smart recommendations.'),
           ),
       ],
@@ -687,9 +643,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: colorScheme.surface,
+          color: AppTheme.cardSurface(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+          border: Border.all(color: colorScheme.outline.withOpacity(0.10)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -749,8 +705,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
+          color: AppTheme.cardSurface(context),
+          borderRadius: BorderRadius.circular(20),
         ),
       )),
     );

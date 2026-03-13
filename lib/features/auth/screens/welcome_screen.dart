@@ -136,21 +136,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     scale: _logoScale,
                     child: Column(
                       children: [
-                        Container(
-                          width: 96,
-                          height: 96,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(28),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.25),
-                              width: 1.5,
-                            ),
-                          ),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(28),
                           child: Image.asset(
                             'assets/images/flux_logo.png',
-                            fit: BoxFit.contain,
+                            width: 95,
+                            height: 95,
+                            fit: BoxFit.cover,
                           ),
                         ),
                         const SizedBox(height: 20),

@@ -37,12 +37,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: AppTheme.pageBackground(context),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: const Text('Budgets'),
         centerTitle: false,
-        backgroundColor: colorScheme.background,
+        backgroundColor: AppTheme.pageBackground(context),
         foregroundColor: colorScheme.onBackground,
         iconTheme: IconThemeData(color: colorScheme.onBackground),
         titleTextStyle: theme.textTheme.displaySmall?.copyWith(
@@ -277,11 +277,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
+                  style: AppTheme.sectionTitleStyle(context).copyWith(fontSize: 20),
                 ),
                 if (subtitle.isNotEmpty) ...[
                   const SizedBox(height: 2),
@@ -298,7 +294,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -327,7 +323,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           activeCount: activeCount,
           inactiveCount: inactiveCount,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
@@ -349,7 +345,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
       ],
     );
   }
@@ -371,96 +367,87 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       utilizationColor = AppColors.success;
     }
 
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: BorderSide(
-          color: colorScheme.outline.withValues(alpha: 0.45),
-          width: 1,
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHigh,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'Budget Health',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w700,
-                  ),
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: AppTheme.surfaceDecoration(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Budget Health',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
                 ),
-                const Spacer(),
+              ),
+              const Spacer(),
+              _heroTag(
+                label: '$activeCount active',
+                color: AppColors.primary,
+                textColor: colorScheme.onSurface,
+              ),
+              if (inactiveCount > 0) ...[
+                const SizedBox(width: 8),
                 _heroTag(
-                  label: '$activeCount active',
-                  color: AppColors.primary,
-                  textColor: colorScheme.onSurface,
-                ),
-                if (inactiveCount > 0) ...[
-                  const SizedBox(width: 8),
-                  _heroTag(
-                    label: '$inactiveCount inactive',
-                    color: AppColors.warning,
-                    textColor: colorScheme.onSurface,
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              '${stats.utilizationPercentage.toStringAsFixed(1)}%',
-              style: theme.textTheme.headlineLarge?.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              height: 8,
-              decoration: BoxDecoration(
-                color: colorScheme.outline.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(99),
-              ),
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor:
-                    (stats.utilizationPercentage / 100).clamp(0.0, 1.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: utilizationColor,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _heroMeta(
-                  label: 'Spent',
-                  value: CurrencyService().formatAmount(stats.totalSpentAmount),
-                  textColor: colorScheme.onSurface,
-                ),
-                _heroMeta(
-                  label: 'Remaining',
-                  value: CurrencyService()
-                      .formatAmount(stats.totalRemainingAmount),
+                  label: '$inactiveCount inactive',
+                  color: AppColors.warning,
                   textColor: colorScheme.onSurface,
                 ),
               ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${stats.utilizationPercentage.toStringAsFixed(1)}%',
+            style: theme.textTheme.headlineLarge?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w800,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Spend visibility across your active budgets.',
+            style: AppTheme.sectionSubtitleStyle(context),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            height: 8,
+            decoration: BoxDecoration(
+              color: colorScheme.outline.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(99),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor:
+                  (stats.utilizationPercentage / 100).clamp(0.0, 1.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: utilizationColor,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _heroMeta(
+                label: 'Spent',
+                value: CurrencyService().formatAmount(stats.totalSpentAmount),
+                textColor: colorScheme.onSurface,
+              ),
+              _heroMeta(
+                label: 'Remaining',
+                value: CurrencyService()
+                    .formatAmount(stats.totalRemainingAmount),
+                textColor: colorScheme.onSurface,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -522,15 +509,23 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     required IconData icon,
     required Color color,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
+        color: isDark ? AppTheme.mutedSurface(context) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.35),
+          color: colorScheme.outline.withValues(alpha: isDark ? 0.14 : 0.08),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.10 : 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -562,7 +557,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: colorScheme.onSurface,
                   ),
@@ -599,8 +594,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       cardColor = AppColors.warning.withValues(alpha: 0.08);
       borderColor = AppColors.warning.withValues(alpha: 0.3);
     } else {
-      cardColor = colorScheme.surfaceContainerLow;
-      borderColor = colorScheme.outline.withValues(alpha: 0.35);
+      cardColor = AppTheme.cardSurface(context);
+      borderColor = colorScheme.outline.withValues(alpha: 0.12);
     }
 
     return InkWell(
@@ -611,14 +606,14 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         elevation: 0,
         color: cardColor,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radius16),
-          side: BorderSide(
-            color: borderColor,
-            width: 1,
+        borderRadius: BorderRadius.circular(AppTheme.radius20),
+        side: BorderSide(
+          color: borderColor,
+          width: 1,
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(AppTheme.spacing20),
+          padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -663,11 +658,11 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         Text(
                           budget.name,
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface
-                                .withValues(alpha: muted ? 0.7 : 1),
-                          ),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurface
+                              .withValues(alpha: muted ? 0.7 : 1),
+                        ),
                         ),
                         Row(
                           children: [
@@ -720,7 +715,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   Text(
                     '${CurrencyService().formatAmount(spent)} / ${CurrencyService().formatAmount(total)}',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: muted
                           ? colorScheme.onSurface.withValues(alpha: 0.7)
@@ -818,9 +813,9 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            color: colorScheme.surface,
+            color: AppTheme.cardSurface(context),
             border:
-                Border.all(color: colorScheme.outline.withValues(alpha: 0.6)),
+                Border.all(color: colorScheme.outline.withValues(alpha: 0.14)),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
@@ -875,10 +870,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
-      color: colorScheme.surface,
+      color: AppTheme.cardSurface(context),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colorScheme.outline, width: 1),
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colorScheme.outline.withOpacity(0.12), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),

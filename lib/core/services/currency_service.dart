@@ -73,7 +73,9 @@ class CurrencyService {
       decimalPlaces = 0; // These currencies typically don't use decimal places
     }
 
-    String formattedAmount = amount.toStringAsFixed(decimalPlaces);
+    final isNegative = amount < 0;
+    final normalizedAmount = isNegative ? amount.abs() : amount;
+    String formattedAmount = normalizedAmount.toStringAsFixed(decimalPlaces);
     
     // Add thousand separators
     List<String> parts = formattedAmount.split('.');
@@ -83,10 +85,12 @@ class CurrencyService {
     // Add commas for thousands
     String formattedInteger = _addThousandSeparators(integerPart);
     
+    final signPrefix = isNegative ? '-' : '';
+
     if (decimalPart.isNotEmpty) {
-      return '$_symbol$formattedInteger.$decimalPart';
+      return '$signPrefix$_symbol$formattedInteger.$decimalPart';
     } else {
-      return '$_symbol$formattedInteger';
+      return '$signPrefix$_symbol$formattedInteger';
     }
   }
 

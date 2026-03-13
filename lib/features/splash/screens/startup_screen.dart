@@ -164,22 +164,14 @@ class _SplashPresentationState extends State<_SplashPresentation>
                   opacity: _logoFade,
                   child: ScaleTransition(
                     scale: _logoScale,
-                    child: Container(
-                      width: 112,
-                      height: 112,
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        borderRadius: BorderRadius.circular(32),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.08),
-                            blurRadius: 24,
-                            offset: const Offset(0, 12),
-                          ),
-                        ],
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: Image.asset(
+                        'assets/images/flux_logo.png',
+                        width: 132,
+                        height: 132,
+                        fit: BoxFit.cover,
                       ),
-                      child: Image.asset('assets/images/flux_logo.png'),
                     ),
                   ),
                 ),

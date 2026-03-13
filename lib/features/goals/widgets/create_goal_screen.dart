@@ -73,18 +73,18 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final saveIconColor = isDark ? Colors.white : colorScheme.onSurface;
+    final saveIconColor = isDark ? Colors.white : colorScheme.onBackground;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
         title: const Text('Create Goal'),
         centerTitle: false,
-        backgroundColor: colorScheme.surface,
-        foregroundColor: colorScheme.onSurface,
-        iconTheme: IconThemeData(color: colorScheme.onSurface),
+        backgroundColor: colorScheme.background,
+        foregroundColor: colorScheme.onBackground,
+        iconTheme: IconThemeData(color: colorScheme.onBackground),
         titleTextStyle: theme.textTheme.titleLarge?.copyWith(
-          color: colorScheme.onSurface,
+          color: colorScheme.onBackground,
           fontWeight: FontWeight.w600,
         ),
         elevation: 0,
@@ -102,7 +102,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                     ),
                   )
                 : Text(
-                    'Create',
+                    'Save',
                     style: TextStyle(
                       color: saveIconColor,
                       fontWeight: FontWeight.w600,
@@ -236,7 +236,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
       style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.bold,
-        color: Theme.of(context).colorScheme.onSurface,
+        color: Theme.of(context).colorScheme.onBackground,
       ),
     );
   }
@@ -250,19 +250,9 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     final colorScheme = theme.colorScheme;
     return InputDecoration(
       hintText: hintText,
-      hintStyle: theme.textTheme.bodyLarge?.copyWith(
-        color: colorScheme.onSurface.withValues(alpha: 0.45),
-      ),
-      prefixIcon: Icon(icon),
+      prefixIcon: Icon(icon, color: colorScheme.onBackground),
       prefixText: prefixText,
-      prefixStyle: theme.textTheme.bodyLarge?.copyWith(
-        color: colorScheme.onSurface,
-        fontWeight: FontWeight.w500,
-      ),
-      filled: false,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide(
@@ -281,6 +271,13 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide(color: colorScheme.error, width: 2),
+      ),
+      hintStyle: theme.textTheme.bodyLarge?.copyWith(
+        color: colorScheme.onBackground.withValues(alpha: 0.45),
+      ),
+      prefixStyle: theme.textTheme.bodyLarge?.copyWith(
+        color: colorScheme.onBackground,
+        fontWeight: FontWeight.w500,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
@@ -319,7 +316,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
+                      color: colorScheme.onBackground,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -330,7 +327,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       color: daysRemaining > 0
-                          ? colorScheme.onSurface.withValues(alpha: 0.6)
+                          ? colorScheme.onBackground.withValues(alpha: 0.6)
                           : AppColors.error,
                     ),
                   ),
@@ -339,7 +336,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: colorScheme.onSurface.withValues(alpha: 0.4),
+              color: colorScheme.onBackground.withValues(alpha: 0.4),
             ),
           ],
         ),
@@ -377,7 +374,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                   size: 17,
                   color: isSelected
                       ? AppColors.primary
-                      : colorScheme.onSurface.withValues(alpha: 0.6),
+                      : colorScheme.onBackground.withValues(alpha: 0.6),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -387,7 +384,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     color: isSelected
                         ? AppColors.primary
-                        : colorScheme.onSurface.withValues(alpha: 0.7),
+                        : colorScheme.onBackground.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -442,14 +439,14 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
               'Recurring Goal',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
+                color: colorScheme.onBackground,
               ),
             ),
             subtitle: Text(
               'Reset progress automatically after completion',
               style: TextStyle(
                 fontSize: 13,
-                color: colorScheme.onSurface.withValues(alpha: 0.6),
+                color: colorScheme.onBackground.withValues(alpha: 0.6),
               ),
             ),
             value: _isRecurring,
@@ -512,7 +509,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               color: isSelected
                   ? AppColors.primary
-                  : colorScheme.onSurface.withValues(alpha: 0.7),
+                  : colorScheme.onBackground.withValues(alpha: 0.7),
             ),
           ),
         ),

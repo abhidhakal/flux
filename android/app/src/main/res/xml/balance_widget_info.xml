@@ -8,6 +8,6 @@
     android:initialLayout="@layout/balance_widget"
     android:previewLayout="@layout/balance_widget"
     android:previewImage="@mipmap/ic_launcher"
-    android:resizeMode="horizontal|vertical"
+    android:resizeMode="horizontal"
     android:widgetCategory="home_screen">
 </appwidget-provider>

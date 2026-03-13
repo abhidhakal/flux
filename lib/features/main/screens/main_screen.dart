@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../shared/widgets/offline_indicator.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../core/constants/app_theme.dart';
 import '../widgets/dashboard_screen.dart';
 import '../widgets/budgets_screen.dart';
 import '../widgets/transactions_screen.dart';
@@ -58,7 +59,7 @@ class _MainScreenState extends State<MainScreen> {
             }
           },
           child: Scaffold(
-            backgroundColor: colorScheme.background,
+            backgroundColor: AppTheme.pageBackground(context),
           extendBody: true,
           body: Column(
             children: [
@@ -76,23 +77,23 @@ class _MainScreenState extends State<MainScreen> {
               Padding(
                 padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
                 child: Container(
-                  height: 85,
+                  height: 78,
                   decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    borderRadius: BorderRadius.circular(35),
+                    color: AppTheme.cardSurface(context),
+                    borderRadius: BorderRadius.circular(30),
                     border: Border.all(
-                      color: colorScheme.outline.withOpacity(0.1),
+                      color: colorScheme.outline,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 20,
+                        color: Colors.black.withOpacity(0.10),
+                        blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(35),
+                    borderRadius: BorderRadius.circular(30),
                     child: BottomNavigationBar(
                       currentIndex: navState.currentIndex,
                       onTap: (index) {

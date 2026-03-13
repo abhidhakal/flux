@@ -167,10 +167,10 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: AppTheme.pageBackground(context),
       appBar: _isSelectionMode
           ? AppBar(
-              backgroundColor: colorScheme.background,
+              backgroundColor: AppTheme.pageBackground(context),
               foregroundColor: colorScheme.onBackground,
               elevation: 0,
               scrolledUnderElevation: 0,
@@ -207,7 +207,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               automaticallyImplyLeading: false,
               title: const Text('Transactions'),
               centerTitle: false,
-              backgroundColor: colorScheme.background,
+              backgroundColor: AppTheme.pageBackground(context),
               foregroundColor: colorScheme.onBackground,
               iconTheme: IconThemeData(color: colorScheme.onBackground),
               titleTextStyle: theme.textTheme.displaySmall?.copyWith(
@@ -318,8 +318,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark ? colorScheme.surface : Colors.black,
         borderRadius: BorderRadius.circular(28),
@@ -467,65 +467,68 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     ];
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: SizedBox(
-        height: 40,
-        child: Row(
-          children: [
-            Expanded(
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.only(left: 16),
-                children: timelinePills
-                    .map((p) => Padding(padding: const EdgeInsets.only(right: 8), child: p))
-                    .toList(),
+      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: AppTheme.surfaceDecoration(context, radius: 22, subtle: true),
+        child: SizedBox(
+          height: 40,
+          child: Row(
+            children: [
+              Expanded(
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.only(left: 12),
+                  children: timelinePills
+                      .map((p) => Padding(padding: const EdgeInsets.only(right: 8), child: p))
+                      .toList(),
+                ),
               ),
-            ),
-            // Filter chip
-            Padding(
-              padding: const EdgeInsets.only(left: 4, right: 16),
-              child: GestureDetector(
-                onTap: () => _showFilterSheet(budgets),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                  decoration: BoxDecoration(
-                    color: hasActiveSecondary ? AppColors.primary : Colors.transparent,
-                    border: Border.all(
-                      color: hasActiveSecondary
-                          ? AppColors.primary
-                          : colorScheme.outline.withOpacity(0.4),
-                      width: hasActiveSecondary ? 1.5 : 1,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.tune_rounded,
-                        size: 15,
+              Padding(
+                padding: const EdgeInsets.only(left: 4, right: 12),
+                child: GestureDetector(
+                  onTap: () => _showFilterSheet(budgets),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: hasActiveSecondary ? AppColors.primary : AppTheme.cardSurface(context),
+                      border: Border.all(
                         color: hasActiveSecondary
-                            ? Colors.white
-                            : colorScheme.onBackground.withOpacity(0.7),
+                            ? AppColors.primary
+                            : colorScheme.outline.withOpacity(0.2),
+                        width: hasActiveSecondary ? 1.5 : 1,
                       ),
-                      if (hasActiveSecondary) ...[
-                        const SizedBox(width: 5),
-                        Text(
-                          _activeFilterCount().toString(),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.tune_rounded,
+                          size: 15,
+                          color: hasActiveSecondary
+                              ? Colors.white
+                              : colorScheme.onBackground.withOpacity(0.7),
                         ),
+                        if (hasActiveSecondary) ...[
+                          const SizedBox(width: 5),
+                          Text(
+                            _activeFilterCount().toString(),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -548,7 +551,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.transparent,
+          color: selected ? AppColors.primary : AppTheme.cardSurface(context),
           border: Border.all(
             color: selected ? AppColors.primary : colorScheme.outline.withOpacity(0.4),
             width: selected ? 1.5 : 1,
@@ -881,12 +884,12 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
+          color: AppTheme.cardSurface(context),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: _selectedIds.contains(id)
                 ? AppColors.primary
-                : colorScheme.outline.withOpacity(0.18),
+                : colorScheme.outline.withOpacity(0.10),
             width: _selectedIds.contains(id) ? 1.5 : 1,
           ),
         ),

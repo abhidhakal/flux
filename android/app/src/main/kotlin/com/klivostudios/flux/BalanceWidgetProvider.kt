@@ -27,7 +27,10 @@ class BalanceWidgetProvider : HomeWidgetProvider() {
                 views.setTextViewText(R.id.widget_balance, balance)
                 views.setTextViewText(R.id.widget_income, income)
                 views.setTextViewText(R.id.widget_expenses, expenses)
-                views.setTextViewText(R.id.widget_transaction_count, "$transactionCount tx")
+                views.setTextViewText(
+                    R.id.widget_transaction_count,
+                    if (transactionCount == 1) "1 record" else "$transactionCount records"
+                )
 
                 // Accessibility: describe the live amounts for TalkBack
                 views.setContentDescription(

@@ -113,7 +113,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ],
       child: Scaffold(
-        backgroundColor: colorScheme.background,
+        backgroundColor: AppTheme.pageBackground(context),
         appBar: AppBar(
           automaticallyImplyLeading: false,
           title: Row(
@@ -124,13 +124,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   return Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(2),
+                        padding: const EdgeInsets.all(3),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: colorScheme.outline.withOpacity(0.2),
-                            width: 1,
-                          ),
+                          color: AppTheme.cardSurface(context),
+                          border: Border.all(color: colorScheme.outline.withOpacity(0.08)),
                         ),
                         child: _profilePictureService.buildProfileAvatar(
                           displayName: state.user.displayName,
@@ -144,18 +142,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           Text(
                             _getGreeting(),
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: colorScheme.onBackground.withOpacity(0.6),
-                            ),
+                            style: AppTheme.sectionSubtitleStyle(context).copyWith(fontSize: 12),
                           ),
                           Text(
                             state.user.displayName?.split(' ').first ?? 'User',
-                            style: TextStyle(
-                              fontSize: 18, // Bigger font size
+                            style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w800,
-                              color: colorScheme.onBackground,
+                              fontSize: 20,
                             ),
                           ),
                         ],
@@ -169,7 +162,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         centerTitle: false,
-        backgroundColor: colorScheme.background,
+        backgroundColor: AppTheme.pageBackground(context),
         elevation: 0,
         actions: [
           IconButton(
@@ -265,15 +258,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           _buildBalanceCard(transactionState.transactions, incomeList, isPremium),
                           const SizedBox(height: 24),
                           _buildQuickActions(),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 24),
                           _buildSmartInsights(isPremium),
                           const SizedBox(height: 24),
                           _buildRecentTransactions(transactionState.transactions),
-                          const SizedBox(height: 24),
-                          _buildFinancialTips(), // Extra content
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 32),
+                          _buildFinancialTips(),
+                          const SizedBox(height: 16),
                           const AppBannerAd(), // Ad-supported monetization
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 32),
                         ],
                       ),
                     );
@@ -334,7 +327,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   'Income',
                   CurrencyService().formatAmount(totalIncome),
                   Icons.arrow_upward_rounded,
-                  const Color(0xFF22C55E), // Green
+                  const Color(0xFF22C55E),
                   colorScheme,
                 ),
               ),
@@ -348,7 +341,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   'Expense',
                   CurrencyService().formatAmount(totalExpenses),
                   Icons.arrow_downward_rounded,
-                  const Color(0xFFEF4444), // Red
+                  const Color(0xFFEF4444),
                   colorScheme,
                 ),
               ),
@@ -404,7 +397,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: _buildActionButton(
             'Add New',
             Icons.add_rounded,
-            const Color(0xFF2b2b2b), // Softer black
+            const Color(0xFF2b2b2b),
             Colors.white,
             () {
               Navigator.push(
@@ -420,9 +413,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             'Budget',
             Icons.pie_chart_outline_rounded,
             Theme.of(context).colorScheme.surface,
-             Theme.of(context).colorScheme.onSurface,
+            Theme.of(context).colorScheme.onSurface,
             () {
-               Navigator.push(
+              Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const BudgetsScreen()),
               );
@@ -435,23 +428,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildActionButton(String label, IconData icon, Color bg, Color fg, VoidCallback onTap, {bool isOutlined = false}) {
+    final theme = Theme.of(context);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
         height: 60,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(20),
-          border: isOutlined ? Border.all(color: fg.withOpacity(0.1)) : null,
-          boxShadow: isOutlined ? null : [
-             BoxShadow(
-              color: bg.withOpacity(0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-             ),
-          ],
-        ),
+        decoration: isOutlined
+            ? AppTheme.surfaceDecoration(context, radius: 20, subtle: true).copyWith(
+                border: Border.all(color: fg.withOpacity(0.08)),
+              )
+            : BoxDecoration(
+                color: theme.brightness == Brightness.dark ? const Color(0xFF161616) : Colors.black,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.20 : 0.14),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -462,7 +460,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: TextStyle(
                 color: fg,
                 fontSize: 14,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -537,11 +535,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
-                  ),
+                  decoration: AppTheme.surfaceDecoration(context),
                   child: Column(
                     children: insights.take(2).map((e) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -592,10 +586,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
            Container(
              height: 120,
              width: double.infinity,
-             decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(24),
-             ),
+             decoration: AppTheme.surfaceDecoration(context),
              padding: const EdgeInsets.all(20),
              child: Column(
                children: [
@@ -612,6 +603,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildRecentTransactions(List<Transaction> transactions) {
     if (transactions.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -637,67 +629,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: transactions.take(5).length,
-          separatorBuilder: (context, index) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            final t = transactions[index];
-            final isExpense = t.type == TransactionType.expense;
-            
-            return Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isExpense ? const Color(0xFFFEE2E2) : const Color(0xFFDCFCE7),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(
-                      isExpense ? Icons.shopping_bag_outlined : Icons.attach_money_rounded,
-                      color: isExpense ? const Color(0xFFEF4444) : const Color(0xFF22C55E),
-                      size: 20,
+        Column(
+          children: List.generate(
+            transactions.length > 4 ? 4 : transactions.length,
+            (index) {
+              final t = transactions[index];
+              final isExpense = t.type == TransactionType.expense;
+              final isLast = index == ((transactions.length > 4 ? 4 : transactions.length) - 1);
+
+              return Padding(
+                padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppTheme.mutedSurface(context)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outline.withOpacity(
+                        Theme.of(context).brightness == Brightness.dark ? 0.14 : 0.08,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          t.title,
-                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isExpense ? const Color(0xFFFEE2E2) : const Color(0xFFDCFCE7),
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        Text(
-                          t.category,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                            fontSize: 12,
-                          ),
+                        child: Icon(
+                          isExpense ? Icons.shopping_bag_outlined : Icons.attach_money_rounded,
+                          color: isExpense ? const Color(0xFFEF4444) : const Color(0xFF22C55E),
+                          size: 20,
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t.title,
+                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            Text(
+                              t.category,
+                              style: AppTheme.sectionSubtitleStyle(context).copyWith(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '${isExpense ? "-" : "+"}${CurrencyService().formatAmount(t.amount)}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: isExpense ? const Color(0xFFEF4444) : const Color(0xFF22C55E),
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    '${isExpense ? "-" : "+"}${CurrencyService().formatAmount(t.amount)}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: isExpense ? const Color(0xFFEF4444) : const Color(0xFF22C55E),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+                ),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -707,9 +705,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.secondary.withOpacity(0.1),
+        color: AppColors.secondary.withOpacity(0.08),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.secondary.withOpacity(0.2)),
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -4,104 +4,56 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/balance_card_background"
-    android:gravity="center_vertical"
+    android:gravity="center"
     android:orientation="horizontal"
-    android:padding="16dp">
+    android:padding="14dp">
 
-    <FrameLayout
-        android:layout_width="110dp"
-        android:layout_height="110dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
 
-        <ProgressBar
-            android:id="@+id/widget_goal_progress_bar"
-            style="@style/Widget.Flux.CircularProgressBar"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:max="100"
-            android:progress="0" />
+        <FrameLayout
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_marginTop="4dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:orientation="vertical">
+            <ProgressBar
+                android:id="@+id/widget_goal_progress_bar"
+                style="@style/Widget.Flux.CircularProgressBar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:max="100"
+                android:progress="0" />
 
             <TextView
                 android:id="@+id/widget_goal_progress_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:text="0%"
                 android:textColor="@color/widget_goal_progress_text"
-                android:textSize="22sp"
+                android:textSize="20sp"
                 android:textStyle="bold" />
+        </FrameLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="progress"
-                android:textColor="@color/widget_text_secondary"
-                android:textSize="11sp" />
-        </LinearLayout>
-    </FrameLayout>
-
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="14dp"
-        android:layout_weight="1"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Goal Focus"
-            android:textColor="@color/widget_text_secondary"
-            android:textSize="12sp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
         <TextView
             android:id="@+id/widget_goal_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
             android:ellipsize="end"
+            android:gravity="center"
             android:maxLines="2"
             android:text="Start your first goal"
             android:textColor="@color/widget_text_primary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/widget_goal_status"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/widget_status_chip_background"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="5dp"
-            android:text="No active goals"
-            android:textColor="@color/widget_goal_progress"
-            android:textSize="11sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/widget_goal_current_amount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="$0.00 saved"
-            android:textColor="@color/widget_text_primary"
             android:textSize="14sp"
             android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/widget_goal_target_amount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="Set a target"
-            android:textColor="@color/widget_text_secondary"
-            android:textSize="12sp" />
     </LinearLayout>
 
 </LinearLayout>
