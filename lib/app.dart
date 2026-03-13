@@ -16,15 +16,14 @@ import 'core/services/subscription_service.dart';
 import 'core/services/background_task_service.dart';
 import 'features/subscription/subscription_bloc.dart';
 import 'features/auth/auth_bloc.dart';
-import 'features/auth/screens/welcome_screen.dart';
 import 'features/budget/budget_bloc.dart';
+import 'features/splash/screens/startup_screen.dart';
 import 'features/transaction/transaction_bloc.dart';
 import 'features/analytics/analytics_bloc.dart';
 import 'features/goals/goals_bloc.dart';
 import 'features/notifications/notifications_bloc.dart';
 import 'features/main/navigation_cubit.dart';
 import 'features/theme/theme_bloc.dart';
-import 'features/main/screens/main_screen.dart';
 import 'core/services/income_service.dart';
 import 'features/income/income_bloc.dart';
 import 'features/transaction/screens/add_transaction_screen.dart';
@@ -242,24 +241,10 @@ class _AppViewState extends State<AppView> {
                 child: safeContent,
               );
             },
-            home: BlocBuilder<AuthBloc, AuthState>(
-              builder: (context, state) {
-                if (state is AuthAuthenticated) {
-                  return const MainScreen();
-                }
-
-                if (state is AuthLoading || state is AuthInitial) {
-                  return const WelcomeScreen();
-                }
-
-                return const WelcomeScreen();
-              },
-            ),
+            home: const StartupScreen(),
           );
         },
       ),
     );
   }
 }
-
-

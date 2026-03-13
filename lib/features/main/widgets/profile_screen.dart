@@ -1122,7 +1122,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             const SizedBox(height: 20),
             ListTile(leading: Icon(Icons.camera_alt_rounded, color: colorScheme.primary), title: const Text('Take Photo'), onTap: () { Navigator.pop(context); _pickImage(ImageSource.camera); }),
             ListTile(leading: Icon(Icons.photo_library_rounded, color: colorScheme.primary), title: const Text('Choose from Gallery'), onTap: () { Navigator.pop(context); _pickImage(ImageSource.gallery); }),
-            if (_profilePictureService.profileImage != null)
+            if (_profilePictureService.hasProfileImage)
               ListTile(
                 leading: Icon(Icons.delete_rounded, color: colorScheme.error),
                 title: Text('Remove Photo', style: TextStyle(color: colorScheme.error)),
@@ -1146,6 +1146,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           AppSnackbar.showSuccess(context, message: 'Profile picture updated!');
         }
       }
+    } on ProfilePictureTooLargeException catch (_) {
+      AppSnackbar.showError(context, message: 'Profile picture must be under 2 MB.');
     } catch (e) {
       AppSnackbar.showError(context, message: 'Failed to pick image: $e');
     }

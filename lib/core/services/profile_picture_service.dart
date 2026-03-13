@@ -1,78 +1,128 @@
 import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:firebase_storage/firebase_storage.dart';
+
+class ProfilePictureTooLargeException implements Exception {
+  const ProfilePictureTooLargeException(this.maxSizeInBytes);
+
+  final int maxSizeInBytes;
+
+  @override
+  String toString() =>
+      'Profile picture must be smaller than ${maxSizeInBytes ~/ (1024 * 1024)} MB.';
+}
 
 class ProfilePictureService {
   static final ProfilePictureService _instance = ProfilePictureService._internal();
+  static const int maxFileSizeInBytes = 2 * 1024 * 1024;
+  static const int _downloadUrlRetryCount = 3;
+
   factory ProfilePictureService() => _instance;
   ProfilePictureService._internal();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
 
   File? _profileImage;
-  // No longer using a static key since we need it to be user-specific
-  // static const String _profileImagePathKey = 'profile_image_path';
+  String? _profileImageUrl;
 
   File? get profileImage => _profileImage;
+  bool get hasProfileImage =>
+      _profileImage != null || (_profileImageUrl?.isNotEmpty ?? false);
 
   Future<void> setProfileImage(File? image, {required String userId}) async {
-    _profileImage = image;
     if (image != null) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('profile_image_path_$userId', image.path);
-      
-      // Save to Firestore as Base64
+      final imageSize = await image.length();
+      if (imageSize > maxFileSizeInBytes) {
+        throw const ProfilePictureTooLargeException(maxFileSizeInBytes);
+      }
+      final previousImage = _profileImage;
+      final previousImageUrl = _profileImageUrl;
+
       try {
-        final bytes = await image.readAsBytes();
-        final base64String = base64Encode(bytes);
+        final storageRef =
+            _storage.ref().child('users/$userId/profile_picture.jpg');
+        final snapshot = await storageRef.putFile(
+          image,
+          SettableMetadata(contentType: 'image/jpeg'),
+        );
+        final downloadUrl = await _getDownloadUrlWithRetry(snapshot.ref);
+
+        _profileImageUrl = downloadUrl;
+        _profileImage = image;
         await _firestore.collection('users').doc(userId).update({
-          'profileImageBase64': base64String,
+          'photoUrl': downloadUrl,
+          'profileImageBase64': FieldValue.delete(),
         });
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('profile_image_path_$userId', image.path);
+
+        final user = _auth.currentUser;
+        if (user != null && user.uid == userId) {
+          await user.updatePhotoURL(downloadUrl);
+        }
       } catch (e) {
-        debugPrint('Error saving profile image to Firestore: $e');
+        _profileImage = previousImage;
+        _profileImageUrl = previousImageUrl;
+        debugPrint('Error saving profile image to Firebase Storage: $e');
+        rethrow;
       }
     } else {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('profile_image_path_$userId');
-      
-      // Remove from Firestore
+      _profileImageUrl = null;
+
       try {
-         await _firestore.collection('users').doc(userId).update({
+        await _storage.ref().child('users/$userId/profile_picture.jpg').delete();
+      } catch (e) {
+        debugPrint('Error removing profile image from Firebase Storage: $e');
+      }
+
+      try {
+        await _firestore.collection('users').doc(userId).update({
+          'photoUrl': FieldValue.delete(),
           'profileImageBase64': FieldValue.delete(),
         });
+
+        final user = _auth.currentUser;
+        if (user != null && user.uid == userId) {
+          await user.updatePhotoURL(null);
+        }
       } catch (e) {
         debugPrint('Error removing profile image from Firestore: $e');
+        rethrow;
       }
     }
   }
 
   Future<void> loadProfileImage({required String userId}) async {
-    // 1. Try loading from Firestore (Source of Truth)
+    _profileImage = null;
+    _profileImageUrl = null;
+
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
-      if (doc.exists && doc.data() != null && doc.data()!.containsKey('profileImageBase64')) {
-        final base64String = doc.data()!['profileImageBase64'] as String;
-        if (base64String.isNotEmpty) {
-           final bytes = base64Decode(base64String);
-           final tempDir = await getTemporaryDirectory();
-           final file = File('${tempDir.path}/profile_${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg');
-           await file.writeAsBytes(bytes);
-           _profileImage = file;
-           
-           // Update local cache
-           final prefs = await SharedPreferences.getInstance();
-           await prefs.setString('profile_image_path_$userId', file.path);
-           return;
+      final data = doc.data();
+      final photoUrl = data?['photoUrl'] as String?;
+      if (photoUrl != null && photoUrl.isNotEmpty) {
+        _profileImageUrl = photoUrl;
+
+        final prefs = await SharedPreferences.getInstance();
+        final imagePath = prefs.getString('profile_image_path_$userId');
+        if (imagePath != null && File(imagePath).existsSync()) {
+          _profileImage = File(imagePath);
         }
+
+        return;
       }
     } catch (e) {
-      debugPrint('Error loading profile image from Firestore: $e');
+      debugPrint('Error loading profile image URL from Firestore: $e');
     }
 
-    // 2. Fallback to local cache if Firestore failed or empty
     final prefs = await SharedPreferences.getInstance();
     final imagePath = prefs.getString('profile_image_path_$userId');
     if (imagePath != null && File(imagePath).existsSync()) {
@@ -86,16 +136,41 @@ class ProfilePictureService {
     await setProfileImage(null, userId: userId);
   }
 
+  Future<String> _getDownloadUrlWithRetry(Reference ref) async {
+    Object? lastError;
+
+    for (var attempt = 0; attempt < _downloadUrlRetryCount; attempt++) {
+      try {
+        return await ref.getDownloadURL();
+      } on FirebaseException catch (e) {
+        lastError = e;
+        if (e.code != 'object-not-found' || attempt == _downloadUrlRetryCount - 1) {
+          rethrow;
+        }
+        await Future<void>.delayed(Duration(milliseconds: 300 * (attempt + 1)));
+      }
+    }
+
+    throw lastError ?? Exception('Failed to fetch profile image download URL.');
+  }
+
   Widget buildProfileAvatar({
     required String? displayName,
     required ColorScheme colorScheme,
     double radius = 25,
   }) {
+    ImageProvider<Object>? imageProvider;
     if (_profileImage != null) {
+      imageProvider = FileImage(_profileImage!);
+    } else if (_profileImageUrl?.isNotEmpty ?? false) {
+      imageProvider = NetworkImage(_profileImageUrl!);
+    }
+
+    if (imageProvider != null) {
       return CircleAvatar(
         radius: radius,
         backgroundColor: colorScheme.primary,
-        backgroundImage: FileImage(_profileImage!),
+        backgroundImage: imageProvider,
       );
     } else {
       return CircleAvatar(
