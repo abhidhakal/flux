@@ -104,6 +104,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             }
           },
         ),
+        BlocListener<GoalsBloc, GoalsState>(
+          listener: (context, state) {
+            if (state is GoalsLoaded) {
+              _updateWidget(context);
+            }
+          },
+        ),
       ],
       child: Scaffold(
         backgroundColor: colorScheme.background,

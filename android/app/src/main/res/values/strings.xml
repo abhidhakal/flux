@@ -2,7 +2,10 @@
 <resources>
     <string name="widget_balance_label">Balance</string>
     <string name="widget_action_label">Add Transaction</string>
+    <string name="widget_quick_capture_label">Quick Capture</string>
+    <string name="widget_goal_label">Goal Progress</string>
     <string name="widget_cd_balance">Total balance: %s</string>
     <string name="widget_cd_income">Total income: %s</string>
     <string name="widget_cd_expenses">Total expenses: %s</string>
+    <string name="widget_cd_goal_progress">%1$s percent complete for %2$s</string>
 </resources>

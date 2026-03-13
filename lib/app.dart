@@ -19,8 +19,10 @@ import 'features/auth/auth_bloc.dart';
 import 'features/budget/budget_bloc.dart';
 import 'features/splash/screens/startup_screen.dart';
 import 'features/transaction/transaction_bloc.dart';
+import 'core/models/transaction_model.dart';
 import 'features/analytics/analytics_bloc.dart';
 import 'features/goals/goals_bloc.dart';
+import 'features/goals/screens/goals_screen.dart';
 import 'features/notifications/notifications_bloc.dart';
 import 'features/main/navigation_cubit.dart';
 import 'features/theme/theme_bloc.dart';
@@ -170,8 +172,36 @@ class _AppViewState extends State<AppView> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Future.delayed(const Duration(milliseconds: 500), () {
           if (uri.host == 'add_transaction') {
+            final type = switch (uri.queryParameters['type']) {
+              'income' => TransactionType.income,
+              _ => TransactionType.expense,
+            };
             _navigatorKey.currentState?.push(
-              MaterialPageRoute(builder: (context) => const AddTransactionScreen()),
+              MaterialPageRoute(
+                builder: (context) => AddTransactionScreen(initialType: type),
+              ),
+            );
+            return;
+          }
+
+          if (uri.host == 'open_budgets') {
+            context.read<NavigationCubit>().setTab(1);
+            return;
+          }
+
+          if (uri.host == 'open_transactions') {
+            context.read<NavigationCubit>().setTab(2);
+            return;
+          }
+
+          if (uri.host == 'open_home') {
+            context.read<NavigationCubit>().setTab(0);
+            return;
+          }
+
+          if (uri.host == 'open_goals') {
+            _navigatorKey.currentState?.push(
+              MaterialPageRoute(builder: (context) => const GoalsScreen()),
             );
           }
         });

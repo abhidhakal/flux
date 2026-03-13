@@ -20,7 +20,7 @@ class ActionWidgetProvider : HomeWidgetProvider() {
                 val pendingIntent = HomeWidgetLaunchIntent.getActivity(
                     context,
                     MainActivity::class.java,
-                    Uri.parse("flux://add_transaction")
+                    Uri.parse("flux://add_transaction?type=expense")
                 )
                 setOnClickPendingIntent(R.id.widget_button_add, pendingIntent)
             }

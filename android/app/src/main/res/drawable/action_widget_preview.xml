@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Static preview for API <= 30 widget picker. Matches the actual action_widget layout. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="57dp"
     android:height="57dp"
     android:viewportWidth="57"
     android:viewportHeight="57">
 
-    <!-- Circular background -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M8,12 C8,9.79 9.79,8 12,8 H45 C47.21,8 49,9.79 49,12 V45 C49,47.21 47.21,49 45,49 H12 C9.79,49 8,47.21 8,45 Z" />
+
+    <path
+        android:strokeColor="#E9ECEF"
+        android:strokeWidth="1"
+        android:pathData="M8.5,12 C8.5,10.07 10.07,8.5 12,8.5 H45 C46.93,8.5 48.5,10.07 48.5,12 V45 C48.5,46.93 46.93,48.5 45,48.5 H12 C10.07,48.5 8.5,46.93 8.5,45 Z" />
+
     <path
         android:fillColor="#0079DC"
-        android:pathData="M28.5,4 A24.5,24.5 0 1,1 28.4999,4 Z" />
-
-    <!-- White plus sign — horizontal bar -->
-    <path
-        android:fillColor="#FFFFFF"
         android:pathData="M20,27 L37,27 L37,30 L20,30 Z" />
 
-    <!-- White plus sign — vertical bar -->
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="#0079DC"
         android:pathData="M27,20 L30,20 L30,37 L27,37 Z" />
-
 </vector>

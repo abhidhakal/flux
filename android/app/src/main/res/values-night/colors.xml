@@ -12,4 +12,9 @@
     <color name="widget_expense">#DC3545</color>
     <color name="widget_button_bg">#0079DC</color>
     <color name="widget_button_text">#FFFFFFFF</color>
+    <color name="widget_surface_alt">#15202B</color>
+    <color name="widget_surface_accent">#102A43</color>
+    <color name="widget_goal_track">#213041</color>
+    <color name="widget_goal_progress">#49A8FF</color>
+    <color name="widget_goal_progress_text">#F3F4F6</color>
 </resources>

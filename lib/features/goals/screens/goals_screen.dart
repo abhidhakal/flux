@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/goal_model.dart';
 import '../../../core/services/currency_service.dart';
+import '../../../core/services/widget_service.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/skeleton_components.dart';
 import '../../auth/auth_bloc.dart';
@@ -128,6 +129,7 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
             List<Goal> goals = [];
             if (state is GoalsLoaded) {
               goals = state.goals;
+              WidgetService.refreshWidgets(context);
             }
 
             if (goals.isNotEmpty) {

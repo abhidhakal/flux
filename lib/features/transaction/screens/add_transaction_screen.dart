@@ -14,7 +14,9 @@ import '../../../core/models/income_model.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 
 class AddTransactionScreen extends StatefulWidget {
-  const AddTransactionScreen({super.key});
+  final TransactionType? initialType;
+
+  const AddTransactionScreen({super.key, this.initialType});
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -37,6 +39,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialType != null) {
+      _selectedType = widget.initialType!;
+      _selectedCategory =
+          _selectedType == TransactionType.income ? 'Salary' : 'Food & Dining';
+    }
     // Load budgets when screen initializes
     final user = context.read<AuthBloc>().state;
     if (user is AuthAuthenticated) {
@@ -714,4 +721,3 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     }
   }
   }
-
