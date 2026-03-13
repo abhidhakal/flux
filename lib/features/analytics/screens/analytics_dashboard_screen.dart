@@ -251,14 +251,26 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     final score = analysis?['healthScore'] ?? 0;
     final color = score > 80 ? AppColors.success : (score > 50 ? Colors.orange : AppColors.error);
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final cardBackground = isDark
+      ? colorScheme.surfaceContainerLow
+      : colorScheme.primaryContainer.withOpacity(0.1);
+    final cardBorderColor = isDark
+      ? colorScheme.outline.withOpacity(0.45)
+      : color.withOpacity(0.2);
+    final progressTrackColor = isDark
+      ? colorScheme.outline.withOpacity(0.25)
+      : color.withOpacity(0.1);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withOpacity(0.1),
+        color: cardBackground,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: cardBorderColor),
       ),
       child: Row(
         children: [
@@ -271,7 +283,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                 child: CircularProgressIndicator(
                   value: score / 100,
                   strokeWidth: 8,
-                  backgroundColor: color.withOpacity(0.1),
+                  backgroundColor: progressTrackColor,
                   color: color,
                   strokeCap: StrokeCap.round,
                 ),
@@ -522,18 +534,26 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   }
 
   Widget _buildStatCard(String label, double amount, IconData icon, Color color) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.darkSurface,
+        color: isDark ? AppColors.darkSurface : colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: color.withOpacity(0.1),
+          color: isDark
+              ? color.withOpacity(0.12)
+              : colorScheme.outline.withOpacity(0.35),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.05),
+            color: isDark
+                ? color.withOpacity(0.05)
+                : Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -555,17 +575,17 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
             label,
             style: TextStyle(
               fontSize: 13,
-              color: Colors.white.withOpacity(0.6),
+              color: colorScheme.onSurface.withOpacity(0.65),
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             CurrencyService().formatAmount(amount).replaceAll('.00', ''),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: colorScheme.onSurface,
             ),
           ),
         ],
@@ -603,7 +623,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildSectionHeader('Smart Intelligence', 'Smart analysis of your habits'),
+            _buildSectionHeader('Flux Intelligence', 'Smart analysis of your habits'),
             Icon(Icons.auto_awesome, color: AppColors.primary, size: 24),
           ],
         ),
@@ -629,7 +649,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Smart Recommendations', 'Actionable steps to improve'),
+        _buildSectionHeader('Flux Recommendations', 'Actionable steps to improve'),
         const SizedBox(height: 16),
         if (recommendations.isNotEmpty)
           ...recommendations.map((rec) => InsightsCard(
@@ -689,7 +709,11 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
               ),
             ),
             const SizedBox(width: 4),
-            const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 20,
+              color: colorScheme.onSurface,
+            ),
           ],
         ),
       ),

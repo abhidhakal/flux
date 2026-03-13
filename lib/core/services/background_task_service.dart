@@ -57,8 +57,13 @@ void callbackDispatcher() {
         if (schedules.containsKey('daily_reminder')) {
           final s = schedules['daily_reminder'];
           if (s['enabled'] == true) {
-            // Trigger if current time is around the scheduled time window
-            if (now.hour == s['hour']) {
+            final scheduledHour = (s['hour'] as num?)?.toInt() ?? 20;
+            final scheduledMinute = (s['minute'] as num?)?.toInt() ?? 0;
+            final hasPassedScheduledTime =
+                now.hour > scheduledHour ||
+                (now.hour == scheduledHour && now.minute >= scheduledMinute);
+
+            if (hasPassedScheduledTime) {
                await triggerService.triggerDailyReminder(userId, s['type']);
             }
           }
@@ -66,7 +71,13 @@ void callbackDispatcher() {
         
         if (schedules.containsKey('morning_greeting')) {
           final s = schedules['morning_greeting'];
-          if (s['enabled'] == true && now.hour == 8) {
+          final scheduledHour = (s['hour'] as num?)?.toInt() ?? 8;
+          final scheduledMinute = (s['minute'] as num?)?.toInt() ?? 0;
+          final hasPassedScheduledTime =
+              now.hour > scheduledHour ||
+              (now.hour == scheduledHour && now.minute >= scheduledMinute);
+
+          if (s['enabled'] == true && hasPassedScheduledTime) {
             await triggerService.triggerMorningGreeting(userId);
           }
         }

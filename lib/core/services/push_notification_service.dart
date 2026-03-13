@@ -54,8 +54,31 @@ class PushNotificationService {
 
   // Request notification permissions
   Future<bool> requestPermissions() async {
+    if (!_isInitialized) await initialize();
+
     final status = await Permission.notification.request();
-    return status.isGranted;
+
+    final iosGranted = await _notifications
+        .resolvePlatformSpecificImplementation<
+          fln.IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(alert: true, badge: true, sound: true) ??
+      true;
+    final macGranted = await _notifications
+        .resolvePlatformSpecificImplementation<
+          fln.MacOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(alert: true, badge: true, sound: true) ??
+      true;
+
+    await _notifications
+      .resolvePlatformSpecificImplementation<
+        fln.AndroidFlutterLocalNotificationsPlugin>()
+      ?.requestNotificationsPermission();
+    await _notifications
+      .resolvePlatformSpecificImplementation<
+        fln.AndroidFlutterLocalNotificationsPlugin>()
+      ?.requestExactAlarmsPermission();
+
+    return status.isGranted && iosGranted && macGranted;
   }
 
   // Check if notifications are enabled
@@ -149,8 +172,18 @@ class PushNotificationService {
       );
       print('DEBUG: Successfully scheduled notification $id');
     } catch (e) {
-      print('DEBUG: Failed in zonedSchedule: $e');
-      rethrow;
+      print('DEBUG: Failed exact zonedSchedule, retrying with inexact mode: $e');
+      await _notifications.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(scheduledDate, tz.local),
+        details,
+        payload: payload,
+        androidScheduleMode: fln.AndroidScheduleMode.inexactAllowWhileIdle,
+        matchDateTimeComponents: matchDateTimeComponents,
+      );
+      print('DEBUG: Successfully scheduled notification $id with inexact mode');
     }
   }
 
@@ -178,8 +211,8 @@ class PushNotificationService {
     }
 
     // Check exact alarm permission on Android
-    final androidInfo = await fln.FlutterLocalNotificationsPlugin()
-        .resolvePlatformSpecificImplementation<fln.AndroidFlutterLocalNotificationsPlugin>()
+    final androidInfo = await _notifications
+      .resolvePlatformSpecificImplementation<fln.AndroidFlutterLocalNotificationsPlugin>()
         ?.requestExactAlarmsPermission();
     print('DEBUG: Exact alarm permission request result: $androidInfo');
 

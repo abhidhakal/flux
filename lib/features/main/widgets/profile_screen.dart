@@ -1576,6 +1576,17 @@ class _ProfileScreenState extends State<ProfileScreen>
           ? (authState.user.displayName ?? 'User') 
           : 'User';
 
+        final now = DateTime.now();
+        final todayIso = now.toIso8601String().split('T').first;
+        final reportScope = budget != null
+          ? 'Scope: Budget - ${budget.name}'
+          : 'Scope: Time Range';
+        final reportRange = budget != null
+          ? 'Range: All records for selected budget'
+          : (days > 0
+            ? 'Range: ${now.subtract(Duration(days: days)).toIso8601String().split('T').first} to $todayIso'
+            : 'Range: All time');
+
       File generatedFile;
       if (format == 'csv') {
         final csvContent = exportService.generateCsv(
@@ -1591,6 +1602,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           filteredTransactions,
           filteredIncomes,
           userName,
+          reportScope: reportScope,
+          reportRange: reportRange,
         );
         generatedFile = await exportService.generateFile(
           pdfBytes, 

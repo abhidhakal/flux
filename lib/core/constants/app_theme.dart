@@ -49,7 +49,7 @@ class AppColors {
   static const Color lightTextMuted = Color(0xFF9CA3AF);
   
   // Dark Theme Colors
-  static const Color darkBackground = Color(0xFF0F0F0F);
+  static const Color darkBackground = Color(0xFF0C0C0C);
   static const Color darkSurface = Color(0xFF1A1A1A);
   static const Color darkCard = Color(0xFF1E1E1E);
   static const Color darkDivider = Color(0xFF2A2A2A);
@@ -351,11 +351,13 @@ class AppTheme {
         primaryContainer: AppColors.primaryUltraLight,
         secondary: AppColors.secondary,
         secondaryContainer: AppColors.secondaryLight,
+        background: AppColors.lightBackground,
         surface: AppColors.lightSurface,
         error: AppColors.error,
         errorContainer: AppColors.errorUltraLight,
         onPrimary: AppColors.lightTextInverse,
         onSecondary: AppColors.lightTextInverse,
+        onBackground: AppColors.lightTextPrimary,
         onSurface: AppColors.lightTextPrimary,
         onError: AppColors.lightTextInverse,
         outline: AppColors.lightBorder,
@@ -378,11 +380,11 @@ class AppTheme {
           size: 24,
         ),
         systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: AppColors.primary,
-          statusBarIconBrightness: Brightness.light,
+          statusBarColor: AppColors.lightBackground,
+          statusBarIconBrightness: Brightness.dark,
           statusBarBrightness: Brightness.light,
           systemNavigationBarColor: AppColors.lightBackground,
-          systemNavigationBarIconBrightness: Brightness.light,
+          systemNavigationBarIconBrightness: Brightness.dark,
           systemNavigationBarDividerColor: AppColors.lightBackground,
         ),
       ),
@@ -567,11 +569,13 @@ class AppTheme {
         primaryContainer: AppColors.primaryDark,
         secondary: AppColors.secondary,
         secondaryContainer: AppColors.secondaryDark,
+        background: AppColors.darkBackground,
         surface: AppColors.darkSurface,
         error: AppColors.error,
         errorContainer: AppColors.errorDark,
         onPrimary: AppColors.darkTextInverse,
         onSecondary: AppColors.darkTextInverse,
+        onBackground: AppColors.darkTextPrimary,
         onSurface: AppColors.darkTextPrimary,
         onError: AppColors.darkTextInverse,
         outline: AppColors.darkBorder,
@@ -594,12 +598,12 @@ class AppTheme {
           size: 24,
         ),
         systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
+          statusBarColor: AppColors.darkBackground,
           statusBarIconBrightness: Brightness.light,
           statusBarBrightness: Brightness.dark,
-          systemNavigationBarColor: Colors.transparent,
+          systemNavigationBarColor: AppColors.darkBackground,
           systemNavigationBarIconBrightness: Brightness.light,
-          systemNavigationBarDividerColor: Colors.transparent,
+          systemNavigationBarDividerColor: AppColors.darkBackground,
         ),
       ),
       cardTheme: CardThemeData(

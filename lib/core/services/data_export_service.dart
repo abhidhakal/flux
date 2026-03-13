@@ -24,6 +24,10 @@ class DataExportService {
   static const PdfColor _accentColor = PdfColor.fromInt(0xFFF1F5F9); // Slate 100
   static const PdfColor _textGrey = PdfColor.fromInt(0xFF64748B); // Slate 500
 
+  static pw.MemoryImage? _cachedLogoImage;
+  static pw.Font? _cachedFontRegular;
+  static pw.Font? _cachedFontBold;
+
   /// Generates CSV content from transactions and income data.
   String generateCsv(List<Transaction> transactions, List<Income> incomes) {
     final List<List<dynamic>> rows = [];
@@ -66,21 +70,45 @@ class DataExportService {
     List<Transaction> transactions,
     List<Income> incomes,
     String userName,
+    {
+    String? reportScope,
+    String? reportRange,
+  }
   ) async {
     final pdf = pw.Document();
     final currencySymbol = _currencyService.symbol;
-    
-    // Load Assets
-    final logoImage = pw.MemoryImage(
-      (await rootBundle.load('assets/images/flux_logo.png')).buffer.asUint8List(),
-    );
-    
-    final fontRegular = pw.Font.ttf(
-      await rootBundle.load('assets/fonts/Inter-Regular.ttf'),
-    );
-    final fontBold = pw.Font.ttf(
-      await rootBundle.load('assets/fonts/Inter-Bold.ttf'),
-    );
+
+    pw.MemoryImage? logoImage = _cachedLogoImage;
+    if (logoImage == null) {
+      try {
+        logoImage = pw.MemoryImage(
+          (await rootBundle.load('assets/images/flux_logo.png'))
+              .buffer
+              .asUint8List(),
+        );
+        _cachedLogoImage = logoImage;
+      } catch (_) {
+        logoImage = null;
+      }
+    }
+
+    pw.Font? fontRegular = _cachedFontRegular;
+    pw.Font? fontBold = _cachedFontBold;
+    if (fontRegular == null || fontBold == null) {
+      try {
+        fontRegular = pw.Font.ttf(
+          await rootBundle.load('assets/fonts/Satoshi/Satoshi-Regular.ttf'),
+        );
+        fontBold = pw.Font.ttf(
+          await rootBundle.load('assets/fonts/Satoshi/Satoshi-Bold.ttf'),
+        );
+        _cachedFontRegular = fontRegular;
+        _cachedFontBold = fontBold;
+      } catch (_) {
+        fontRegular = null;
+        fontBold = null;
+      }
+    }
 
     // Calculate totals
     final totalIncome = incomes.fold<double>(0, (sum, i) => sum + i.amount);
@@ -89,17 +117,25 @@ class DataExportService {
         .fold<double>(0, (sum, t) => sum + t.amount);
     final netBalance = totalIncome - totalExpenses;
 
+    final pageTheme = (fontRegular != null && fontBold != null)
+        ? pw.PageTheme(
+            pageFormat: PdfPageFormat.a4,
+            margin: const pw.EdgeInsets.all(40),
+            theme: pw.ThemeData.withFont(
+              base: fontRegular,
+              bold: fontBold,
+            ),
+          )
+        : pw.PageTheme(
+            pageFormat: PdfPageFormat.a4,
+            margin: const pw.EdgeInsets.all(40),
+          );
+
     pdf.addPage(
       pw.MultiPage(
-        pageTheme: pw.PageTheme(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(40),
-          theme: pw.ThemeData.withFont(
-            base: fontRegular,
-            bold: fontBold,
-          ),
-        ),
-        header: (context) => _buildPdfHeader(logoImage, userName),
+        pageTheme: pageTheme,
+        header: (context) =>
+            _buildPdfHeader(logoImage, userName, reportScope, reportRange),
         footer: (context) => _buildPdfFooter(context),
         build: (context) => [
           // Summary Section
@@ -107,15 +143,35 @@ class DataExportService {
           pw.SizedBox(height: 12),
           _buildSummarySection(totalIncome, totalExpenses, netBalance, currencySymbol),
           pw.SizedBox(height: 32),
+
+          // Category Summary
+          _buildSectionTitle('Spending by Category'),
+          pw.SizedBox(height: 12),
+          _buildCategorySummary(transactions, currencySymbol),
+          pw.SizedBox(height: 32),
           
           // Transactions Table
           _buildSectionTitle('Transaction History'),
+          pw.SizedBox(height: 6),
+          _buildSectionMeta(
+            leftLabel: 'Entries',
+            leftValue: transactions.length.toString(),
+            rightLabel: 'Total Expenses',
+            rightValue: _formatCurrency(totalExpenses, currencySymbol),
+          ),
           pw.SizedBox(height: 12),
           _buildTransactionsTable(transactions, currencySymbol),
           pw.SizedBox(height: 32),
           
           // Income Table
           _buildSectionTitle('Income Record'),
+          pw.SizedBox(height: 6),
+          _buildSectionMeta(
+            leftLabel: 'Entries',
+            leftValue: incomes.length.toString(),
+            rightLabel: 'Total Income',
+            rightValue: _formatCurrency(totalIncome, currencySymbol),
+          ),
           pw.SizedBox(height: 12),
           _buildIncomeTable(incomes, currencySymbol),
         ],
@@ -125,13 +181,18 @@ class DataExportService {
     return pdf.save();
   }
 
-  pw.Widget _buildPdfHeader(pw.MemoryImage logo, String userName) {
+  pw.Widget _buildPdfHeader(
+    pw.MemoryImage? logo,
+    String userName,
+    String? reportScope,
+    String? reportRange,
+  ) {
     return pw.Container(
       margin: const pw.EdgeInsets.only(bottom: 24),
       decoration: const pw.BoxDecoration(
         border: pw.Border(bottom: pw.BorderSide(color: _accentColor, width: 2)),
       ),
-      padding: const pw.EdgeInsets.only(bottom: 12),
+      padding: const pw.EdgeInsets.only(bottom: 14),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         crossAxisAlignment: pw.CrossAxisAlignment.end,
@@ -141,7 +202,22 @@ class DataExportService {
               pw.Container(
                 width: 40,
                 height: 40,
-                child: pw.Image(logo),
+                decoration: pw.BoxDecoration(
+                  color: _accentColor,
+                  borderRadius: pw.BorderRadius.circular(10),
+                ),
+                child: logo != null
+                    ? pw.Image(logo)
+                    : pw.Center(
+                        child: pw.Text(
+                          'F',
+                          style: pw.TextStyle(
+                            color: _primaryColor,
+                            fontSize: 18,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ),
               ),
               pw.SizedBox(width: 12),
               pw.Column(
@@ -158,7 +234,7 @@ class DataExportService {
                   pw.Text(
                     'Financial Statement',
                     style: const pw.TextStyle(
-                      fontSize: 10,
+                      fontSize: 10.5,
                       color: _textGrey,
                       letterSpacing: 1.2,
                     ),
@@ -186,10 +262,51 @@ class DataExportService {
                   color: _textGrey,
                 ),
               ),
+              if (reportScope != null && reportScope.isNotEmpty) ...[
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  reportScope,
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                    color: _textGrey,
+                  ),
+                ),
+              ],
+              if (reportRange != null && reportRange.isNotEmpty) ...[
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  reportRange,
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                    color: _textGrey,
+                  ),
+                ),
+              ],
             ],
           ),
         ],
       ),
+    );
+  }
+
+  pw.Widget _buildSectionMeta({
+    required String leftLabel,
+    required String leftValue,
+    required String rightLabel,
+    required String rightValue,
+  }) {
+    return pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      children: [
+        pw.Text(
+          '$leftLabel: $leftValue',
+          style: const pw.TextStyle(fontSize: 9, color: _textGrey),
+        ),
+        pw.Text(
+          '$rightLabel: $rightValue',
+          style: const pw.TextStyle(fontSize: 9, color: _textGrey),
+        ),
+      ],
     );
   }
 
@@ -240,7 +357,7 @@ class DataExportService {
   pw.Widget _buildSummaryCard(String label, double amount, String symbol, PdfColor color, bool isPositive) {
     return pw.Expanded(
       child: pw.Container(
-        padding: const pw.EdgeInsets.all(16),
+        padding: const pw.EdgeInsets.all(18),
         decoration: pw.BoxDecoration(
           color: PdfColors.white,
           borderRadius: pw.BorderRadius.circular(12),
@@ -251,13 +368,13 @@ class DataExportService {
           children: [
             pw.Text(
               label.toUpperCase(),
-              style: pw.TextStyle(fontSize: 9, color: _textGrey, fontWeight: pw.FontWeight.bold),
+              style: pw.TextStyle(fontSize: 9.5, color: _textGrey, fontWeight: pw.FontWeight.bold),
             ),
-            pw.SizedBox(height: 8),
+            pw.SizedBox(height: 10),
             pw.Text(
-              '$symbol${amount.toStringAsFixed(2)}',
+              _formatCurrency(amount, symbol),
               style: pw.TextStyle(
-                fontSize: 18,
+                fontSize: 19,
                 fontWeight: pw.FontWeight.bold,
                 color: color,
               ),
@@ -277,7 +394,7 @@ class DataExportService {
       child: pw.Text(
         title,
         style: pw.TextStyle(
-          fontSize: 16,
+          fontSize: 16.5,
           fontWeight: pw.FontWeight.bold,
           color: _secondaryColor,
         ),
@@ -290,28 +407,61 @@ class DataExportService {
       return pw.Text('No transactions available for this period.', style: const pw.TextStyle(color: _textGrey, fontSize: 10));
     }
 
-    return pw.TableHelper.fromTextArray(
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: _secondaryColor),
-      cellStyle: const pw.TextStyle(fontSize: 9, color: _secondaryColor),
-      headerDecoration: const pw.BoxDecoration(color: _accentColor),
-      cellHeight: 32,
-      cellAlignments: {
-        0: pw.Alignment.centerLeft,
-        1: pw.Alignment.centerLeft,
-        2: pw.Alignment.centerLeft,
-        3: pw.Alignment.centerRight,
-      },
-      headers: ['DATE', 'TITLE', 'CATEGORY', 'AMOUNT'],
-      data: transactions.map((t) => [
-        _dateFormat.format(t.date),
-        t.title.length > 30 ? '${t.title.substring(0, 30)}...' : t.title,
-        t.category,
-        '${t.type == TransactionType.expense ? '-' : '+'} $currencySymbol${t.amount.toStringAsFixed(2)}',
-      ]).toList(),
+    return pw.Table(
       border: pw.TableBorder(
         horizontalInside: pw.BorderSide(color: _accentColor, width: 0.5),
         bottom: pw.BorderSide(color: _accentColor, width: 0.5),
       ),
+      columnWidths: const {
+        0: pw.FlexColumnWidth(1.3),
+        1: pw.FlexColumnWidth(2.4),
+        2: pw.FlexColumnWidth(1.6),
+        3: pw.FlexColumnWidth(1.4),
+      },
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: _accentColor),
+          children: [
+            _buildHeaderCell('DATE'),
+            _buildHeaderCell('TITLE'),
+            _buildHeaderCell('CATEGORY'),
+            _buildHeaderCell('AMOUNT', alignRight: true),
+          ],
+        ),
+        ...List.generate(transactions.length, (index) {
+          final t = transactions[index];
+          final isExpense = t.type == TransactionType.expense;
+          final amountColor = isExpense ? PdfColors.red600 : PdfColors.green600;
+          return pw.TableRow(
+            decoration: pw.BoxDecoration(
+              color: index.isEven
+                  ? PdfColors.white
+                  : const PdfColor.fromInt(0xFFF8FAFC),
+            ),
+            children: [
+              _buildBodyCell(_dateFormat.format(t.date)),
+              _buildBodyCell(
+                t.title.length > 30 ? '${t.title.substring(0, 30)}...' : t.title,
+              ),
+              _buildBodyCell(t.category),
+              _buildBodyCell(
+                _formatCurrency(
+                  t.amount,
+                  currencySymbol,
+                  showSign: true,
+                  isNegative: isExpense,
+                ),
+                alignRight: true,
+                style: pw.TextStyle(
+                  fontSize: 9,
+                  color: amountColor,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ],
+          );
+        }),
+      ],
     );
   }
 
@@ -320,29 +470,177 @@ class DataExportService {
       return pw.Text('No income records available for this period.', style: const pw.TextStyle(color: _textGrey, fontSize: 10));
     }
 
-    return pw.TableHelper.fromTextArray(
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: _secondaryColor),
-      cellStyle: const pw.TextStyle(fontSize: 9, color: _secondaryColor),
-      headerDecoration: const pw.BoxDecoration(color: _accentColor),
-      cellHeight: 32,
-      cellAlignments: {
-        0: pw.Alignment.centerLeft,
-        1: pw.Alignment.centerLeft,
-        2: pw.Alignment.centerRight,
-        3: pw.Alignment.centerLeft,
-      },
-      headers: ['DATE', 'CATEGORY', 'AMOUNT', 'NOTES'],
-      data: incomes.map((i) => [
-        _dateFormat.format(i.date),
-        i.category,
-        '+ $currencySymbol${i.amount.toStringAsFixed(2)}',
-        (i.notes?.length ?? 0) > 25 ? '${i.notes!.substring(0, 25)}...' : (i.notes ?? '-'),
-      ]).toList(),
+    return pw.Table(
       border: pw.TableBorder(
         horizontalInside: pw.BorderSide(color: _accentColor, width: 0.5),
         bottom: pw.BorderSide(color: _accentColor, width: 0.5),
       ),
+      columnWidths: const {
+        0: pw.FlexColumnWidth(1.4),
+        1: pw.FlexColumnWidth(1.7),
+        2: pw.FlexColumnWidth(1.3),
+        3: pw.FlexColumnWidth(2.4),
+      },
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: _accentColor),
+          children: [
+            _buildHeaderCell('DATE'),
+            _buildHeaderCell('CATEGORY'),
+            _buildHeaderCell('AMOUNT', alignRight: true),
+            _buildHeaderCell('NOTES'),
+          ],
+        ),
+        ...List.generate(incomes.length, (index) {
+          final i = incomes[index];
+          return pw.TableRow(
+            decoration: pw.BoxDecoration(
+              color: index.isEven
+                  ? PdfColors.white
+                  : const PdfColor.fromInt(0xFFF8FAFC),
+            ),
+            children: [
+              _buildBodyCell(_dateFormat.format(i.date)),
+              _buildBodyCell(i.category),
+              _buildBodyCell(
+                _formatCurrency(i.amount, currencySymbol, showSign: true),
+                alignRight: true,
+                style: pw.TextStyle(
+                  fontSize: 9,
+                  color: PdfColors.green600,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              _buildBodyCell(
+                (i.notes?.length ?? 0) > 25
+                    ? '${i.notes!.substring(0, 25)}...'
+                    : (i.notes ?? '-'),
+              ),
+            ],
+          );
+        }),
+      ],
     );
+  }
+
+  pw.Widget _buildCategorySummary(
+    List<Transaction> transactions,
+    String currencySymbol,
+  ) {
+    final expenseTotals = <String, double>{};
+    for (final t in transactions.where((t) => t.type == TransactionType.expense)) {
+      expenseTotals.update(
+        t.category,
+        (value) => value + t.amount,
+        ifAbsent: () => t.amount,
+      );
+    }
+
+    if (expenseTotals.isEmpty) {
+      return pw.Text(
+        'No expense categories available for this period.',
+        style: const pw.TextStyle(color: _textGrey, fontSize: 10),
+      );
+    }
+
+    final sortedEntries = expenseTotals.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final topEntries = sortedEntries.take(5).toList();
+    final total = sortedEntries.fold<double>(0, (sum, e) => sum + e.value);
+
+    return pw.Column(
+      children: topEntries.map((entry) {
+        final share = total > 0 ? (entry.value / total) * 100 : 0;
+        return pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 8),
+          child: pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            decoration: pw.BoxDecoration(
+              color: const PdfColor.fromInt(0xFFF8FAFC),
+              borderRadius: pw.BorderRadius.circular(8),
+              border: pw.Border.all(color: _accentColor, width: 0.5),
+            ),
+            child: pw.Row(
+              children: [
+                pw.Expanded(
+                  child: pw.Text(
+                    entry.key,
+                    style: pw.TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: pw.FontWeight.bold,
+                      color: _secondaryColor,
+                    ),
+                  ),
+                ),
+                pw.Text(
+                  '${share.toStringAsFixed(1)}%',
+                  style: const pw.TextStyle(fontSize: 9, color: _textGrey),
+                ),
+                pw.SizedBox(width: 12),
+                pw.Text(
+                  _formatCurrency(entry.value, currencySymbol),
+                  style: pw.TextStyle(
+                    fontSize: 10.5,
+                    color: PdfColors.red600,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  pw.Widget _buildHeaderCell(String text, {bool alignRight = false}) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      child: pw.Align(
+        alignment: alignRight ? pw.Alignment.centerRight : pw.Alignment.centerLeft,
+        child: pw.Text(
+          text,
+          style: pw.TextStyle(
+            fontWeight: pw.FontWeight.bold,
+            fontSize: 9,
+            color: _secondaryColor,
+          ),
+        ),
+      ),
+    );
+  }
+
+  pw.Widget _buildBodyCell(
+    String text, {
+    bool alignRight = false,
+    pw.TextStyle? style,
+  }) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      child: pw.Align(
+        alignment: alignRight ? pw.Alignment.centerRight : pw.Alignment.centerLeft,
+        child: pw.Text(
+          text,
+          style: style ?? const pw.TextStyle(fontSize: 9, color: _secondaryColor),
+        ),
+      ),
+    );
+  }
+
+  String _formatCurrency(
+    double amount,
+    String symbol, {
+    bool showSign = false,
+    bool isNegative = false,
+  }) {
+    final formatter = NumberFormat.currency(
+      locale: 'en_US',
+      symbol: symbol,
+      decimalDigits: 2,
+    );
+    final formatted = formatter.format(amount.abs());
+    if (!showSign) return formatted;
+    return '${isNegative ? '-' : '+'} $formatted';
   }
 
   /// Generates the file and returns it.

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/constants/app_theme.dart';
+import '../../../core/services/background_task_service.dart';
 import '../../../core/services/enhanced_notification_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
@@ -464,6 +465,39 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     return '$h:$m';
   }
 
+  Future<void> _pickDailyReminderTime(ColorScheme colorScheme) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: _dailyReminderHour, minute: _dailyReminderMinute),
+      builder: (context, child) {
+        final base = Theme.of(context);
+        return Theme(
+          data: base.copyWith(
+            colorScheme: base.colorScheme.copyWith(
+              primary: AppColors.primary,
+              surface: colorScheme.surface,
+              onSurface: colorScheme.onSurface,
+              onPrimary: Colors.white,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+              ),
+            ),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _dailyReminderHour = picked.hour;
+        _dailyReminderMinute = picked.minute;
+      });
+    }
+  }
+
   void _showDailyReminderConfig(ColorScheme colorScheme) {
     showModalBottomSheet(
       context: context,
@@ -510,51 +544,39 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               const SizedBox(height: 16),
               Text('Time', style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
-                      value: _dailyReminderHour,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              InkWell(
+                onTap: () async {
+                  await _pickDailyReminderTime(colorScheme);
+                  setModalState(() {});
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: colorScheme.outline.withOpacity(0.35)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.schedule_outlined, color: AppColors.primary),
+                      const SizedBox(width: 12),
+                      Text(
+                        _formatTime(_dailyReminderHour, _dailyReminderMinute),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
                       ),
-                      items: List.generate(24, (i) => DropdownMenuItem(
-                        value: i,
-                        child: Text(i.toString().padLeft(2, '0')),
-                      )),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setModalState(() => _dailyReminderHour = value);
-                          setState(() => _dailyReminderHour = value);
-                        }
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(':', style: TextStyle(fontSize: 20, color: colorScheme.onSurface)),
-                  ),
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
-                      value: _dailyReminderMinute,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      const Spacer(),
+                      Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: colorScheme.onSurface.withOpacity(0.65),
                       ),
-                      items: List.generate(12, (i) => DropdownMenuItem(
-                        value: i * 5,
-                        child: Text((i * 5).toString().padLeft(2, '0')),
-                      )),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setModalState(() => _dailyReminderMinute = value);
-                          setState(() => _dailyReminderMinute = value);
-                        }
-                      },
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -590,6 +612,18 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         final enabled = await _notificationService.requestPermissions();
         if (enabled) {
           setState(() => _notificationsEnabled = true);
+          final user = context.read<AuthBloc>().state;
+          if (user is AuthAuthenticated) {
+            if (_dailyReminders) {
+              await _scheduleDailyReminder();
+            }
+            if (_morningGreetings) {
+              await _scheduleMorningGreeting();
+            }
+            if (_backgroundHealthChecks) {
+              await BackgroundTaskService().registerDailyHealthCheck(user.user.id);
+            }
+          }
           if (mounted) AppSnackbar.showSuccess(context, message: 'Notifications enabled');
         } else {
           if (mounted) AppSnackbar.showError(context, message: 'Please enable notifications in settings');
@@ -621,11 +655,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     try {
       final user = context.read<AuthBloc>().state;
       if (user is AuthAuthenticated) {
-        await _firestore.collection('users').doc(user.user.id).set({
-          'notificationSchedules': {
-            'daily_reminder': {'enabled': false},
-          },
-        }, SetOptions(merge: true));
+        await _notificationService.cancelDailyReminder(user.user.id);
         if (mounted) AppSnackbar.showInfo(context, message: 'Daily reminder disabled');
       }
     } catch (e) {
@@ -637,7 +667,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     try {
       final user = context.read<AuthBloc>().state;
       if (user is AuthAuthenticated) {
-        await _notificationService.scheduleMorningGreeting(user.user.id);
+        await _notificationService.scheduleMorningGreeting(user.user.id, force: true);
         if (mounted) AppSnackbar.showSuccess(context, message: 'Morning greeting scheduled');
       }
     } catch (e) {
@@ -649,11 +679,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     try {
       final user = context.read<AuthBloc>().state;
       if (user is AuthAuthenticated) {
-        await _firestore.collection('users').doc(user.user.id).set({
-          'notificationSchedules': {
-            'morning_greeting': {'enabled': false},
-          },
-        }, SetOptions(merge: true));
+        await _notificationService.cancelMorningGreeting(user.user.id);
         if (mounted) AppSnackbar.showInfo(context, message: 'Morning greeting disabled');
       }
     } catch (e) {
@@ -670,6 +696,10 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             'background_health_check': {'enabled': enabled},
           },
         }, SetOptions(merge: true));
+
+        if (enabled) {
+          await BackgroundTaskService().registerDailyHealthCheck(user.user.id);
+        }
         
         final msg = enabled ? 'Background checks enabled' : 'Background checks disabled';
         if (mounted) AppSnackbar.showInfo(context, message: msg);

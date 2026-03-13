@@ -7,6 +7,9 @@ import 'push_notification_service.dart';
 import 'transaction_service.dart';
 
 class EnhancedNotificationService {
+  static const int _smartDailyReminderId = 2000;
+  static const int _morningGreetingId = 7000;
+
   final NotificationService _notificationService = NotificationService();
   final PushNotificationService _pushService = PushNotificationService();
   final firestore.FirebaseFirestore _firestore = firestore.FirebaseFirestore.instance;
@@ -176,6 +179,24 @@ class EnhancedNotificationService {
     await _pushService.cancelAllNotifications();
   }
 
+  Future<void> cancelDailyReminder(String userId) async {
+    await _pushService.cancelNotification(_getReminderId('budget_check'));
+    await _pushService.cancelNotification(_getReminderId('goal_update'));
+    await _pushService.cancelNotification(_getReminderId('expense_log'));
+    await _saveNotificationSchedule(userId, 'daily_reminder', {
+      'enabled': false,
+      'cancelledAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> cancelMorningGreeting(String userId) async {
+    await _pushService.cancelNotification(_morningGreetingId);
+    await _saveNotificationSchedule(userId, 'morning_greeting', {
+      'enabled': false,
+      'cancelledAt': DateTime.now().toIso8601String(),
+    });
+  }
+
   // Get pending notifications
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     return await _pushService.getPendingNotifications();
@@ -294,7 +315,7 @@ class EnhancedNotificationService {
       // 3. Schedule the notification
       // We use a specific ID for this smart reminder (e.g., 2000)
       await _pushService.scheduleNotification(
-        id: 2000,
+        id: _smartDailyReminderId,
         title: 'Add your finances',
         body: 'You haven\'t added any finances today. Take a moment to log your expenses!',
         scheduledDate: scheduledDate,
@@ -316,14 +337,14 @@ class EnhancedNotificationService {
       print('🔵 ENHANCED NOTIFICATION SERVICE: Transaction added, updating daily reminder...');
       
       // Cancel the current reminder for today
-      await _pushService.cancelNotification(2000);
+      await _pushService.cancelNotification(_smartDailyReminderId);
       
       // Schedule for tomorrow 5 PM
       final now = DateTime.now();
       final tomorrow5pm = DateTime(now.year, now.month, now.day, 17, 0).add(const Duration(days: 1));
       
       await _pushService.scheduleNotification(
-        id: 2000,
+        id: _smartDailyReminderId,
         title: 'Add your finances',
         body: 'You haven\'t added any finances today. Take a moment to log your expenses!',
         scheduledDate: tomorrow5pm,
@@ -340,18 +361,28 @@ class EnhancedNotificationService {
   }
 
   // Schedule daily morning greeting (7 AM)
-  Future<void> scheduleMorningGreeting(String userId) async {
+  Future<void> scheduleMorningGreeting(String userId, {bool force = false}) async {
     try {
+      if (!force) {
+        final schedules = await getUserNotificationSchedules(userId);
+        if (schedules['morning_greeting']?['enabled'] != true) {
+          print('🔵 ENHANCED NOTIFICATION SERVICE: Morning greeting disabled, skipping schedule.');
+          return;
+        }
+      }
+
       final now = DateTime.now();
-      var scheduledDate = DateTime(now.year, now.month, now.day, 7, 0); // 7 AM
+      var scheduledDate = DateTime(now.year, now.month, now.day, 8, 0); // 8 AM
       
-      // If 7 AM has passed, schedule for tomorrow
+      // If 8 AM has passed, schedule for tomorrow
       if (scheduledDate.isBefore(now)) {
         scheduledDate = scheduledDate.add(const Duration(days: 1));
       }
 
+      await _pushService.cancelNotification(_morningGreetingId);
+
       await _pushService.scheduleNotification(
-        id: 7000,
+        id: _morningGreetingId,
         title: 'Good Morning ☀️',
         body: 'Rise and shine! Take a moment to track your finances today.',
         scheduledDate: scheduledDate,
@@ -359,6 +390,13 @@ class EnhancedNotificationService {
         payload: 'morning_greeting',
         matchDateTimeComponents: DateTimeComponents.time,
       );
+
+      await _saveNotificationSchedule(userId, 'morning_greeting', {
+        'enabled': true,
+        'hour': 8,
+        'minute': 0,
+        'lastScheduled': DateTime.now().toIso8601String(),
+      });
       
       print('✅ ENHANCED NOTIFICATION SERVICE: Scheduled morning greeting for $scheduledDate');
     } catch (e) {

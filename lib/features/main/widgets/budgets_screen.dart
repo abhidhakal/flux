@@ -37,14 +37,14 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: const Text('Budgets'),
         centerTitle: false,
-        backgroundColor: colorScheme.surface,
-        foregroundColor: colorScheme.onSurface,
-        iconTheme: IconThemeData(color: colorScheme.onSurface),
+        backgroundColor: colorScheme.background,
+        foregroundColor: colorScheme.onBackground,
+        iconTheme: IconThemeData(color: colorScheme.onBackground),
         titleTextStyle: theme.textTheme.displaySmall?.copyWith(
           fontSize: 24,
           letterSpacing: -1,
@@ -53,7 +53,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         scrolledUnderElevation: 0,
         actions: [
           IconButton(
-            icon: Icon(Icons.add_rounded, color: colorScheme.onSurface),
+            icon: Icon(Icons.add_rounded, color: colorScheme.onBackground),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -587,16 +587,19 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     Color cardColor;
     Color borderColor;
     if (muted) {
-      cardColor = colorScheme.surfaceContainerHighest.withValues(alpha: 0.45);
+      cardColor = colorScheme.surfaceContainerHighest.withValues(alpha: 0.6);
       borderColor = colorScheme.outline.withValues(alpha: 0.35);
+    } else if (spent <= 0) {
+      cardColor = AppColors.primary.withValues(alpha: 0.06);
+      borderColor = AppColors.primary.withValues(alpha: 0.28);
     } else if (isOverBudget) {
-      cardColor = colorScheme.surface;
+      cardColor = AppColors.error.withValues(alpha: 0.08);
       borderColor = AppColors.error.withValues(alpha: 0.35);
     } else if (percentage > 80) {
-      cardColor = colorScheme.surface;
+      cardColor = AppColors.warning.withValues(alpha: 0.08);
       borderColor = AppColors.warning.withValues(alpha: 0.3);
     } else {
-      cardColor = colorScheme.surface;
+      cardColor = colorScheme.surfaceContainerLow;
       borderColor = colorScheme.outline.withValues(alpha: 0.35);
     }
 

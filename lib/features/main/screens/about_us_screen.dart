@@ -201,8 +201,8 @@ class _AboutUsScreenState extends State<AboutUsScreen>
                 _buildMinimalLink(
                   icon: Icons.mail_outline_rounded,
                   title: 'Contact Us',
-                  url: 'info@klivo.com.np',
-                  onTap: () => _launchUrl('mailto:info@klivo.com.np'),
+                  url: 'hi@klivostudios.com',
+                  onTap: () => _launchUrl('mailto:hi@klivostudios.com'),
                 ),
 
                 const SizedBox(height: 60),

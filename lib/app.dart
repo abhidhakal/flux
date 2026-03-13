@@ -212,7 +212,7 @@ class _AppViewState extends State<AppView> {
             debugShowCheckedModeBanner: false,
             builder: (context, child) {
               final Widget safeContent = SafeArea(
-                top: true,
+                top: false,
                 bottom: true,
                 left: false,
                 right: false,
@@ -222,19 +222,19 @@ class _AppViewState extends State<AppView> {
               final isDark = theme.brightness == Brightness.dark;
               final overlay = isDark
                   ? const SystemUiOverlayStyle(
-                      statusBarColor: Colors.transparent,
+                      statusBarColor: AppColors.darkBackground,
                       statusBarIconBrightness: Brightness.light,
                       statusBarBrightness: Brightness.dark,
-                      systemNavigationBarColor: Colors.transparent,
+                      systemNavigationBarColor: AppColors.darkBackground,
                       systemNavigationBarIconBrightness: Brightness.light,
-                      systemNavigationBarDividerColor: Colors.transparent,
+                      systemNavigationBarDividerColor: AppColors.darkBackground,
                     )
                   : const SystemUiOverlayStyle(
-                      statusBarColor: AppColors.primary,
-                      statusBarIconBrightness: Brightness.light,
+                      statusBarColor: AppColors.lightBackground,
+                      statusBarIconBrightness: Brightness.dark,
                       statusBarBrightness: Brightness.light,
                       systemNavigationBarColor: AppColors.lightBackground,
-                      systemNavigationBarIconBrightness: Brightness.light,
+                      systemNavigationBarIconBrightness: Brightness.dark,
                       systemNavigationBarDividerColor: AppColors.lightBackground,
                     );
               return AnnotatedRegion<SystemUiOverlayStyle>(
