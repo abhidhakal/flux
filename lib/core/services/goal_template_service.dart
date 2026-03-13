@@ -1,8 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:uuid/uuid.dart';
+import '../models/goal_model.dart';
 import '../models/goal_template_model.dart';
 
 class GoalTemplateService {
   final firestore.FirebaseFirestore _firestore = firestore.FirebaseFirestore.instance;
+  final Uuid _uuid = const Uuid();
+
+  Future<List<GoalTemplate>> getGoalTemplates() async {
+    return getAllTemplates();
+  }
 
   // Get all goal templates
   Future<List<GoalTemplate>> getAllTemplates() async {
@@ -17,7 +25,7 @@ class GoalTemplateService {
           .map((doc) => GoalTemplate.fromJson(doc.data()))
           .toList();
     } catch (e) {
-      print('❌ GOAL TEMPLATE SERVICE: Error getting templates: $e');
+      debugPrint('GOAL TEMPLATE SERVICE: Error getting templates: $e');
       return _getDefaultTemplates();
     }
   }
@@ -35,7 +43,7 @@ class GoalTemplateService {
           .map((doc) => GoalTemplate.fromJson(doc.data()))
           .toList();
     } catch (e) {
-      print('❌ GOAL TEMPLATE SERVICE: Error getting templates by category: $e');
+      debugPrint('GOAL TEMPLATE SERVICE: Error getting templates by category: $e');
       return _getDefaultTemplates().where((t) => t.category == category).toList();
     }
   }
@@ -59,7 +67,7 @@ class GoalTemplateService {
       
       return templates;
     } catch (e) {
-      print('❌ GOAL TEMPLATE SERVICE: Error getting popular templates: $e');
+      debugPrint('GOAL TEMPLATE SERVICE: Error getting popular templates: $e');
       // Fallback to default templates
       final defaultTemplates = _getDefaultTemplates().where((t) => t.isPopular).toList();
       defaultTemplates.sort((a, b) => b.completionRate.compareTo(a.completionRate));
@@ -77,7 +85,7 @@ class GoalTemplateService {
                template.tags.any((tag) => tag.toLowerCase().contains(query.toLowerCase()));
       }).toList();
     } catch (e) {
-      print('❌ GOAL TEMPLATE SERVICE: Error searching templates: $e');
+      debugPrint('GOAL TEMPLATE SERVICE: Error searching templates: $e');
       return [];
     }
   }
@@ -107,6 +115,45 @@ class GoalTemplateService {
     };
   }
 
+  Future<void> createAndSaveGoalFromTemplate(
+    GoalTemplate template,
+    String userId, {
+    double? customAmount,
+    int? customDurationMonths,
+    String? customName,
+  }) async {
+    try {
+      final goalData = await createGoalFromTemplate(
+        template,
+        userId,
+        customAmount: customAmount,
+        customDurationMonths: customDurationMonths,
+        customName: customName,
+      );
+
+      final goal = Goal(
+        id: _uuid.v4(),
+        userId: userId,
+        name: goalData['name'] as String,
+        description: goalData['description'] as String,
+        type: _mapCategoryToGoalType(goalData['category'] as String),
+        targetAmount: goalData['targetAmount'] as double,
+        currentAmount: 0.0,
+        targetDate: goalData['targetDate'] as DateTime,
+        status: GoalStatus.active,
+        createdAt: DateTime.now(),
+        icon: goalData['icon'] as String,
+        color: 0xFF0079DC,
+        isRecurring: false,
+      );
+
+      await _firestore.collection('goals').doc(goal.id).set(goal.toJson());
+      await trackTemplateUsage(template.id, userId);
+    } catch (e) {
+      throw Exception('Failed to create goal from template: $e');
+    }
+  }
+
   // Initialize default templates
   Future<void> initializeDefaultTemplates() async {
     try {
@@ -119,9 +166,9 @@ class GoalTemplateService {
             .set(template.toJson());
       }
       
-      print('✅ GOAL TEMPLATE SERVICE: Default templates initialized');
+      debugPrint('GOAL TEMPLATE SERVICE: Default templates initialized');
     } catch (e) {
-      print('❌ GOAL TEMPLATE SERVICE: Error initializing templates: $e');
+      debugPrint('GOAL TEMPLATE SERVICE: Error initializing templates: $e');
     }
   }
 
@@ -468,7 +515,7 @@ class GoalTemplateService {
         'templateId': templateId,
       });
     } catch (e) {
-      print('❌ GOAL TEMPLATE SERVICE: Error tracking usage: $e');
+      debugPrint('GOAL TEMPLATE SERVICE: Error tracking usage: $e');
     }
   }
 
@@ -491,8 +538,28 @@ class GoalTemplateService {
             .length,
       };
     } catch (e) {
-      print('❌ GOAL TEMPLATE SERVICE: Error getting stats: $e');
+      debugPrint('GOAL TEMPLATE SERVICE: Error getting stats: $e');
       return {'totalUsage': 0, 'recentUsage': 0};
+    }
+  }
+
+  GoalType _mapCategoryToGoalType(String category) {
+    switch (category.toLowerCase()) {
+      case 'house':
+      case 'home':
+        return GoalType.home;
+      case 'vacation':
+      case 'travel':
+        return GoalType.vacation;
+      case 'education':
+      case 'school':
+        return GoalType.education;
+      case 'emergency':
+        return GoalType.emergency;
+      case 'retirement':
+        return GoalType.investment;
+      default:
+        return GoalType.other;
     }
   }
 }

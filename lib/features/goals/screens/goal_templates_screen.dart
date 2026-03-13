@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/goal_template_model.dart';
-import '../../../core/services/enhanced_goal_service.dart';
 import '../../../core/services/currency_service.dart';
+import '../../../core/services/goal_template_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../goals_bloc.dart';
@@ -32,7 +32,7 @@ class GoalTemplatesScreen extends StatefulWidget {
 
 class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
     with TickerProviderStateMixin {
-  final EnhancedGoalService _goalService = EnhancedGoalService();
+  final GoalTemplateService _goalService = GoalTemplateService();
   final CurrencyService _currencyService = CurrencyService();
   
   List<GoalTemplate> _templates = [];
@@ -316,7 +316,7 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
 
 class _TemplateDetailsSheet extends StatefulWidget {
   final GoalTemplate template;
-  final EnhancedGoalService goalService;
+  final GoalTemplateService goalService;
   final CurrencyService currencyService;
 
   const _TemplateDetailsSheet({
@@ -519,7 +519,7 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
     try {
       final authState = context.read<AuthBloc>().state;
       if (authState is AuthAuthenticated) {
-        await widget.goalService.createGoalFromTemplate(
+        await widget.goalService.createAndSaveGoalFromTemplate(
           widget.template,
           authState.user.id,
           customAmount: amount,

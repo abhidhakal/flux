@@ -14,7 +14,6 @@ import '../../budget/budget_bloc.dart';
 import '../../../core/models/income_model.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/page_transitions.dart';
-import '../../../shared/widgets/animated_button.dart';
 import '../../../shared/widgets/skeleton_components.dart';
 import '../../../core/widgets/app_banner_ad.dart';
 
@@ -218,7 +217,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               elevation: 0,
               scrolledUnderElevation: 0,
               actions: [
-                AnimatedIconButton(
+                IconButton(
                   icon: Icon(Icons.add_rounded, color: colorScheme.onBackground),
                   onPressed: () => context.pushSmooth(
                     const AddTransactionScreen(),
@@ -1133,4 +1132,3 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     if (item is Income) EditIncomeScreen.show(context, item);
   }
 }
-
