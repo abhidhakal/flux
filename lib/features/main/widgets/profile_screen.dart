@@ -75,14 +75,16 @@ class _ProfileScreenState extends State<ProfileScreen>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
     _initializeCurrency();
-    
+
     // Load profile image
-     final authState = context.read<AuthBloc>().state;
-     if (authState is AuthAuthenticated) {
-        _profilePictureService.loadProfileImage(userId: authState.user.id).then((_) {
-          if (mounted) setState(() {});
-        });
-     }
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      _profilePictureService
+          .loadProfileImage(userId: authState.user.id)
+          .then((_) {
+        if (mounted) setState(() {});
+      });
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fadeController.forward();
@@ -141,7 +143,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: BlocBuilder<GoalsBloc, GoalsState>(
               builder: (context, goalsState) {
-                return _buildStatsRow(goalsState, colorScheme, progressSnapshot);
+                return _buildStatsRow(
+                    goalsState, colorScheme, progressSnapshot);
               },
             ),
           ),
@@ -168,36 +171,37 @@ class _ProfileScreenState extends State<ProfileScreen>
               ], colorScheme),
               const SizedBox(height: 24),
               _buildSectionHeader('Preferences', colorScheme),
-                BlocBuilder<ThemeBloc, ThemeState>(
-                  builder: (context, state) {
-                    String mode = 'System';
-                    if (state is ThemeLoaded) {
-                      if (state.themeMode == ThemeMode.light) mode = 'Light';
-                      if (state.themeMode == ThemeMode.dark) mode = 'Dark';
-                    }
-                    return _buildSettingsGroup([
-                      _SettingsItem(
-                        icon: Icons.palette_outlined,
-                        title: 'Appearance',
-                        subtitle: mode,
-                        onTap: () => _showAppearancePopup(),
-                      ),
-                      _SettingsItem(
-                        icon: Icons.notifications_outlined,
-                        title: 'Notifications',
-                        subtitle: 'Manage alerts',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const NotificationSettingsScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                    ], colorScheme);
-                  },
-                ),
+              BlocBuilder<ThemeBloc, ThemeState>(
+                builder: (context, state) {
+                  String mode = 'System';
+                  if (state is ThemeLoaded) {
+                    if (state.themeMode == ThemeMode.light) mode = 'Light';
+                    if (state.themeMode == ThemeMode.dark) mode = 'Dark';
+                  }
+                  return _buildSettingsGroup([
+                    _SettingsItem(
+                      icon: Icons.palette_outlined,
+                      title: 'Appearance',
+                      subtitle: mode,
+                      onTap: () => _showAppearancePopup(),
+                    ),
+                    _SettingsItem(
+                      icon: Icons.notifications_outlined,
+                      title: 'Notifications',
+                      subtitle: 'Manage alerts',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const NotificationSettingsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ], colorScheme);
+                },
+              ),
               const SizedBox(height: 24),
               _buildSectionHeader('Data & Privacy', colorScheme),
               _buildSettingsGroup([
@@ -397,7 +401,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           Icon(
             icon,
             size: 15,
-            color: emphasized ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            color:
+                emphasized ? colorScheme.primary : colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: 8),
           Text(
@@ -426,13 +431,15 @@ class _ProfileScreenState extends State<ProfileScreen>
       transactionCount = transactionState.transactions.length;
     }
     if (goalsState is GoalsLoaded) {
-      goalsCount = goalsState.goals.where((g) => g.status == GoalStatus.active).length;
+      goalsCount =
+          goalsState.goals.where((g) => g.status == GoalStatus.active).length;
     }
 
     return Row(
       children: [
         Expanded(
-          child: _buildStatCard('$transactionCount', 'Transactions', colorScheme),
+          child:
+              _buildStatCard('$transactionCount', 'Transactions', colorScheme),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -493,7 +500,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildSettingsGroup(List<_SettingsItem> items, ColorScheme colorScheme) {
+  Widget _buildSettingsGroup(
+      List<_SettingsItem> items, ColorScheme colorScheme) {
     return Container(
       decoration: AppTheme.surfaceDecoration(context, radius: 20),
       child: Column(
@@ -558,7 +566,8 @@ class _ProfileScreenState extends State<ProfileScreen>
       icon: Icon(Icons.logout_rounded, color: colorScheme.onError),
       label: Text(
         'Sign Out',
-        style: TextStyle(color: colorScheme.onError, fontWeight: FontWeight.w600),
+        style:
+            TextStyle(color: colorScheme.onError, fontWeight: FontWeight.w600),
       ),
       style: OutlinedButton.styleFrom(
         backgroundColor: colorScheme.error,
@@ -644,10 +653,21 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildFlag(String countryName) {
     final Map<String, String> flagByCountry = {
-      'United States': '🇺🇸', 'United Kingdom': '🇬🇧', 'European Union': '🇪🇺',
-      'Japan': '🇯🇵', 'Canada': '🇨🇦', 'Australia': '🇦🇺', 'India': '🇮🇳',
-      'China': '🇨🇳', 'Brazil': '🇧🇷', 'South Korea': '🇰🇷', 'Nepal': '🇳🇵',
-      'Mexico': '🇲🇽', 'Singapore': '🇸🇬', 'Switzerland': '🇨🇭', 'New Zealand': '🇳🇿',
+      'United States': '🇺🇸',
+      'United Kingdom': '🇬🇧',
+      'European Union': '🇪🇺',
+      'Japan': '🇯🇵',
+      'Canada': '🇨🇦',
+      'Australia': '🇦🇺',
+      'India': '🇮🇳',
+      'China': '🇨🇳',
+      'Brazil': '🇧🇷',
+      'South Korea': '🇰🇷',
+      'Nepal': '🇳🇵',
+      'Mexico': '🇲🇽',
+      'Singapore': '🇸🇬',
+      'Switzerland': '🇨🇭',
+      'New Zealand': '🇳🇿',
     };
     final emoji = flagByCountry[countryName];
     if (emoji != null) {
@@ -666,12 +686,14 @@ class _ProfileScreenState extends State<ProfileScreen>
         value: themeBloc,
         child: BlocBuilder<ThemeBloc, ThemeState>(
           builder: (context, state) {
-            final current = state is ThemeLoaded ? state.themeMode : ThemeMode.system;
+            final current =
+                state is ThemeLoaded ? state.themeMode : ThemeMode.system;
             return Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -694,11 +716,26 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                   ),
                   const SizedBox(height: 24),
-                  _buildThemeOption('Light', Icons.light_mode_rounded, current == ThemeMode.light, () => _changeTheme(dialogContext, ThemeMode.light), colorScheme),
+                  _buildThemeOption(
+                      'Light',
+                      Icons.light_mode_rounded,
+                      current == ThemeMode.light,
+                      () => _changeTheme(dialogContext, ThemeMode.light),
+                      colorScheme),
                   const SizedBox(height: 12),
-                  _buildThemeOption('Dark', Icons.dark_mode_rounded, current == ThemeMode.dark, () => _changeTheme(dialogContext, ThemeMode.dark), colorScheme),
+                  _buildThemeOption(
+                      'Dark',
+                      Icons.dark_mode_rounded,
+                      current == ThemeMode.dark,
+                      () => _changeTheme(dialogContext, ThemeMode.dark),
+                      colorScheme),
                   const SizedBox(height: 12),
-                  _buildThemeOption('System', Icons.phone_android_rounded, current == ThemeMode.system, () => _changeTheme(dialogContext, ThemeMode.system), colorScheme),
+                  _buildThemeOption(
+                      'System',
+                      Icons.phone_android_rounded,
+                      current == ThemeMode.system,
+                      () => _changeTheme(dialogContext, ThemeMode.system),
+                      colorScheme),
                   const SizedBox(height: 20),
                 ],
               ),
@@ -709,19 +746,31 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildThemeOption(String title, IconData icon, bool isSelected, VoidCallback onTap, ColorScheme colorScheme) {
+  Widget _buildThemeOption(String title, IconData icon, bool isSelected,
+      VoidCallback onTap, ColorScheme colorScheme) {
     return ListTile(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isSelected ? colorScheme.primary : colorScheme.outline.withOpacity(0.2),
+          color: isSelected
+              ? colorScheme.primary
+              : colorScheme.outline.withOpacity(0.2),
           width: isSelected ? 2 : 1,
         ),
       ),
-      tileColor: isSelected ? colorScheme.primary.withOpacity(0.05) : Colors.transparent,
-      leading: Icon(icon, color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant),
-      title: Text(title, style: TextStyle(color: colorScheme.onSurface, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)),
-      trailing: isSelected ? Icon(Icons.check_circle, color: colorScheme.primary) : null,
+      tileColor: isSelected
+          ? colorScheme.primary.withOpacity(0.05)
+          : Colors.transparent,
+      leading: Icon(icon,
+          color:
+              isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant),
+      title: Text(title,
+          style: TextStyle(
+              color: colorScheme.onSurface,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)),
+      trailing: isSelected
+          ? Icon(Icons.check_circle, color: colorScheme.primary)
+          : null,
       onTap: onTap,
     );
   }
@@ -765,11 +814,13 @@ class _ProfileScreenState extends State<ProfileScreen>
         return StatefulBuilder(
           builder: (context, setState) {
             return Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom),
               child: Container(
                 decoration: BoxDecoration(
                   color: cs.surface,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(28)),
                 ),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
@@ -780,7 +831,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                       // Handle
                       Center(
                         child: Container(
-                          width: 40, height: 4,
+                          width: 40,
+                          height: 4,
                           decoration: BoxDecoration(
                             color: cs.onSurfaceVariant.withOpacity(0.3),
                             borderRadius: BorderRadius.circular(2),
@@ -788,11 +840,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                       ),
                       const SizedBox(height: 24),
-                      Text('Edit Profile', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                      Text('Edit Profile',
+                          style: theme.textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 32),
 
                       // ── Display Name ────────────────────────────
-                      Text('Display Name', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+                      Text('Display Name',
+                          style: theme.textTheme.labelLarge
+                              ?.copyWith(fontWeight: FontWeight.w600)),
                       const SizedBox(height: 8),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -803,14 +859,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                               controller: nameController,
                               textCapitalization: TextCapitalization.words,
                               decoration: _inputDeco(cs, hint: 'Your name'),
-                              validator: (v) => v == null || v.trim().isEmpty ? 'Enter a name' : null,
+                              validator: (v) => v == null || v.trim().isEmpty
+                                  ? 'Enter a name'
+                                  : null,
                             ),
                           ),
                           const SizedBox(width: 10),
                           _saveButton(
                             loading: savingName,
                             onTap: () async {
-                              if (nameKey.currentState?.validate() != true) return;
+                              if (nameKey.currentState?.validate() != true)
+                                return;
                               setState(() => savingName = true);
                               try {
                                 await authService.updateProfile(
@@ -818,13 +877,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   displayName: nameController.text.trim(),
                                 );
                                 if (mounted) {
-                                  this.context.read<AuthBloc>().add(AuthCheckRequested());
+                                  this
+                                      .context
+                                      .read<AuthBloc>()
+                                      .add(AuthCheckRequested());
                                   Navigator.pop(sheetCtx);
-                                  AppSnackbar.showSuccess(this.context, message: 'Name updated');
+                                  AppSnackbar.showSuccess(this.context,
+                                      message: 'Name updated');
                                 }
                               } catch (e) {
                                 setState(() => savingName = false);
-                                if (mounted) AppSnackbar.showError(this.context, message: 'Failed to update name');
+                                if (mounted)
+                                  AppSnackbar.showError(this.context,
+                                      message: 'Failed to update name');
                               }
                             },
                             cs: cs,
@@ -838,11 +903,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                         const SizedBox(height: 20),
 
                         // ── Email ──────────────────────────────────
-                        Text('Change Email', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+                        Text('Change Email',
+                            style: theme.textTheme.labelLarge
+                                ?.copyWith(fontWeight: FontWeight.w600)),
                         const SizedBox(height: 4),
                         Text(
                           'A verification link will be sent to the new address.',
-                          style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: cs.onSurfaceVariant),
                         ),
                         const SizedBox(height: 8),
                         Row(
@@ -853,10 +921,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 key: emailKey,
                                 controller: emailController,
                                 keyboardType: TextInputType.emailAddress,
-                                decoration: _inputDeco(cs, hint: 'New email address'),
+                                decoration:
+                                    _inputDeco(cs, hint: 'New email address'),
                                 validator: (v) {
-                                  if (v == null || v.trim().isEmpty) return 'Enter an email';
-                                  if (!v.contains('@')) return 'Enter a valid email';
+                                  if (v == null || v.trim().isEmpty)
+                                    return 'Enter an email';
+                                  if (!v.contains('@'))
+                                    return 'Enter a valid email';
                                   return null;
                                 },
                               ),
@@ -865,7 +936,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                             _saveButton(
                               loading: savingEmail,
                               onTap: () async {
-                                if (emailKey.currentState?.validate() != true) return;
+                                if (emailKey.currentState?.validate() != true)
+                                  return;
                                 setState(() => savingEmail = true);
                                 try {
                                   await authService.updateEmail(
@@ -874,11 +946,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   );
                                   if (mounted) {
                                     Navigator.pop(sheetCtx);
-                                    AppSnackbar.showSuccess(this.context, message: 'Verification email sent — check your inbox');
+                                    AppSnackbar.showSuccess(this.context,
+                                        message:
+                                            'Verification email sent — check your inbox');
                                   }
                                 } catch (e) {
                                   setState(() => savingEmail = false);
-                                  if (mounted) AppSnackbar.showError(this.context, message: 'Failed to change email');
+                                  if (mounted)
+                                    AppSnackbar.showError(this.context,
+                                        message: 'Failed to change email');
                                 }
                               },
                               cs: cs,
@@ -891,7 +967,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                         const SizedBox(height: 20),
 
                         // ── Password ───────────────────────────────
-                        Text('Change Password', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+                        Text('Change Password',
+                            style: theme.textTheme.labelLarge
+                                ?.copyWith(fontWeight: FontWeight.w600)),
                         const SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,
@@ -901,37 +979,58 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 : () async {
                                     setState(() => savingPw = true);
                                     try {
-                                      await authService.resetPassword(user.email);
+                                      await authService
+                                          .resetPassword(user.email);
                                       if (mounted) {
                                         Navigator.pop(sheetCtx);
-                                        AppSnackbar.showSuccess(this.context, message: 'Password reset link sent to ${user.email}');
+                                        AppSnackbar.showSuccess(this.context,
+                                            message:
+                                                'Password reset link sent to ${user.email}');
                                       }
                                     } catch (e) {
                                       setState(() => savingPw = false);
-                                      if (mounted) AppSnackbar.showError(this.context, message: 'Failed to send reset email');
+                                      if (mounted)
+                                        AppSnackbar.showError(this.context,
+                                            message:
+                                                'Failed to send reset email');
                                     }
                                   },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.primary,
-                              side: BorderSide(color: AppColors.primary.withOpacity(0.5)),
+                              side: BorderSide(
+                                  color: AppColors.primary.withOpacity(0.5)),
                               padding: const EdgeInsets.symmetric(vertical: 13),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
                             ),
                             icon: savingPw
-                                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                                : const Icon(Icons.mail_outline_rounded, size: 18),
-                            label: const Text('Send password reset email', style: TextStyle(fontWeight: FontWeight.w600)),
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2))
+                                : const Icon(Icons.mail_outline_rounded,
+                                    size: 18),
+                            label: const Text('Send password reset email',
+                                style: TextStyle(fontWeight: FontWeight.w600)),
                           ),
                         ),
                         const SizedBox(height: 16),
                         Row(
                           children: [
-                            Expanded(child: Divider(color: cs.outline.withOpacity(0.2))),
+                            Expanded(
+                                child: Divider(
+                                    color: cs.outline.withOpacity(0.2))),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              child: Text('or change manually', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              child: Text('or change manually',
+                                  style: theme.textTheme.bodySmall
+                                      ?.copyWith(color: cs.onSurfaceVariant)),
                             ),
-                            Expanded(child: Divider(color: cs.outline.withOpacity(0.2))),
+                            Expanded(
+                                child: Divider(
+                                    color: cs.outline.withOpacity(0.2))),
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -942,17 +1041,33 @@ class _ProfileScreenState extends State<ProfileScreen>
                               TextFormField(
                                 controller: currentPwController,
                                 obscureText: !showCurrentPw,
-                                decoration: _inputDeco(cs, hint: 'Current password', suffix: _eyeToggle(showCurrentPw, cs, () => setState(() => showCurrentPw = !showCurrentPw))),
-                                validator: (v) => v == null || v.isEmpty ? 'Enter current password' : null,
+                                decoration: _inputDeco(cs,
+                                    hint: 'Current password',
+                                    suffix: _eyeToggle(
+                                        showCurrentPw,
+                                        cs,
+                                        () => setState(() =>
+                                            showCurrentPw = !showCurrentPw))),
+                                validator: (v) => v == null || v.isEmpty
+                                    ? 'Enter current password'
+                                    : null,
                               ),
                               const SizedBox(height: 12),
                               TextFormField(
                                 controller: newPwController,
                                 obscureText: !showNewPw,
-                                decoration: _inputDeco(cs, hint: 'New password', suffix: _eyeToggle(showNewPw, cs, () => setState(() => showNewPw = !showNewPw))),
+                                decoration: _inputDeco(cs,
+                                    hint: 'New password',
+                                    suffix: _eyeToggle(
+                                        showNewPw,
+                                        cs,
+                                        () => setState(
+                                            () => showNewPw = !showNewPw))),
                                 validator: (v) {
-                                  if (v == null || v.isEmpty) return 'Enter new password';
-                                  if (v.length < 6) return 'At least 6 characters';
+                                  if (v == null || v.isEmpty)
+                                    return 'Enter new password';
+                                  if (v.length < 6)
+                                    return 'At least 6 characters';
                                   return null;
                                 },
                               ),
@@ -960,8 +1075,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                               TextFormField(
                                 controller: confirmPwController,
                                 obscureText: !showConfirmPw,
-                                decoration: _inputDeco(cs, hint: 'Confirm new password', suffix: _eyeToggle(showConfirmPw, cs, () => setState(() => showConfirmPw = !showConfirmPw))),
-                                validator: (v) => v != newPwController.text ? 'Passwords do not match' : null,
+                                decoration: _inputDeco(cs,
+                                    hint: 'Confirm new password',
+                                    suffix: _eyeToggle(
+                                        showConfirmPw,
+                                        cs,
+                                        () => setState(() =>
+                                            showConfirmPw = !showConfirmPw))),
+                                validator: (v) => v != newPwController.text
+                                    ? 'Passwords do not match'
+                                    : null,
                               ),
                               const SizedBox(height: 16),
                               SizedBox(
@@ -970,33 +1093,52 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   onPressed: savingPw
                                       ? null
                                       : () async {
-                                          if (!pwKey.currentState!.validate()) return;
+                                          if (!pwKey.currentState!.validate())
+                                            return;
                                           setState(() => savingPw = true);
                                           try {
                                             await authService.updatePassword(
-                                              currentPassword: currentPwController.text,
+                                              currentPassword:
+                                                  currentPwController.text,
                                               newPassword: newPwController.text,
                                             );
                                             if (mounted) {
                                               Navigator.pop(sheetCtx);
-                                              AppSnackbar.showSuccess(this.context, message: 'Password updated');
+                                              AppSnackbar.showSuccess(
+                                                  this.context,
+                                                  message: 'Password updated');
                                             }
                                           } catch (e) {
                                             setState(() => savingPw = false);
                                             if (mounted) {
-                                              final msg = e.toString().replaceAll('Exception: ', '');
-                                              AppSnackbar.showError(this.context, message: msg);
+                                              final msg = e
+                                                  .toString()
+                                                  .replaceAll(
+                                                      'Exception: ', '');
+                                              AppSnackbar.showError(
+                                                  this.context,
+                                                  message: msg);
                                             }
                                           }
                                         },
                                   style: FilledButton.styleFrom(
                                     backgroundColor: AppColors.primary,
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(14)),
                                   ),
                                   child: savingPw
-                                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                      : const Text('Update Password', style: TextStyle(fontWeight: FontWeight.w600)),
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white))
+                                      : const Text('Update Password',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w600)),
                                 ),
                               ),
                             ],
@@ -1014,22 +1156,35 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  InputDecoration _inputDeco(ColorScheme cs, {required String hint, Widget? suffix}) {
+  InputDecoration _inputDeco(ColorScheme cs,
+      {required String hint, Widget? suffix}) {
     return InputDecoration(
       hintText: hint,
       suffixIcon: suffix,
       filled: true,
       fillColor: cs.surfaceVariant.withOpacity(0.35),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: cs.outline.withOpacity(0.15))),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
-      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: cs.error)),
-      focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: cs.error, width: 1.5)),
+      border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: cs.outline.withOpacity(0.15))),
+      focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
+      errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: cs.error)),
+      focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: cs.error, width: 1.5)),
     );
   }
 
-  Widget _saveButton({required bool loading, required VoidCallback onTap, required ColorScheme cs}) {
+  Widget _saveButton(
+      {required bool loading,
+      required VoidCallback onTap,
+      required ColorScheme cs}) {
     return SizedBox(
       height: 50,
       child: FilledButton(
@@ -1037,10 +1192,15 @@ class _ProfileScreenState extends State<ProfileScreen>
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.primary,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: loading
-            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white))
             : const Text('Save', style: TextStyle(fontWeight: FontWeight.w600)),
       ),
     );
@@ -1048,7 +1208,10 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _eyeToggle(bool visible, ColorScheme cs, VoidCallback onTap) {
     return IconButton(
-      icon: Icon(visible ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 20, color: cs.onSurfaceVariant),
+      icon: Icon(
+          visible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+          size: 20,
+          color: cs.onSurfaceVariant),
       onPressed: onTap,
     );
   }
@@ -1121,8 +1284,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                     child: Text('Cancel',
                         style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: cs.onSurface)),
+                            fontWeight: FontWeight.w600, color: cs.onSurface)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1165,19 +1327,44 @@ class _ProfileScreenState extends State<ProfileScreen>
           children: [
             Container(
               margin: const EdgeInsets.only(top: 12),
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: colorScheme.onSurface.withOpacity(0.3), borderRadius: BorderRadius.circular(2)),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2)),
             ),
             const SizedBox(height: 20),
-            Text('Change Profile Picture', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+            Text('Change Profile Picture',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface)),
             const SizedBox(height: 20),
-            ListTile(leading: Icon(Icons.camera_alt_rounded, color: colorScheme.primary), title: const Text('Take Photo'), onTap: () { Navigator.pop(context); _pickImage(ImageSource.camera); }),
-            ListTile(leading: Icon(Icons.photo_library_rounded, color: colorScheme.primary), title: const Text('Choose from Gallery'), onTap: () { Navigator.pop(context); _pickImage(ImageSource.gallery); }),
+            ListTile(
+                leading:
+                    Icon(Icons.camera_alt_rounded, color: colorScheme.primary),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                }),
+            ListTile(
+                leading: Icon(Icons.photo_library_rounded,
+                    color: colorScheme.primary),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                }),
             if (_profilePictureService.hasProfileImage)
               ListTile(
                 leading: Icon(Icons.delete_rounded, color: colorScheme.error),
-                title: Text('Remove Photo', style: TextStyle(color: colorScheme.error)),
-                onTap: () { Navigator.pop(context); _removeProfileImage(); },
+                title: Text('Remove Photo',
+                    style: TextStyle(color: colorScheme.error)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _removeProfileImage();
+                },
               ),
             const SizedBox(height: 20),
           ],
@@ -1188,28 +1375,45 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final XFile? image = await _picker.pickImage(source: source, maxWidth: 512, maxHeight: 512, imageQuality: 85);
+      final XFile? image = await _picker.pickImage(
+          source: source, maxWidth: 512, maxHeight: 512, imageQuality: 85);
       if (image != null) {
         final authState = context.read<AuthBloc>().state;
         if (authState is AuthAuthenticated) {
-          await _profilePictureService.setProfileImage(File(image.path), userId: authState.user.id);
+          final imageFile = File(image.path);
+          final saveFuture = _profilePictureService.setProfileImage(imageFile,
+              userId: authState.user.id);
+          setState(() {});
+          await saveFuture;
+          if (!mounted) return;
           setState(() {});
           AppSnackbar.showSuccess(context, message: 'Profile picture updated!');
         }
       }
     } on ProfilePictureTooLargeException catch (_) {
-      AppSnackbar.showError(context, message: 'Profile picture must be under 2 MB.');
+      if (!mounted) return;
+      AppSnackbar.showError(context,
+          message: 'Profile picture must be under 2 MB.');
     } catch (e) {
+      if (!mounted) return;
       AppSnackbar.showError(context, message: 'Failed to pick image: $e');
     }
   }
 
-  void _removeProfileImage() async {
+  Future<void> _removeProfileImage() async {
     final authState = context.read<AuthBloc>().state;
-    if (authState is AuthAuthenticated) {
-      await _profilePictureService.removeProfileImage(userId: authState.user.id);
+    if (authState is! AuthAuthenticated) return;
+
+    try {
+      await _profilePictureService.removeProfileImage(
+          userId: authState.user.id);
+      if (!mounted) return;
       setState(() {});
       AppSnackbar.showSuccess(context, message: 'Profile picture removed!');
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackbar.showError(context,
+          message: 'Failed to remove profile picture: $e');
     }
   }
 
@@ -1232,13 +1436,15 @@ class _ProfileScreenState extends State<ProfileScreen>
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setModalState) {
           final budgetState = context.read<BudgetBloc>().state;
-          final budgets = budgetState is BudgetLoaded ? budgetState.budgets : <Budget>[];
-          
+          final budgets =
+              budgetState is BudgetLoaded ? budgetState.budgets : <Budget>[];
+
           return Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1385,7 +1591,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 const SizedBox(height: 20),
 
                 // 2a. Time Range Selector (shown only in 'time' mode)
-                if (filterMode == 'time') ...[  
+                if (filterMode == 'time') ...[
                   Text(
                     'Time Range',
                     style: TextStyle(
@@ -1400,23 +1606,30 @@ class _ProfileScreenState extends State<ProfileScreen>
                     decoration: BoxDecoration(
                       color: colorScheme.surfaceVariant.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+                      border: Border.all(
+                          color: colorScheme.outline.withOpacity(0.1)),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<int>(
                         value: selectedDays,
                         isExpanded: true,
-                        icon: Icon(Icons.keyboard_arrow_down_rounded, color: colorScheme.onSurface),
+                        icon: Icon(Icons.keyboard_arrow_down_rounded,
+                            color: colorScheme.onSurface),
                         dropdownColor: colorScheme.surface,
                         items: const [
-                          DropdownMenuItem(value: 7, child: Text('Last 7 days')),
-                          DropdownMenuItem(value: 30, child: Text('Last 30 days')),
-                          DropdownMenuItem(value: 90, child: Text('Last 3 months')),
-                          DropdownMenuItem(value: 365, child: Text('Last 1 year')),
+                          DropdownMenuItem(
+                              value: 7, child: Text('Last 7 days')),
+                          DropdownMenuItem(
+                              value: 30, child: Text('Last 30 days')),
+                          DropdownMenuItem(
+                              value: 90, child: Text('Last 3 months')),
+                          DropdownMenuItem(
+                              value: 365, child: Text('Last 1 year')),
                           DropdownMenuItem(value: -1, child: Text('All time')),
                         ],
                         onChanged: (value) {
-                          if (value != null) setModalState(() => selectedDays = value);
+                          if (value != null)
+                            setModalState(() => selectedDays = value);
                         },
                       ),
                     ),
@@ -1425,7 +1638,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ],
 
                 // 2b. Budget Selector (shown only in 'budget' mode)
-                if (filterMode == 'budget' && budgets.isNotEmpty) ...[  
+                if (filterMode == 'budget' && budgets.isNotEmpty) ...[
                   Text(
                     'Select Budget',
                     style: TextStyle(
@@ -1440,13 +1653,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                     decoration: BoxDecoration(
                       color: colorScheme.surfaceVariant.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+                      border: Border.all(
+                          color: colorScheme.outline.withOpacity(0.1)),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<Budget?>(
                         value: selectedBudget,
                         isExpanded: true,
-                        icon: Icon(Icons.keyboard_arrow_down_rounded, color: colorScheme.onSurface),
+                        icon: Icon(Icons.keyboard_arrow_down_rounded,
+                            color: colorScheme.onSurface),
                         dropdownColor: colorScheme.surface,
                         hint: const Text('Choose a budget'),
                         items: budgets
@@ -1455,7 +1670,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   child: Text(b.name),
                                 ))
                             .toList(),
-                        onChanged: (value) => setModalState(() => selectedBudget = value),
+                        onChanged: (value) =>
+                            setModalState(() => selectedBudget = value),
                       ),
                     ),
                   ),
@@ -1476,9 +1692,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                   children: [
                     Expanded(
                       child: _buildFormatOption(
-                        'PDF', 
-                        Icons.picture_as_pdf_rounded, 
-                        selectedFormat == 'pdf', 
+                        'PDF',
+                        Icons.picture_as_pdf_rounded,
+                        selectedFormat == 'pdf',
                         () => setModalState(() => selectedFormat = 'pdf'),
                         colorScheme,
                       ),
@@ -1486,9 +1702,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildFormatOption(
-                        'CSV', 
-                        Icons.table_chart_rounded, 
-                        selectedFormat == 'csv', 
+                        'CSV',
+                        Icons.table_chart_rounded,
+                        selectedFormat == 'csv',
                         () => setModalState(() => selectedFormat = 'csv'),
                         colorScheme,
                       ),
@@ -1496,7 +1712,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ],
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Action Button
                 SizedBox(
                   width: double.infinity,
@@ -1514,12 +1730,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       backgroundColor: colorScheme.primary,
                       foregroundColor: colorScheme.onPrimary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                       elevation: 0,
                     ),
                     child: const Text(
                       'Generate Export',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -1532,17 +1750,22 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildFormatOption(String label, IconData icon, bool isSelected, VoidCallback onTap, ColorScheme colorScheme) {
+  Widget _buildFormatOption(String label, IconData icon, bool isSelected,
+      VoidCallback onTap, ColorScheme colorScheme) {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? colorScheme.primary.withOpacity(0.1) : colorScheme.surface,
+          color: isSelected
+              ? colorScheme.primary.withOpacity(0.1)
+              : colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? colorScheme.primary : colorScheme.outline.withOpacity(0.2),
+            color: isSelected
+                ? colorScheme.primary
+                : colorScheme.outline.withOpacity(0.2),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -1550,7 +1773,9 @@ class _ProfileScreenState extends State<ProfileScreen>
           children: [
             Icon(
               icon,
-              color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+              color: isSelected
+                  ? colorScheme.primary
+                  : colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 8),
             Text(
@@ -1566,7 +1791,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Future<void> _performExport({required String format, required int days, Budget? budget}) async {
+  Future<void> _performExport(
+      {required String format, required int days, Budget? budget}) async {
     // Show loading dialog
     showDialog(
       context: context,
@@ -1578,46 +1804,51 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     try {
       final exportService = DataExportService();
-      
+
       // Get transactions
       final transactionState = context.read<TransactionBloc>().state;
-      List<Transaction> filteredTransactions = (transactionState is TransactionLoaded
-          ? transactionState.transactions
-          : <Transaction>[]).cast<Transaction>();
+      List<Transaction> filteredTransactions =
+          (transactionState is TransactionLoaded
+                  ? transactionState.transactions
+                  : <Transaction>[])
+              .cast<Transaction>();
 
       // Get incomes
       final incomeState = context.read<IncomeBloc>().state;
-      List<Income> filteredIncomes = (incomeState is IncomeLoaded
-          ? incomeState.incomes
-          : <Income>[]).cast<Income>();
+      List<Income> filteredIncomes =
+          (incomeState is IncomeLoaded ? incomeState.incomes : <Income>[])
+              .cast<Income>();
 
       print('DEBUG: Total transactions: ${filteredTransactions.length}');
 
       if (budget != null) {
         // BUDGET MODE: export all transactions for the chosen budget, ignore date range
         final budgetId = budget.id;
-        print('DEBUG: Budget mode — filtering by budget "${budget.name}" (id: $budgetId)');
+        print(
+            'DEBUG: Budget mode — filtering by budget "${budget.name}" (id: $budgetId)');
 
-        filteredTransactions = filteredTransactions
-            .where((t) => t.budgetId == budgetId)
-            .toList();
-        filteredIncomes = filteredIncomes
-            .where((i) => i.budgetId == budgetId)
-            .toList();
+        filteredTransactions =
+            filteredTransactions.where((t) => t.budgetId == budgetId).toList();
+        filteredIncomes =
+            filteredIncomes.where((i) => i.budgetId == budgetId).toList();
 
-        print('DEBUG: After budget filter — transactions: ${filteredTransactions.length}, incomes: ${filteredIncomes.length}');
+        print(
+            'DEBUG: After budget filter — transactions: ${filteredTransactions.length}, incomes: ${filteredIncomes.length}');
       } else {
         // TIME MODE: export transactions within the selected time range, no budget filter
         final DateTime? cutoffDate =
             days > 0 ? DateTime.now().subtract(Duration(days: days)) : null;
 
         if (cutoffDate != null) {
-          print('DEBUG: Time mode — filtering since ${cutoffDate.toIso8601String()}');
-          filteredTransactions =
-              filteredTransactions.where((t) => t.date.isAfter(cutoffDate)).toList();
+          print(
+              'DEBUG: Time mode — filtering since ${cutoffDate.toIso8601String()}');
+          filteredTransactions = filteredTransactions
+              .where((t) => t.date.isAfter(cutoffDate))
+              .toList();
           filteredIncomes =
               filteredIncomes.where((i) => i.date.isAfter(cutoffDate)).toList();
-          print('DEBUG: After date filter — transactions: ${filteredTransactions.length}, incomes: ${filteredIncomes.length}');
+          print(
+              'DEBUG: After date filter — transactions: ${filteredTransactions.length}, incomes: ${filteredIncomes.length}');
         } else {
           print('DEBUG: Time mode — All time, no date filter applied');
         }
@@ -1625,20 +1856,20 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       // Get user name for PDF
       final authState = context.read<AuthBloc>().state;
-      final userName = authState is AuthAuthenticated 
-          ? (authState.user.displayName ?? 'User') 
+      final userName = authState is AuthAuthenticated
+          ? (authState.user.displayName ?? 'User')
           : 'User';
 
-        final now = DateTime.now();
-        final todayIso = now.toIso8601String().split('T').first;
-        final reportScope = budget != null
+      final now = DateTime.now();
+      final todayIso = now.toIso8601String().split('T').first;
+      final reportScope = budget != null
           ? 'Scope: Budget - ${budget.name}'
           : 'Scope: Time Range';
-        final reportRange = budget != null
+      final reportRange = budget != null
           ? 'Range: All records for selected budget'
           : (days > 0
-            ? 'Range: ${now.subtract(Duration(days: days)).toIso8601String().split('T').first} to $todayIso'
-            : 'Range: All time');
+              ? 'Range: ${now.subtract(Duration(days: days)).toIso8601String().split('T').first} to $todayIso'
+              : 'Range: All time');
 
       File generatedFile;
       if (format == 'csv') {
@@ -1647,7 +1878,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           filteredIncomes,
         );
         generatedFile = await exportService.generateFile(
-          Uint8List.fromList(csvContent.codeUnits), 
+          Uint8List.fromList(csvContent.codeUnits),
           'csv',
         );
       } else {
@@ -1659,27 +1890,26 @@ class _ProfileScreenState extends State<ProfileScreen>
           reportRange: reportRange,
         );
         generatedFile = await exportService.generateFile(
-          pdfBytes, 
+          pdfBytes,
           'pdf',
         );
       }
 
       // Close loading dialog
       if (mounted) Navigator.pop(context);
-      
+
       // Show action dialog (Share vs Download)
       if (mounted) {
         _showExportActionDialog(generatedFile, exportService);
       }
-      
     } catch (e) {
       // Close loading dialog
       if (mounted) Navigator.pop(context);
-      
+
       AppSnackbar.showError(context, message: 'Export failed: $e');
     }
   }
-  
+
   void _showExportActionDialog(File file, DataExportService exportService) {
     final colorScheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
@@ -1732,11 +1962,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                       try {
                         final path = await exportService.saveToDownloads(file);
                         if (mounted) {
-                           AppSnackbar.showSuccess(this.context, message: 'Saved to $path');
+                          AppSnackbar.showSuccess(this.context,
+                              message: 'Saved to $path');
                         }
                       } catch (e) {
                         if (mounted) {
-                          AppSnackbar.showError(this.context, message: 'Failed to save: $e');
+                          AppSnackbar.showError(this.context,
+                              message: 'Failed to save: $e');
                         }
                       }
                     },
@@ -1780,8 +2012,8 @@ class _ProfileScreenState extends State<ProfileScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            border: isPrimary 
-                ? null 
+            border: isPrimary
+                ? null
                 : Border.all(color: colorScheme.outline.withOpacity(0.2)),
             borderRadius: BorderRadius.circular(12),
           ),
@@ -1797,7 +2029,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                 label,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: isPrimary ? colorScheme.onPrimary : colorScheme.primary,
+                  color:
+                      isPrimary ? colorScheme.onPrimary : colorScheme.primary,
                 ),
               ),
             ],
@@ -1808,9 +2041,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _navigateToAboutUs() {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutUsScreen()));
+    Navigator.push(context,
+        MaterialPageRoute(builder: (context) => const AboutUsScreen()));
   }
-
 
   Widget _buildProfileSkeleton() {
     return SingleChildScrollView(
@@ -1843,5 +2076,9 @@ class _SettingsItem {
   final String? subtitle;
   final VoidCallback onTap;
 
-  _SettingsItem({required this.icon, required this.title, this.subtitle, required this.onTap});
+  _SettingsItem(
+      {required this.icon,
+      required this.title,
+      this.subtitle,
+      required this.onTap});
 }

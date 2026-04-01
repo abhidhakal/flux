@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,7 +17,8 @@ class ProfilePictureTooLargeException implements Exception {
 }
 
 class ProfilePictureService {
-  static final ProfilePictureService _instance = ProfilePictureService._internal();
+  static final ProfilePictureService _instance =
+      ProfilePictureService._internal();
   static const int maxFileSizeInBytes = 2 * 1024 * 1024;
   static const int _downloadUrlRetryCount = 3;
 
@@ -36,35 +38,43 @@ class ProfilePictureService {
 
   Future<void> setProfileImage(File? image, {required String userId}) async {
     if (image != null) {
-      final imageSize = await image.length();
-      if (imageSize > maxFileSizeInBytes) {
-        throw const ProfilePictureTooLargeException(maxFileSizeInBytes);
-      }
       final previousImage = _profileImage;
       final previousImageUrl = _profileImageUrl;
+      _profileImage = image;
 
       try {
-        final storageRef =
-            _storage.ref().child('users/$userId/profile_picture.jpg');
-        final snapshot = await storageRef.putFile(
-          image,
-          SettableMetadata(contentType: 'image/jpeg'),
-        );
-        final downloadUrl = await _getDownloadUrlWithRetry(snapshot.ref);
+        final imageSize = await image.length();
+        if (imageSize > maxFileSizeInBytes) {
+          throw const ProfilePictureTooLargeException(maxFileSizeInBytes);
+        }
+        try {
+          final storageRef =
+              _storage.ref().child('users/$userId/profile_picture.jpg');
+          final snapshot = await storageRef.putFile(
+            image,
+            SettableMetadata(contentType: 'image/jpeg'),
+          );
+          final downloadUrl = await _getDownloadUrlWithRetry(snapshot.ref);
 
-        _profileImageUrl = downloadUrl;
-        _profileImage = image;
-        await _firestore.collection('users').doc(userId).update({
-          'photoUrl': downloadUrl,
-          'profileImageBase64': FieldValue.delete(),
-        });
+          _profileImageUrl = downloadUrl;
+          _profileImage = image;
+          await _firestore.collection('users').doc(userId).update({
+            'photoUrl': downloadUrl,
+            'profileImageBase64': FieldValue.delete(),
+          });
+        } on FirebaseException catch (e) {
+          debugPrint(
+            'Falling back to Firestore-backed profile image after Storage error: $e',
+          );
+          await _saveImageAsBase64(image, userId: userId);
+        }
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('profile_image_path_$userId', image.path);
 
         final user = _auth.currentUser;
         if (user != null && user.uid == userId) {
-          await user.updatePhotoURL(downloadUrl);
+          await user.updatePhotoURL(_profileImageUrl);
         }
       } catch (e) {
         _profileImage = previousImage;
@@ -73,12 +83,20 @@ class ProfilePictureService {
         rethrow;
       }
     } else {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('profile_image_path_$userId');
+      final previousImage = _profileImage;
+      final previousImageUrl = _profileImageUrl;
+
+      _profileImage = null;
       _profileImageUrl = null;
 
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('profile_image_path_$userId');
+
       try {
-        await _storage.ref().child('users/$userId/profile_picture.jpg').delete();
+        await _storage
+            .ref()
+            .child('users/$userId/profile_picture.jpg')
+            .delete();
       } catch (e) {
         debugPrint('Error removing profile image from Firebase Storage: $e');
       }
@@ -94,6 +112,8 @@ class ProfilePictureService {
           await user.updatePhotoURL(null);
         }
       } catch (e) {
+        _profileImage = previousImage;
+        _profileImageUrl = previousImageUrl;
         debugPrint('Error removing profile image from Firestore: $e');
         rethrow;
       }
@@ -117,6 +137,16 @@ class ProfilePictureService {
           _profileImage = File(imagePath);
         }
 
+        return;
+      }
+
+      final profileImageBase64 = data?['profileImageBase64'] as String?;
+      if (profileImageBase64 != null && profileImageBase64.isNotEmpty) {
+        _profileImage = await _restoreImageFromBase64(
+          profileImageBase64,
+          userId: userId,
+        );
+        _profileImageUrl = null;
         return;
       }
     } catch (e) {
@@ -144,7 +174,8 @@ class ProfilePictureService {
         return await ref.getDownloadURL();
       } on FirebaseException catch (e) {
         lastError = e;
-        if (e.code != 'object-not-found' || attempt == _downloadUrlRetryCount - 1) {
+        if (e.code != 'object-not-found' ||
+            attempt == _downloadUrlRetryCount - 1) {
           rethrow;
         }
         await Future<void>.delayed(Duration(milliseconds: 300 * (attempt + 1)));
@@ -154,37 +185,86 @@ class ProfilePictureService {
     throw lastError ?? Exception('Failed to fetch profile image download URL.');
   }
 
+  Future<void> _saveImageAsBase64(File image, {required String userId}) async {
+    final bytes = await image.readAsBytes();
+    final base64String = base64Encode(bytes);
+    _profileImageUrl = null;
+
+    await _firestore.collection('users').doc(userId).update({
+      'photoUrl': FieldValue.delete(),
+      'profileImageBase64': base64String,
+    });
+  }
+
+  Future<File> _restoreImageFromBase64(
+    String base64String, {
+    required String userId,
+  }) async {
+    final bytes = base64Decode(base64String);
+    final prefs = await SharedPreferences.getInstance();
+    final cachedPath = prefs.getString('profile_image_path_$userId');
+
+    if (cachedPath != null && cachedPath.isNotEmpty) {
+      final cachedFile = File(cachedPath);
+      await cachedFile.writeAsBytes(bytes, flush: true);
+      return cachedFile;
+    }
+
+    final tempDir = Directory.systemTemp;
+    final file = File('${tempDir.path}/profile_$userId.jpg');
+    await file.writeAsBytes(bytes, flush: true);
+    await prefs.setString('profile_image_path_$userId', file.path);
+    return file;
+  }
+
   Widget buildProfileAvatar({
     required String? displayName,
     required ColorScheme colorScheme,
     double radius = 25,
   }) {
-    ImageProvider<Object>? imageProvider;
-    if (_profileImage != null) {
-      imageProvider = FileImage(_profileImage!);
-    } else if (_profileImageUrl?.isNotEmpty ?? false) {
-      imageProvider = NetworkImage(_profileImageUrl!);
-    }
+    final fallback = CircleAvatar(
+      radius: radius,
+      backgroundColor: colorScheme.primary,
+      child: Text(
+        (displayName?.isNotEmpty == true) ? displayName![0].toUpperCase() : 'U',
+        style: TextStyle(
+          fontSize: radius * 0.7,
+          fontWeight: FontWeight.bold,
+          color: colorScheme.onPrimary,
+        ),
+      ),
+    );
 
-    if (imageProvider != null) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundColor: colorScheme.primary,
-        backgroundImage: imageProvider,
-      );
-    } else {
-      return CircleAvatar(
-        radius: radius,
-        backgroundColor: colorScheme.primary,
-        child: Text(
-          (displayName?.isNotEmpty == true) ? displayName![0].toUpperCase() : 'U',
-          style: TextStyle(
-            fontSize: radius * 0.7,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onPrimary,
-          ),
+    if (_profileImage != null && _profileImage!.existsSync()) {
+      return ClipOval(
+        child: Image.file(
+          _profileImage!,
+          width: radius * 2,
+          height: radius * 2,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => fallback,
         ),
       );
     }
+
+    if (_profileImageUrl?.isNotEmpty ?? false) {
+      return ClipOval(
+        child: Image.network(
+          _profileImageUrl!,
+          width: radius * 2,
+          height: radius * 2,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => fallback,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) {
+              return child;
+            }
+            return fallback;
+          },
+        ),
+      );
+    }
+
+    return fallback;
   }
 }

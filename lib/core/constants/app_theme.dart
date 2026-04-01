@@ -7,35 +7,35 @@ class AppColors {
   static const Color primaryLight = Color(0xFF3399FF);
   static const Color primaryDark = Color(0xFF0056B3);
   static const Color primaryUltraLight = Color(0xFFE6F3FF);
-  
+
   // Secondary colors - Teal
   static const Color secondary = Color(0xFF00B4D8);
   static const Color secondaryLight = Color(0xFF4DC9E6);
   static const Color secondaryDark = Color(0xFF0099CC);
-  
+
   // Accent colors - Coral
   static const Color accent = Color(0xFFFF6B6B);
   static const Color accentLight = Color(0xFFFF8A8A);
   static const Color accentDark = Color(0xFFE55A5A);
-  
+
   // Success colors - Modern Green
   static const Color success = Color(0xFF00C851);
   static const Color successLight = Color(0xFF4CD964);
   static const Color successDark = Color(0xFF00A843);
   static const Color successUltraLight = Color(0xFFE8F5E8);
-  
+
   // Warning colors - Amber
   static const Color warning = Color(0xFFFFB300);
   static const Color warningLight = Color(0xFFFFC107);
   static const Color warningDark = Color(0xFFE6A200);
   static const Color warningUltraLight = Color(0xFFFFF8E1);
-  
+
   // Error colors - Modern Red
   static const Color error = Color(0xFFDC3545);
   static const Color errorLight = Color(0xFFE74C3C);
   static const Color errorDark = Color(0xFFC82333);
   static const Color errorUltraLight = Color(0xFFFFEBEE);
-  
+
   // Light Theme Colors
   static const Color lightBackground = Color(0xFFFAFBFC);
   static const Color lightSurface = Color(0xFFFFFFFF);
@@ -47,19 +47,21 @@ class AppColors {
   static const Color lightTextTertiary = Color(0xFF9CA3AF);
   static const Color lightTextInverse = Color(0xFFFFFFFF);
   static const Color lightTextMuted = Color(0xFF9CA3AF);
-  
+
   // Dark Theme Colors
-  static const Color darkBackground = Color(0xFF0C0C0C);
-  static const Color darkSurface = Color(0xFF1A1A1A);
-  static const Color darkCard = Color(0xFF1E1E1E);
-  static const Color darkDivider = Color(0xFF2A2A2A);
-  static const Color darkBorder = Color(0xFF333333);
-  static const Color darkTextPrimary = Color(0xFFE5E5E5);
-  static const Color darkTextSecondary = Color(0xFFB0B0B0);
-  static const Color darkTextTertiary = Color(0xFF808080);
+  static const Color darkBackground = Color(0xFF0E0E0E);
+  static const Color darkSurface = Color(0xFF161616);
+  static const Color darkCard = Color(0xFF1B1B1B);
+  static const Color darkDivider = Color(0xFF262626);
+  static const Color darkBorder = Color(0xFF303030);
+  static const Color darkTextPrimary = Color(0xFFF4F4F4);
+  static const Color darkTextSecondary = Color(0xFFB8B8B8);
+  static const Color darkTextTertiary = Color(0xFF868686);
   static const Color darkTextInverse = Color(0xFF000000);
-  static const Color darkTextMuted = Color(0xFF808080);
-  
+  static const Color darkTextMuted = Color(0xFF868686);
+  static const Color darkElevatedSurface = Color(0xFF202020);
+  static const Color darkNavSurface = Color(0xFF141414);
+
   // Legacy colors (for backward compatibility)
   static const Color background = lightBackground;
   static const Color surface = lightSurface;
@@ -71,64 +73,63 @@ class AppColors {
   static const Color textTertiary = lightTextTertiary;
   static const Color textInverse = lightTextInverse;
   static const Color textMuted = lightTextMuted;
-  
+
   // Status colors
   static const Color info = Color(0xFF0079DC);
   static const Color infoLight = Color(0xFF4DA3FF);
   static const Color infoDark = Color(0xFF0056CC);
-  
+
   // Budget status colors
   static const Color budgetOnTrack = Color(0xFF00C851);
   static const Color budgetWarning = Color(0xFFFFB300);
   static const Color budgetOver = Color(0xFFDC3545);
-  
+
   // Gradient colors - Modern Gradients
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [primary, primaryLight],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient secondaryGradient = LinearGradient(
     colors: [secondary, secondaryLight],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient accentGradient = LinearGradient(
     colors: [accent, accentLight],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient successGradient = LinearGradient(
     colors: [success, successLight],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient errorGradient = LinearGradient(
     colors: [error, errorLight],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   // Shadow colors
   static const Color shadowLight = Color(0x0A000000);
   static const Color shadowMedium = Color(0x1A000000);
   static const Color shadowDark = Color(0x33000000);
-  
+
   // Overlay colors
   static const Color overlayLight = Color(0x80000000);
   static const Color overlayMedium = Color(0xB3000000);
   static const Color overlayDark = Color(0xE6000000);
 }
 
-
 class AppTheme {
   // Typography
   static const String fontFamily = 'Satoshi';
-  
+
   // Light Text Theme
   static const TextTheme lightTextTheme = TextTheme(
     displayLarge: TextStyle(
@@ -317,22 +318,44 @@ class AppTheme {
   static Color pageBackground(BuildContext context) {
     final theme = Theme.of(context);
     return theme.brightness == Brightness.dark
-        ? const Color(0xFF0E1013)
+        ? AppColors.darkBackground
         : const Color(0xFFF5F7FA);
   }
 
   static Color cardSurface(BuildContext context) {
     final theme = Theme.of(context);
     return theme.brightness == Brightness.dark
-        ? const Color(0xFF171A1F)
+        ? AppColors.darkCard
         : Colors.white;
   }
 
   static Color mutedSurface(BuildContext context) {
     final theme = Theme.of(context);
     return theme.brightness == Brightness.dark
-        ? const Color(0xFF1D2128)
+        ? AppColors.darkElevatedSurface
         : const Color(0xFFF0F4F8);
+  }
+
+  static Color navigationBarSurface(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.brightness == Brightness.dark
+        ? AppColors.darkNavSurface
+        : AppColors.lightSurface;
+  }
+
+  static Color navigationBarBorder(BuildContext context) {
+    final theme = Theme.of(context);
+    final outline = theme.colorScheme.outline;
+    return outline.withValues(
+      alpha: theme.brightness == Brightness.dark ? 0.72 : 1,
+    );
+  }
+
+  static Color navigationBarShadow(BuildContext context) {
+    final theme = Theme.of(context);
+    return Colors.black.withValues(
+      alpha: theme.brightness == Brightness.dark ? 0.26 : 0.10,
+    );
   }
 
   static BoxDecoration surfaceDecoration(
@@ -347,11 +370,13 @@ class AppTheme {
       color: subtle ? mutedSurface(context) : cardSurface(context),
       borderRadius: BorderRadius.circular(radius),
       border: Border.all(
-        color: colorScheme.outline.withValues(alpha: theme.brightness == Brightness.dark ? 0.34 : 0.10),
+        color: colorScheme.outline.withValues(
+            alpha: theme.brightness == Brightness.dark ? 0.34 : 0.10),
       ),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: theme.brightness == Brightness.dark ? 0.18 : 0.05),
+          color: Colors.black.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.18 : 0.05),
           blurRadius: subtle ? 12 : 20,
           offset: const Offset(0, 8),
         ),
@@ -368,14 +393,17 @@ class AppTheme {
     final colorScheme = theme.colorScheme;
 
     return BoxDecoration(
-      color: tint.withValues(alpha: theme.brightness == Brightness.dark ? 0.14 : 0.10),
+      color: tint.withValues(
+          alpha: theme.brightness == Brightness.dark ? 0.14 : 0.10),
       borderRadius: BorderRadius.circular(radius),
       border: Border.all(
-        color: colorScheme.outline.withValues(alpha: theme.brightness == Brightness.dark ? 0.32 : 0.10),
+        color: colorScheme.outline.withValues(
+            alpha: theme.brightness == Brightness.dark ? 0.32 : 0.10),
       ),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: theme.brightness == Brightness.dark ? 0.14 : 0.04),
+          color: Colors.black.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.14 : 0.04),
           blurRadius: 18,
           offset: const Offset(0, 8),
         ),
@@ -392,7 +420,8 @@ class AppTheme {
 
   static TextStyle sectionSubtitleStyle(BuildContext context) {
     return Theme.of(context).textTheme.bodyMedium!.copyWith(
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.62),
+          color:
+              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.62),
           fontWeight: FontWeight.w500,
         );
   }
@@ -435,13 +464,11 @@ class AppTheme {
         primaryContainer: AppColors.primaryUltraLight,
         secondary: AppColors.secondary,
         secondaryContainer: AppColors.secondaryLight,
-        background: AppColors.lightBackground,
         surface: AppColors.lightSurface,
         error: AppColors.error,
         errorContainer: AppColors.errorUltraLight,
         onPrimary: AppColors.lightTextInverse,
         onSecondary: AppColors.lightTextInverse,
-        onBackground: AppColors.lightTextPrimary,
         onSurface: AppColors.lightTextPrimary,
         onError: AppColors.lightTextInverse,
         outline: AppColors.lightBorder,
@@ -654,13 +681,11 @@ class AppTheme {
         primaryContainer: AppColors.primaryDark,
         secondary: AppColors.secondary,
         secondaryContainer: AppColors.secondaryDark,
-        background: AppColors.darkBackground,
         surface: AppColors.darkSurface,
         error: AppColors.error,
         errorContainer: AppColors.errorDark,
         onPrimary: AppColors.darkTextInverse,
         onSecondary: AppColors.darkTextInverse,
-        onBackground: AppColors.darkTextPrimary,
         onSurface: AppColors.darkTextPrimary,
         onError: AppColors.darkTextInverse,
         outline: AppColors.darkBorder,
@@ -814,7 +839,7 @@ class AppTheme {
         ),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: AppColors.darkSurface,
+        backgroundColor: AppColors.darkNavSurface,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.darkTextSecondary,
         type: BottomNavigationBarType.fixed,
