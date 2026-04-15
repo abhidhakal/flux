@@ -2,22 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
-import '../../../core/models/income_model.dart';
 import '../../../core/services/currency_service.dart';
 
 class TrendAnalysisChart extends StatelessWidget {
   final List<Transaction> transactions;
-  final List<Income> incomes;
 
   const TrendAnalysisChart({
     super.key, 
     required this.transactions,
-    required this.incomes,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (transactions.isEmpty && incomes.isEmpty) {
+    if (transactions.isEmpty) {
       return Container(
         height: 200,
         decoration: BoxDecoration(
@@ -188,13 +185,14 @@ class TrendAnalysisChart extends StatelessWidget {
       }
     }
 
-    // Add incomes
-    for (final income in incomes) {
-      final monthKey = '${income.date.year}-${income.date.month.toString().padLeft(2, '0')}';
+    for (final transaction in transactions.where((t) => t.isIncome)) {
+      final monthKey =
+          '${transaction.date.year}-${transaction.date.month.toString().padLeft(2, '0')}';
       if (!monthlyData.containsKey(monthKey)) {
         monthlyData[monthKey] = {'income': 0, 'expense': 0};
       }
-      monthlyData[monthKey]!['income'] = monthlyData[monthKey]!['income']! + income.amount;
+      monthlyData[monthKey]!['income'] =
+          monthlyData[monthKey]!['income']! + transaction.amount;
     }
 
     final sortedMonths = monthlyData.keys.toList()..sort();

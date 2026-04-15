@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 class NetworkService {
@@ -8,6 +9,7 @@ class NetworkService {
 
   final Connectivity _connectivity = Connectivity();
   final StreamController<bool> _connectionController = StreamController<bool>.broadcast();
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   // Stream to listen to connection changes
   Stream<bool> get connectionStream => _connectionController.stream;
@@ -15,20 +17,27 @@ class NetworkService {
   // Current connection status
   bool _isOnline = true;
   bool get isOnline => _isOnline;
+  bool _isInitialized = false;
 
   // Initialize the network service
   Future<void> initialize() async {
+    if (_isInitialized) {
+      await _checkConnectivity();
+      return;
+    }
+
     // Check initial connectivity
     await _checkConnectivity();
 
     // Listen to connectivity changes (new API: List<ConnectivityResult>)
-    _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) {
+    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) {
       if (results.isNotEmpty) {
         _updateConnectionStatus(results.first);
       } else {
         _updateConnectionStatus(ConnectivityResult.none);
       }
     });
+    _isInitialized = true;
   }
 
   // Check current connectivity status
@@ -41,7 +50,7 @@ class NetworkService {
         _updateConnectionStatus(ConnectivityResult.none);
       }
     } catch (e) {
-      print('❌ NETWORK SERVICE: Error checking connectivity: $e');
+      debugPrint('❌ NETWORK SERVICE: Error checking connectivity: $e');
       _isOnline = false;
       _connectionController.add(false);
     }
@@ -55,7 +64,7 @@ class NetworkService {
     // Only emit if status changed
     if (wasOnline != _isOnline) {
       _connectionController.add(_isOnline);
-      print('🌐 NETWORK SERVICE: Connection status changed - ${_isOnline ? "Online" : "Offline"}');
+      debugPrint('🌐 NETWORK SERVICE: Connection status changed - ${_isOnline ? "Online" : "Offline"}');
     }
   }
 
@@ -68,7 +77,7 @@ class NetworkService {
       final results = await _connectivity.checkConnectivity(); // List<ConnectivityResult>
       return results.any((r) => r != ConnectivityResult.none);
     } catch (e) {
-      print('❌ NETWORK SERVICE: Error checking online status: $e');
+      debugPrint('❌ NETWORK SERVICE: Error checking online status: $e');
       return false;
     }
   }
@@ -78,13 +87,15 @@ class NetworkService {
     try {
       return await _connectivity.checkConnectivity();
     } catch (e) {
-      print('❌ NETWORK SERVICE: Error getting connectivity result: $e');
+      debugPrint('❌ NETWORK SERVICE: Error getting connectivity result: $e');
       return [ConnectivityResult.none];
     }
   }
 
   // Dispose resources
   void dispose() {
+    _connectivitySubscription?.cancel();
     _connectionController.close();
+    _isInitialized = false;
   }
 }

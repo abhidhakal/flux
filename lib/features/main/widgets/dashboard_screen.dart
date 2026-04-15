@@ -9,6 +9,7 @@ import '../../../core/services/stale_budget_helper.dart';
 import '../../../core/services/widget_service.dart';
 import '../../../shared/widgets/skeleton_components.dart';
 import '../../../core/widgets/app_banner_ad.dart';
+import '../../../core/services/feature_flag_service.dart';
 
 import '../../../core/models/transaction_model.dart';
 import '../../auth/auth_bloc.dart';
@@ -20,8 +21,6 @@ import '../../goals/screens/goals_screen.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../../notifications/notifications_bloc.dart';
 import '../../transaction/screens/add_transaction_screen.dart';
-import '../../income/income_bloc.dart';
-import '../../../core/models/income_model.dart';
 import '../../subscription/subscription_bloc.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -37,14 +36,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // Load data when screen initializes
     final user = context.read<AuthBloc>().state;
     if (user is AuthAuthenticated) {
-      context.read<TransactionBloc>().add(LoadTransactions(user.user.id));
-      context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
-      context.read<NotificationsBloc>().add(LoadNotifications(user.user.id));
-      context.read<IncomeBloc>().add(LoadIncome(user.user.id));
-      context.read<GoalsBloc>().add(LoadGoals(user.user.id));
       _profilePictureService.loadProfileImage(userId: user.user.id).then((_) {
         if (mounted) setState(() {});
       });
@@ -87,13 +80,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             if (state is TransactionLoaded) {
               _updateWidget(context);
               _checkStaleBudgets();
-            }
-          },
-        ),
-        BlocListener<IncomeBloc, IncomeState>(
-          listener: (context, state) {
-            if (state is IncomeLoaded) {
-              _updateWidget(context);
+              context.read<AnalyticsBloc>().add(
+                    AnalyzeSpendingPatterns(state.transactions),
+                  );
             }
           },
         ),
@@ -236,41 +225,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
 
           if (transactionState is TransactionLoaded) {
-            return BlocBuilder<IncomeBloc, IncomeState>(
-              builder: (context, incomeState) {
-                final incomeList = (incomeState is IncomeLoaded) ? incomeState.incomes : <Income>[];
+            return BlocBuilder<SubscriptionBloc, SubscriptionState>(
+              builder: (context, subscriptionState) {
+                final hasPremiumAccess =
+                    !FeatureFlagService.isSubscriptionEnabled ||
+                    subscriptionState is SubscriptionPremium;
 
-                // Trigger analytics when both transactions and incomes are ready
-                context.read<AnalyticsBloc>().add(
-                  AnalyzeSpendingPatterns(transactionState.transactions, incomeList),
-                );
-
-                return BlocBuilder<SubscriptionBloc, SubscriptionState>(
-                  builder: (context, subscriptionState) {
-                    final isPremium = subscriptionState is SubscriptionPremium;
-                    
-                    return SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 120),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildBalanceCard(transactionState.transactions, incomeList, isPremium),
-                          const SizedBox(height: 24),
-                          _buildQuickActions(),
-                          const SizedBox(height: 24),
-                          _buildSmartInsights(isPremium),
-                          const SizedBox(height: 24),
-                          _buildRecentTransactions(transactionState.transactions),
-                          const SizedBox(height: 32),
-                          _buildFinancialTips(),
-                          const SizedBox(height: 16),
-                          const AppBannerAd(), // Ad-supported monetization
-                          const SizedBox(height: 32),
-                        ],
-                      ),
-                    );
-                  },
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 120),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildBalanceCard(transactionState.transactions),
+                      const SizedBox(height: 24),
+                      _buildQuickActions(),
+                      const SizedBox(height: 24),
+                      _buildSmartInsights(hasPremiumAccess),
+                      const SizedBox(height: 24),
+                      _buildRecentTransactions(transactionState.transactions),
+                      const SizedBox(height: 32),
+                      _buildFinancialTips(),
+                      const SizedBox(height: 16),
+                      const AppBannerAd(),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
                 );
               },
             );
@@ -282,10 +262,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   );
 }
 
-  Widget _buildBalanceCard(List<Transaction> transactions, List<Income> incomes, bool isPremium) {
-    final expenses = transactions.where((t) => t.type == TransactionType.expense).toList();
+  Widget _buildBalanceCard(List<Transaction> transactions) {
+    final expenses = transactions.where((t) => t.isExpense).toList();
+    final incomes = transactions.where((t) => t.isIncome).toList();
     final totalExpenses = expenses.fold(0.0, (sum, t) => sum + t.amount);
-    final totalIncome = incomes.fold(0.0, (sum, i) => sum + i.amount);
+    final totalIncome = incomes.fold(0.0, (sum, t) => sum + t.amount);
     final balance = totalIncome - totalExpenses;
     
     final colorScheme = Theme.of(context).colorScheme;

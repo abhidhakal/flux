@@ -24,11 +24,6 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   @override
   void initState() {
     super.initState();
-    // Load budgets when screen initializes
-    final user = context.read<AuthBloc>().state;
-    if (user is AuthAuthenticated) {
-      context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
-    }
   }
 
   @override
@@ -949,6 +944,16 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(sheetContext),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colorScheme.onSurface,
+                          side: BorderSide(
+                            color: colorScheme.outline.withValues(alpha: 0.35),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
                         child: const Text('Cancel'),
                       ),
                     ),
@@ -962,6 +967,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.error,
                           foregroundColor: colorScheme.onError,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
                         child: const Text('Delete'),
                       ),

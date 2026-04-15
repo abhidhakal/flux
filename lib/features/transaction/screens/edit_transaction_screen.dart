@@ -296,7 +296,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     prefixIcon: const Icon(Icons.attach_money_rounded),
-                    prefixText: CurrencyService().symbol + ' ',
+                    prefixText: '${CurrencyService().symbol} ',
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -315,7 +315,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                 _buildSectionTitle('Category'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: InputDecoration(
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -528,7 +528,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
               )
             else
               DropdownButtonFormField<Budget>(
-                value: _selectedBudget,
+                initialValue: _selectedBudget,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -812,7 +812,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     prefixIcon: const Icon(Icons.attach_money_rounded),
-                    prefixText: CurrencyService().symbol + ' ',
+                    prefixText: '${CurrencyService().symbol} ',
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -831,7 +831,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                 _buildSectionTitle('Category'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: InputDecoration(
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -1045,7 +1045,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
               )
             else
               DropdownButtonFormField<Budget>(
-                value: _selectedBudget,
+                initialValue: _selectedBudget,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),

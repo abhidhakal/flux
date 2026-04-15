@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flux/core/services/ad_service.dart';
@@ -14,6 +15,7 @@ class AppBannerAd extends StatefulWidget {
 class _AppBannerAdState extends State<AppBannerAd> {
   BannerAd? _bannerAd;
   bool _isLoaded = false;
+  StreamSubscription<bool>? _purchaseSubscription;
   
   @override
   void initState() {
@@ -21,7 +23,7 @@ class _AppBannerAdState extends State<AppBannerAd> {
     _loadAd();
     
     // Listen for premium purchase updates to hide ads dynamically
-    SubscriptionService().purchaseStream.listen((_) {
+    _purchaseSubscription = SubscriptionService().purchaseStream.listen((_) {
       if (mounted) {
         setState(() {}); // Rebuild to check showAds condition
       }
@@ -33,6 +35,7 @@ class _AppBannerAdState extends State<AppBannerAd> {
 
     // Ensure the Mobile Ads SDK is initialized before loading ads
     await AdService().ensureInitialized();
+    if (!mounted) return;
 
     final AnchoredAdaptiveBannerAdSize? size = switch (Platform.isAndroid || Platform.isIOS) {
        true => await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
@@ -64,6 +67,7 @@ class _AppBannerAdState extends State<AppBannerAd> {
 
   @override
   void dispose() {
+    _purchaseSubscription?.cancel();
     _bannerAd?.dispose();
     super.dispose();
   }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:home_widget/home_widget.dart';
@@ -13,7 +15,9 @@ import 'core/services/notification_trigger_service.dart';
 import 'core/services/currency_service.dart';
 import 'core/services/network_service.dart';
 import 'core/services/subscription_service.dart';
+import 'core/services/feature_flag_service.dart';
 import 'core/services/background_task_service.dart';
+import 'core/services/recurring_transaction_service.dart';
 import 'features/subscription/subscription_bloc.dart';
 import 'features/auth/auth_bloc.dart';
 import 'features/budget/budget_bloc.dart';
@@ -26,8 +30,6 @@ import 'features/goals/screens/goals_screen.dart';
 import 'features/notifications/notifications_bloc.dart';
 import 'features/main/navigation_cubit.dart';
 import 'features/theme/theme_bloc.dart';
-import 'core/services/income_service.dart';
-import 'features/income/income_bloc.dart';
 import 'features/transaction/screens/add_transaction_screen.dart';
 
 class App extends StatefulWidget {
@@ -43,7 +45,8 @@ class _AppState extends State<App> {
   final AuthService _authService = AuthService();
   final BudgetService _budgetService = BudgetService();
   final TransactionService _transactionService = TransactionService();
-  final IncomeService _incomeService = IncomeService();
+  late final RecurringTransactionService _recurringTransactionService =
+      RecurringTransactionService(transactionService: _transactionService);
   final AIIntelligenceService _aiService = AIIntelligenceService();
   final GoalService _goalService = GoalService();
   final SubscriptionService _subscriptionService = SubscriptionService();
@@ -72,14 +75,10 @@ class _AppState extends State<App> {
         BlocProvider<TransactionBloc>(
           create: (context) => TransactionBloc(
             transactionService: _transactionService,
+            recurringTransactionService: _recurringTransactionService,
             budgetService: _budgetService,
             notificationTriggerService: _triggerService,
             enhancedNotificationService: _notificationService,
-          ),
-        ),
-        BlocProvider<IncomeBloc>(
-          create: (context) => IncomeBloc(
-            incomeService: _incomeService,
           ),
         ),
         BlocProvider<AnalyticsBloc>(
@@ -120,6 +119,7 @@ class AppView extends StatefulWidget {
 class _AppViewState extends State<AppView> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   Uri? _pendingUri;
+  StreamSubscription<Uri?>? _widgetClickSubscription;
 
   @override
   void initState() {
@@ -153,11 +153,11 @@ class _AppViewState extends State<AppView> {
   void _setupHomeWidget() {
     HomeWidget.setAppGroupId('group.com.klivostudios.flux');
     HomeWidget.initiallyLaunchedFromHomeWidget().then(_handleWidgetLaunch);
-    HomeWidget.widgetClicked.listen(_handleWidgetLaunch);
+    _widgetClickSubscription = HomeWidget.widgetClicked.listen(_handleWidgetLaunch);
   }
 
   void _handleWidgetLaunch(Uri? uri) {
-    if (uri == null) return;
+    if (!mounted || uri == null) return;
     _pendingUri = uri;
     _checkPendingWidgetLaunch();
   }
@@ -171,6 +171,8 @@ class _AppViewState extends State<AppView> {
       // Use a slight delay to ensure the MainScreen is fully mounted and ready
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Future.delayed(const Duration(milliseconds: 500), () {
+          if (!mounted) return;
+
           if (uri.host == 'add_transaction') {
             final type = switch (uri.queryParameters['type']) {
               'income' => TransactionType.income,
@@ -210,13 +212,26 @@ class _AppViewState extends State<AppView> {
   }
 
   @override
+  void dispose() {
+    _widgetClickSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
       listeners: [
         BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state is AuthAuthenticated) {
-              context.read<SubscriptionBloc>().add(SubscriptionCheckRequested());
+              context.read<TransactionBloc>().add(LoadTransactions(state.user.id));
+              context.read<BudgetBloc>().add(LoadBudgets(state.user.id));
+              context.read<NotificationsBloc>().add(LoadNotifications(state.user.id));
+              context.read<GoalsBloc>().add(LoadGoals(state.user.id));
+
+              if (FeatureFlagService.isSubscriptionEnabled) {
+                context.read<SubscriptionBloc>().add(SubscriptionCheckRequested());
+              }
               _checkPendingWidgetLaunch();
               
               // Register background health checks for notifications

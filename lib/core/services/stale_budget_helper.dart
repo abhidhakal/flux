@@ -16,6 +16,7 @@ class StaleBudgetHelper {
     required List<Transaction> transactions,
     required String userId,
   }) async {
+    final budgetBloc = context.read<BudgetBloc>();
     final prefs = await SharedPreferences.getInstance();
     final lastCheckMillis = prefs.getInt('${_lastCheckKey}_$userId') ?? 0;
     final now = DateTime.now();
@@ -56,15 +57,30 @@ class StaleBudgetHelper {
     if (staleBudgets.isNotEmpty && context.mounted) {
       // Record that we checked today
       await prefs.setInt('${_lastCheckKey}_$userId', now.millisecondsSinceEpoch);
+      if (!context.mounted) {
+        return;
+      }
       
       // Show dialog for the first stale budget found
       // (Or we could show a list if multiple are stale, but sticking to original behavior)
       final info = staleBudgets.first;
-      _showStaleBudgetDialog(context, info.budget, info.percentage, info.daysSinceTx);
+      _showStaleBudgetDialog(
+        context,
+        budgetBloc,
+        info.budget,
+        info.percentage,
+        info.daysSinceTx,
+      );
     }
   }
 
-  static void _showStaleBudgetDialog(BuildContext context, Budget budget, int percentage, int daysSinceTx) {
+  static void _showStaleBudgetDialog(
+    BuildContext context,
+    BudgetBloc budgetBloc,
+    Budget budget,
+    int percentage,
+    int daysSinceTx,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final daysLabel = daysSinceTx >= 999 ? 'no transactions recorded' : '$daysSinceTx days ago';
     
@@ -84,7 +100,7 @@ class StaleBudgetHelper {
           ElevatedButton(
             onPressed: () {
               Navigator.of(ctx).pop();
-              context.read<BudgetBloc>().add(
+              budgetBloc.add(
                     UpdateBudget(budget.copyWith(isActive: false)),
                   );
             },

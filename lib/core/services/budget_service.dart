@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/budget_model.dart';
 import '../models/transaction_model.dart';
@@ -11,10 +12,10 @@ class BudgetService {
   // Create new budget
   Future<void> createBudget(Budget budget) async {
     try {
-      print('🔵 BUDGET SERVICE: Creating budget');
-      print('🔵 Budget: ${budget.name} - \$${budget.amount}');
-      print('🔵 Category: ${budget.category}');
-      print('🔵 Period: ${budget.period.name}');
+      debugPrint('🔵 BUDGET SERVICE: Creating budget');
+      debugPrint('🔵 Budget: ${budget.name} - \$${budget.amount}');
+      debugPrint('🔵 Category: ${budget.category}');
+      debugPrint('🔵 Period: ${budget.period.name}');
 
       // Ensure user document exists
       await _ensureUserExists(budget.userId);
@@ -28,9 +29,9 @@ class BudgetService {
           .doc(budgetId)
           .set(budgetToSave.toJson());
 
-      print('✅ BUDGET SERVICE: Budget created successfully');
+      debugPrint('✅ BUDGET SERVICE: Budget created successfully');
     } catch (e) {
-      print('❌ BUDGET SERVICE: Error creating budget: $e');
+      debugPrint('❌ BUDGET SERVICE: Error creating budget: $e');
       throw Exception('Failed to create budget: $e');
     }
   }
@@ -38,17 +39,17 @@ class BudgetService {
   // Update budget
   Future<void> updateBudget(Budget budget) async {
     try {
-      print('🔵 BUDGET SERVICE: Updating budget');
-      print('🔵 Budget ID: ${budget.id}');
+      debugPrint('🔵 BUDGET SERVICE: Updating budget');
+      debugPrint('🔵 Budget ID: ${budget.id}');
 
       await _firestore
           .collection('budgets')
           .doc(budget.id)
           .update(budget.toJson());
 
-      print('✅ BUDGET SERVICE: Budget updated successfully');
+      debugPrint('✅ BUDGET SERVICE: Budget updated successfully');
     } catch (e) {
-      print('❌ BUDGET SERVICE: Error updating budget: $e');
+      debugPrint('❌ BUDGET SERVICE: Error updating budget: $e');
       throw Exception('Failed to update budget: $e');
     }
   }
@@ -56,14 +57,14 @@ class BudgetService {
   // Delete budget
   Future<void> deleteBudget(String budgetId) async {
     try {
-      print('🔵 BUDGET SERVICE: Deleting budget');
-      print('🔵 Budget ID: $budgetId');
+      debugPrint('🔵 BUDGET SERVICE: Deleting budget');
+      debugPrint('🔵 Budget ID: $budgetId');
 
       await _firestore.collection('budgets').doc(budgetId).delete();
 
-      print('✅ BUDGET SERVICE: Budget deleted successfully');
+      debugPrint('✅ BUDGET SERVICE: Budget deleted successfully');
     } catch (e) {
-      print('❌ BUDGET SERVICE: Error deleting budget: $e');
+      debugPrint('❌ BUDGET SERVICE: Error deleting budget: $e');
       throw Exception('Failed to delete budget: $e');
     }
   }
@@ -71,7 +72,7 @@ class BudgetService {
   // Get user budgets
   Future<List<Budget>> getUserBudgets(String userId) async {
     try {
-      print('🔵 BUDGET SERVICE: Getting budgets for user: $userId');
+      debugPrint('🔵 BUDGET SERVICE: Getting budgets for user: $userId');
 
       // Ensure user document exists
       await _ensureUserExists(userId);
@@ -83,13 +84,13 @@ class BudgetService {
 
       final budgets = querySnapshot.docs.map((doc) {
         try {
-          print('🔵 BUDGET SERVICE: Parsing budget document: ${doc.id}');
-          print('🔵 BUDGET SERVICE: Document data: ${doc.data()}');
+          debugPrint('🔵 BUDGET SERVICE: Parsing budget document: ${doc.id}');
+          debugPrint('🔵 BUDGET SERVICE: Document data: ${doc.data()}');
           return Budget.fromJson(doc.data());
         } catch (e) {
-          print(
+          debugPrint(
               '❌ BUDGET SERVICE: Error parsing budget document ${doc.id}: $e');
-          print('❌ BUDGET SERVICE: Document data: ${doc.data()}');
+          debugPrint('❌ BUDGET SERVICE: Document data: ${doc.data()}');
           rethrow;
         }
       }).toList();
@@ -97,10 +98,10 @@ class BudgetService {
       // Sort by creation date (newest first)
       budgets.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-      print('✅ BUDGET SERVICE: Found ${budgets.length} budgets');
+      debugPrint('✅ BUDGET SERVICE: Found ${budgets.length} budgets');
       return budgets;
     } catch (e) {
-      print('❌ BUDGET SERVICE: Error getting budgets: $e');
+      debugPrint('❌ BUDGET SERVICE: Error getting budgets: $e');
       // Return empty list instead of throwing to prevent app crashes
       return [];
     }
@@ -109,7 +110,7 @@ class BudgetService {
   // Get active budgets for user
   Future<List<Budget>> getActiveBudgets(String userId) async {
     try {
-      print('🔵 BUDGET SERVICE: Getting active budgets for user: $userId');
+      debugPrint('🔵 BUDGET SERVICE: Getting active budgets for user: $userId');
 
       // Ensure user document exists
       await _ensureUserExists(userId);
@@ -123,10 +124,10 @@ class BudgetService {
       final budgets =
           querySnapshot.docs.map((doc) => Budget.fromJson(doc.data())).toList();
 
-      print('✅ BUDGET SERVICE: Found ${budgets.length} active budgets');
+      debugPrint('✅ BUDGET SERVICE: Found ${budgets.length} active budgets');
       return budgets;
     } catch (e) {
-      print('❌ BUDGET SERVICE: Error getting active budgets: $e');
+      debugPrint('❌ BUDGET SERVICE: Error getting active budgets: $e');
       return [];
     }
   }
@@ -134,7 +135,7 @@ class BudgetService {
   // Process budget rollovers
   Future<void> processBudgetRollovers(String userId) async {
     try {
-      print('🔵 BUDGET SERVICE: Processing budget rollovers for user: $userId');
+      debugPrint('🔵 BUDGET SERVICE: Processing budget rollovers for user: $userId');
 
       final budgets = await getUserBudgets(userId);
 
@@ -144,16 +145,16 @@ class BudgetService {
         }
       }
 
-      print('✅ BUDGET SERVICE: Budget rollovers processed');
+      debugPrint('✅ BUDGET SERVICE: Budget rollovers processed');
     } catch (e) {
-      print('❌ BUDGET SERVICE: Error processing budget rollovers: $e');
+      debugPrint('❌ BUDGET SERVICE: Error processing budget rollovers: $e');
     }
   }
 
   // Recalculate all budget spent amounts from transactions
   Future<void> recalculateBudgetSpent(String userId) async {
     try {
-      print('🔵 BUDGET SERVICE: Recalculating budget spent for user: $userId');
+      debugPrint('🔵 BUDGET SERVICE: Recalculating budget spent for user: $userId');
 
       // Ensure user document exists
       await _ensureUserExists(userId);
@@ -226,9 +227,9 @@ class BudgetService {
       // Commit the batch
       await batch.commit();
 
-      print('✅ BUDGET SERVICE: Budget spent amounts recalculated');
+      debugPrint('✅ BUDGET SERVICE: Budget spent amounts recalculated');
     } catch (e) {
-      print('❌ BUDGET SERVICE: Error recalculating budget spent: $e');
+      debugPrint('❌ BUDGET SERVICE: Error recalculating budget spent: $e');
       throw Exception('Failed to recalculate budget spent: $e');
     }
   }
@@ -239,7 +240,7 @@ class BudgetService {
       final userDoc = await _firestore.collection('users').doc(userId).get();
 
       if (!userDoc.exists) {
-        print('⚠️ BUDGET SERVICE: User not found, creating user document');
+        debugPrint('⚠️ BUDGET SERVICE: User not found, creating user document');
         // Create basic user document if it doesn't exist
         await _firestore.collection('users').doc(userId).set({
           'id': userId,
@@ -248,7 +249,7 @@ class BudgetService {
         });
       }
     } catch (e) {
-      print('❌ BUDGET SERVICE: Error ensuring user exists: $e');
+      debugPrint('❌ BUDGET SERVICE: Error ensuring user exists: $e');
       // Don't throw here to prevent cascading failures
     }
   }
@@ -256,7 +257,7 @@ class BudgetService {
   // Private method to process budget rollover
   Future<void> _processBudgetRollover(Budget budget) async {
     try {
-      print(
+      debugPrint(
           '🔵 BUDGET SERVICE: Processing rollover for budget: ${budget.name}');
 
       // Calculate rollover amount
@@ -294,10 +295,10 @@ class BudgetService {
 
       await batch.commit();
 
-      print(
+      debugPrint(
           '✅ BUDGET SERVICE: Rollover processed - \$$rolloverAmount carried over');
     } catch (e) {
-      print('❌ BUDGET SERVICE: Error processing budget rollover: $e');
+      debugPrint('❌ BUDGET SERVICE: Error processing budget rollover: $e');
     }
   }
 

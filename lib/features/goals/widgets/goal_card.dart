@@ -428,7 +428,10 @@ class GoalCard extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ).whenComplete(() {
+      amountController.dispose();
+      focusNode.dispose();
+    });
   }
 
   void _showGoalActions(BuildContext context) {
@@ -584,4 +587,3 @@ class GoalCard extends StatelessWidget {
     }
   }
 }
-

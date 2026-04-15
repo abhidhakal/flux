@@ -1,5 +1,4 @@
 import '../models/transaction_model.dart';
-import '../models/income_model.dart';
 import 'currency_service.dart';
 
 class AIIntelligenceService {
@@ -127,8 +126,8 @@ class AIIntelligenceService {
   }
 
   // Analyze spending patterns and provide insights
-  Map<String, dynamic> analyzeSpendingPatterns(List<Transaction> transactions, List<Income> incomes) {
-    if (transactions.isEmpty && incomes.isEmpty) {
+  Map<String, dynamic> analyzeSpendingPatterns(List<Transaction> transactions) {
+    if (transactions.isEmpty) {
       return {
         'healthScore': 0,
         'totalSpent': 0.0,
@@ -146,8 +145,9 @@ class AIIntelligenceService {
     }
 
     final expenses = transactions.where((t) => t.isExpense).toList();
+    final incomes = transactions.where((t) => t.isIncome).toList();
     final totalSpent = expenses.fold(0.0, (sum, t) => sum + t.amount);
-    final totalIncome = incomes.fold<double>(0.0, (sum, i) => sum + i.amount);
+    final totalIncome = incomes.fold<double>(0.0, (sum, t) => sum + t.amount);
     final averageSpent = expenses.isNotEmpty ? totalSpent / expenses.length : 0.0;
     
     final savingsRate = totalIncome > 0 ? ((totalIncome - totalSpent) / totalIncome * 100) : 0.0;
@@ -315,10 +315,9 @@ class AIIntelligenceService {
   // Generate smart budget recommendations
   List<BudgetRecommendation> generateBudgetRecommendations(
     List<Transaction> transactions,
-    List<Income> incomes,
     double monthlyIncome,
   ) {
-    final analysis = analyzeSpendingPatterns(transactions, incomes);
+    final analysis = analyzeSpendingPatterns(transactions);
     final recommendations = <BudgetRecommendation>[];
 
     // 50/30/20 rule recommendations

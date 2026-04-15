@@ -1,15 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:equatable/equatable.dart';
 
-// Note: TransactionType.income is DEPRECATED. Use Income model for incomes.
-// This is kept for backward compatibility during migration.
 enum TransactionType {
-  @Deprecated('Use Income model instead')
   income,
   expense
 }
 
-/// Represents an Expense Transaction.
-/// Note: Income has been moved to a separate [Income] entity.
+/// Represents a financial transaction, either income or expense.
 class Transaction extends Equatable {
   static const Object _unset = Object();
 
@@ -117,14 +114,33 @@ class Transaction extends Equatable {
       budgetId: json['budgetId'] as String?,
       isActive: json['isActive'] as bool? ?? true,
       isEssential: json['isEssential'] as bool? ?? false,
-      date: json['date'] != null
-          ? DateTime.parse(json['date'] as String)
-          : DateTime.now(),
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'] as String)
-          : DateTime.now(),
-      metadata: Map<String, dynamic>.from(json['metadata'] ?? {}),
+      date: _parseDateTime(json['date']),
+      createdAt: _parseDateTime(json['createdAt'] ?? json['date']),
+      metadata: _parseMetadata(json['metadata']),
     );
+  }
+
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) {
+      return DateTime.now();
+    }
+    if (value is DateTime) {
+      return value;
+    }
+    if (value is firestore.Timestamp) {
+      return value.toDate();
+    }
+    if (value is String && value.isNotEmpty) {
+      return DateTime.parse(value);
+    }
+    return DateTime.now();
+  }
+
+  static Map<String, dynamic> _parseMetadata(dynamic value) {
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+    return const {};
   }
 
   @override

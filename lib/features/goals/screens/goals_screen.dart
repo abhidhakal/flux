@@ -17,6 +17,7 @@ import '../../subscription/subscription_bloc.dart';
 import 'goal_templates_screen.dart';
 import 'edit_goal_screen.dart';
 import '../../../shared/widgets/page_transitions.dart';
+import '../../../core/services/feature_flag_service.dart';
 
 class GoalsScreen extends StatefulWidget {
   const GoalsScreen({super.key});
@@ -195,7 +196,8 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
               onTap: () {
                 Navigator.pop(context);
                 final subscriptionState = context.read<SubscriptionBloc>().state;
-                if (subscriptionState is SubscriptionPremium) {
+                if (!FeatureFlagService.isSubscriptionEnabled ||
+                    subscriptionState is SubscriptionPremium) {
                   context.pushSmooth(
                     const CreateGoalScreen(),
                     transitionType: PageTransitionType.slideFromBottom,

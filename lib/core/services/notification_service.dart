@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/notification_model.dart';
 
@@ -29,7 +30,7 @@ class NotificationService {
           .map((doc) => Notification.fromJson(doc.data()))
           .toList();
     } catch (e) {
-      print('❌ NOTIFICATION SERVICE: Error getting user notifications: $e');
+      debugPrint('❌ NOTIFICATION SERVICE: Error getting user notifications: $e');
       return [];
     }
   }
@@ -47,7 +48,7 @@ class NotificationService {
           .map((doc) => Notification.fromJson(doc.data()))
           .toList();
     } catch (e) {
-      print('❌ NOTIFICATION SERVICE: Error getting unread notifications: $e');
+      debugPrint('❌ NOTIFICATION SERVICE: Error getting unread notifications: $e');
       return [];
     }
   }
@@ -154,7 +155,7 @@ class NotificationService {
       }
       return null;
     } catch (e) {
-      print('❌ NOTIFICATION SERVICE: Error getting last generation time: $e');
+      debugPrint('❌ NOTIFICATION SERVICE: Error getting last generation time: $e');
       return null;
     }
   }
@@ -168,7 +169,7 @@ class NotificationService {
       final timeSinceLastGeneration = DateTime.now().difference(lastGenerated);
       return timeSinceLastGeneration.inHours >= 1;
     } catch (e) {
-      print('❌ NOTIFICATION SERVICE: Error checking generation eligibility: $e');
+      debugPrint('❌ NOTIFICATION SERVICE: Error checking generation eligibility: $e');
       return true; // Allow generation if there's an error
     }
   }
@@ -183,7 +184,7 @@ class NotificationService {
         'lastSmartNotificationGeneration': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      print('❌ NOTIFICATION SERVICE: Error updating last generation time: $e');
+      debugPrint('❌ NOTIFICATION SERVICE: Error updating last generation time: $e');
     }
   }
 
@@ -198,7 +199,7 @@ class NotificationService {
       
       return Duration(minutes: 60 - timeSinceLastGeneration.inMinutes);
     } catch (e) {
-      print('❌ NOTIFICATION SERVICE: Error getting time until next generation: $e');
+      debugPrint('❌ NOTIFICATION SERVICE: Error getting time until next generation: $e');
       return null;
     }
   }

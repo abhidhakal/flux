@@ -8,10 +8,8 @@ import '../../auth/auth_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
 import '../../transaction/screens/edit_transaction_screen.dart';
 import '../../transaction/screens/add_transaction_screen.dart';
-import '../../income/screens/edit_income_screen.dart';
-import '../../income/income_bloc.dart';
+import '../../transaction/screens/recurring_transactions_screen.dart';
 import '../../budget/budget_bloc.dart';
-import '../../../core/models/income_model.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/page_transitions.dart';
 import '../../../shared/widgets/skeleton_components.dart';
@@ -55,13 +53,6 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       vsync: this,
     );
     _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
-
-    final user = context.read<AuthBloc>().state;
-    if (user is AuthAuthenticated) {
-      context.read<TransactionBloc>().add(LoadTransactions(user.user.id));
-      context.read<IncomeBloc>().add(LoadIncome(user.user.id));
-      context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
-    }
   }
 
   @override
@@ -74,7 +65,6 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     final user = context.read<AuthBloc>().state;
     if (user is AuthAuthenticated) {
       context.read<TransactionBloc>().add(LoadTransactions(user.user.id));
-      context.read<IncomeBloc>().add(LoadIncome(user.user.id));
       context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
       await Future.delayed(const Duration(milliseconds: 600));
     }
@@ -126,34 +116,26 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   // ─── Filtering logic ──────────────────────────────────────────────────────
 
-  List<dynamic> _applyFilters(List<Transaction> transactions, List<Income> incomes) {
+  List<Transaction> _applyFilters(List<Transaction> transactions) {
     final range = _getActiveRange();
-    final List<dynamic> result = [];
-
-    if (_typeFilter != _TypeFilter.income) {
-      for (final t in transactions) {
-        if (!t.date.isBefore(range.start) && !t.date.isAfter(range.end)) {
-          if (_selectedBudgetId == null || t.budgetId == _selectedBudgetId) {
-            result.add(t);
-          }
-        }
+    final result = <Transaction>[];
+    for (final transaction in transactions) {
+      if (transaction.date.isBefore(range.start) || transaction.date.isAfter(range.end)) {
+        continue;
       }
-    }
-
-    if (_typeFilter != _TypeFilter.expenses) {
-      for (final i in incomes) {
-        if (!i.date.isBefore(range.start) && !i.date.isAfter(range.end)) {
-          if (_selectedBudgetId == null || i.budgetId == _selectedBudgetId) {
-            result.add(i);
-          }
-        }
+      if (_selectedBudgetId != null && transaction.budgetId != _selectedBudgetId) {
+        continue;
       }
+      if (_typeFilter == _TypeFilter.expenses && !transaction.isExpense) {
+        continue;
+      }
+      if (_typeFilter == _TypeFilter.income && !transaction.isIncome) {
+        continue;
+      }
+      result.add(transaction);
     }
-
     result.sort((a, b) {
-      final dA = a is Transaction ? a.date : (a as Income).date;
-      final dB = b is Transaction ? b.date : (b as Income).date;
-      return dB.compareTo(dA);
+      return b.date.compareTo(a.date);
     });
 
     return result;
@@ -218,6 +200,14 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               scrolledUnderElevation: 0,
               actions: [
                 IconButton(
+                  icon:
+                      Icon(Icons.repeat_rounded, color: colorScheme.onBackground),
+                  onPressed: () => context.pushSmooth(
+                    const RecurringTransactionsScreen(),
+                  ),
+                  tooltip: 'Recurring Transactions',
+                ),
+                IconButton(
                   icon: Icon(Icons.add_rounded, color: colorScheme.onBackground),
                   onPressed: () => context.pushSmooth(
                     const AddTransactionScreen(),
@@ -229,12 +219,6 @@ class _TransactionsScreenState extends State<TransactionsScreen>
             ),
       body: MultiBlocListener(
         listeners: [
-          BlocListener<IncomeBloc, IncomeState>(
-            listener: (context, state) {
-              if (state is IncomeSuccess) AppSnackbar.showSuccess(context, message: state.message);
-              if (state is IncomeError) AppSnackbar.showError(context, message: state.message);
-            },
-          ),
           BlocListener<TransactionBloc, TransactionState>(
             listener: (context, state) {
               if (state is TransactionLoaded && state.message != null) {
@@ -246,18 +230,16 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         ],
         child: Builder(builder: (context) {
           final txState = context.watch<TransactionBloc>().state;
-          final incState = context.watch<IncomeBloc>().state;
           final budgetState = context.watch<BudgetBloc>().state;
 
-          if (txState is TransactionLoading || incState is IncomeLoading) {
+          if (txState is TransactionLoading) {
             return _buildLoadingState();
           }
 
           final transactions = txState is TransactionLoaded ? txState.transactions : <Transaction>[];
-          final incomes = incState is IncomeLoaded ? incState.incomes : <Income>[];
           final budgets = budgetState is BudgetLoaded ? budgetState.budgets : <Budget>[];
 
-          final filtered = _applyFilters(transactions, incomes);
+          final filtered = _applyFilters(transactions);
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (_fadeController.status != AnimationStatus.completed) _fadeController.forward();
@@ -302,13 +284,13 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   // ─── Summary bar ─────────────────────────────────────────────────────────
 
-  Widget _buildSummaryBar(List<dynamic> items) {
+  Widget _buildSummaryBar(List<Transaction> items) {
     double totalIncome = 0;
     double totalExpense = 0;
     for (final item in items) {
-      if (item is Income) {
+      if (item.isIncome) {
         totalIncome += item.amount;
-      } else if (item is Transaction) {
+      } else if (item.isExpense) {
         totalExpense += item.amount;
       }
     }
@@ -791,12 +773,11 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   // ─── Transaction list (sliver) ────────────────────────────────────────────
 
-  Widget _buildTransactionSliver(List<dynamic> items) {
+  Widget _buildTransactionSliver(List<Transaction> items) {
     // Group by date
-    final grouped = <String, List<dynamic>>{};
+    final grouped = <String, List<Transaction>>{};
     for (final item in items) {
-      final date = item is Transaction ? item.date : (item as Income).date;
-      grouped.putIfAbsent(_formatDateKey(date), () => []).add(item);
+      grouped.putIfAbsent(_formatDateKey(item.date), () => []).add(item);
     }
     final keys = grouped.keys.toList();
 
@@ -808,10 +789,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     );
   }
 
-  Widget _buildGroup(String dateKey, List<dynamic> items) {
+  Widget _buildGroup(String dateKey, List<Transaction> items) {
     final dayNet = items.fold(0.0, (sum, item) {
-      final amount = item is Income ? item.amount : (item as Transaction).amount;
-      return sum + (item is Income ? amount : -amount);
+      return sum + (item.isIncome ? item.amount : -item.amount);
     });
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -848,27 +828,13 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     );
   }
 
-  Widget _buildTransactionTile(dynamic item) {
-    final String title;
-    final String subtitle;
-    final double amount;
-    final DateTime date;
-    final String id;
-    final bool isIncome = item is Income;
-    if (item is Income) {
-      title = item.category;
-      subtitle = item.notes?.isNotEmpty == true ? item.notes! : 'Income';
-      amount = item.amount;
-      date = item.date;
-      id = item.id;
-    } else {
-      final t = item as Transaction;
-      title = t.title;
-      subtitle = t.category;
-      amount = t.amount;
-      date = t.date;
-      id = t.id;
-    }
+  Widget _buildTransactionTile(Transaction item) {
+    final title = item.title;
+    final subtitle = item.description.isNotEmpty ? item.description : item.category;
+    final amount = item.amount;
+    final date = item.date;
+    final id = item.id;
+    final isIncome = item.isIncome;
     final colorScheme = Theme.of(context).colorScheme;
     final accentColor = isIncome ? AppColors.success : AppColors.error;
 
@@ -1089,19 +1055,13 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     if (user is! AuthAuthenticated) return;
 
     final txState = context.read<TransactionBloc>().state;
-    final incState = context.read<IncomeBloc>().state;
-    final all = <dynamic>[
-      ...((txState is TransactionLoaded) ? txState.transactions : <Transaction>[]),
-      ...((incState is IncomeLoaded) ? incState.incomes : <Income>[]),
-    ];
+    final all = (txState is TransactionLoaded) ? txState.transactions : <Transaction>[];
 
     for (final id in _selectedIds) {
-      final item = all.firstWhere(
-        (e) => (e is Transaction ? e.id : (e as Income).id) == id,
-        orElse: () => null,
-      );
-      if (item is Income) context.read<IncomeBloc>().add(DeleteIncome(id, user.user.id));
-      if (item is Transaction) context.read<TransactionBloc>().add(DeleteTransaction(id, user.user.id));
+      final item = all.where((transaction) => transaction.id == id).firstOrNull;
+      if (item != null) {
+        context.read<TransactionBloc>().add(DeleteTransaction(id, user.user.id));
+      }
     }
 
     setState(() {
@@ -1130,8 +1090,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   String _formatTime(DateTime date) =>
       '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 
-  void _showEditDialog(dynamic item) {
-    if (item is Transaction) EditTransactionScreen.showEditTransactionPopup(context, item);
-    if (item is Income) EditIncomeScreen.show(context, item);
+  void _showEditDialog(Transaction item) {
+    EditTransactionScreen.showEditTransactionPopup(context, item);
   }
 }

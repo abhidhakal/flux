@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/constants/categories.dart';
+import '../../../core/models/recurring_transaction_model.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/services/currency_service.dart';
+import '../../../core/services/recurring_transaction_service.dart';
 import '../../transaction/transaction_bloc.dart';
-
 import '../../auth/auth_bloc.dart';
 import '../../budget/budget_bloc.dart';
-import '../../income/income_bloc.dart';
-import '../../../core/models/income_model.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -33,8 +32,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
   bool _isEssential = false;
+  bool _isRecurring = false;
+  RecurringTransactionFrequency _recurringFrequency =
+      RecurringTransactionFrequency.monthly;
   List<Budget> _availableBudgets = [];
   Budget? _selectedBudget;
+  final RecurringTransactionService _recurringTransactionService =
+      RecurringTransactionService();
 
   @override
   void initState() {
@@ -115,45 +119,27 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             });
           }
         },
-        child: BlocListener<IncomeBloc, IncomeState>(
+        child: BlocListener<TransactionBloc, TransactionState>(
           listener: (context, state) {
-            if (state is IncomeLoading) {
+            if (state is TransactionLoading) {
               setState(() => _isLoading = true);
             } else {
               setState(() => _isLoading = false);
             }
 
-            if (state is IncomeSuccess) {
-              AppSnackbar.showSuccess(context, message: state.message);
+            if (state is TransactionLoaded && state.message != null) {
+              AppSnackbar.showSuccess(context, message: state.message!);
+              final user = context.read<AuthBloc>().state;
+              if (user is AuthAuthenticated) {
+                context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
+              }
               Navigator.pop(context);
             }
 
-            if (state is IncomeError) {
+            if (state is TransactionError) {
               AppSnackbar.showError(context, message: state.message);
             }
           },
-          child: BlocListener<TransactionBloc, TransactionState>(
-            listener: (context, state) {
-              if (state is TransactionLoading) {
-                setState(() => _isLoading = true);
-              } else {
-                setState(() => _isLoading = false);
-              }
-
-              if (state is TransactionLoaded && state.message != null) {
-                AppSnackbar.showSuccess(context, message: state.message!);
-                // Reload budgets to update spent amounts
-                final user = context.read<AuthBloc>().state;
-                if (user is AuthAuthenticated) {
-                  context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
-                }
-                Navigator.pop(context);
-              }
-
-          if (state is TransactionError) {
-            AppSnackbar.showError(context, message: state.message);
-          }
-        },
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Form(
@@ -180,14 +166,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   _buildSectionTitle('Category'),
                   const SizedBox(height: 8),
                   _buildCategorySelector(),
-                  const SizedBox(height: 20),
-                  _buildSectionTitle('Budget'),
-                  const SizedBox(height: 8),
-                  _buildBudgetSelector(),
                   if (_selectedType == TransactionType.expense) ...[
+                    const SizedBox(height: 20),
+                    _buildSectionTitle('Budget'),
+                    const SizedBox(height: 8),
+                    _buildBudgetSelector(),
                     const SizedBox(height: 20),
                     _buildEssentialToggle(),
                   ],
+                  const SizedBox(height: 20),
+                  _buildRecurringSection(),
                   const SizedBox(height: 20),
                   _buildSectionTitle('Date'),
                   const SizedBox(height: 8),
@@ -198,10 +186,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ),
             ),
           ),
+        ),
       ),
-    ),
-  ),
-);
+    );
   }
 
   Widget _buildTransactionTypeSelector() {
@@ -336,7 +323,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         : AppCategories.expenseCategories;
 
     return DropdownButtonFormField<String>(
-      value: _selectedCategory,
+      initialValue: _selectedCategory,
       decoration: InputDecoration(
         prefixIcon: const Icon(Icons.category_rounded),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -486,7 +473,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           )
         else
           DropdownButtonFormField<Budget?>(
-            value: _selectedBudget,
+            initialValue: _selectedBudget,
             isExpanded: true,
             decoration: InputDecoration(
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -618,7 +605,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           style: TextStyle(color: colorScheme.onBackground.withOpacity(0.6)),
         ),
         value: _isEssential,
-        activeColor: AppColors.primary,
+        activeThumbColor: AppColors.primary,
         onChanged: (value) => setState(() => _isEssential = value),
         secondary: Icon(
           _isEssential ? Icons.fact_check_rounded : Icons.shopping_bag_outlined,
@@ -626,6 +613,71 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildRecurringSection() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          SwitchListTile(
+            title: Text(
+              'Repeat this transaction',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onBackground,
+              ),
+            ),
+            subtitle: Text(
+              'Automatically create future ${_selectedType == TransactionType.income ? 'income' : 'expense'} entries.',
+              style: TextStyle(
+                color: colorScheme.onBackground.withValues(alpha: 0.6),
+              ),
+            ),
+            value: _isRecurring,
+            activeThumbColor: AppColors.primary,
+            onChanged: (value) => setState(() => _isRecurring = value),
+          ),
+          if (_isRecurring)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: DropdownButtonFormField<RecurringTransactionFrequency>(
+                initialValue: _recurringFrequency,
+                decoration: InputDecoration(
+                  labelText: 'Frequency',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                items: RecurringTransactionFrequency.values.map((frequency) {
+                  return DropdownMenuItem(
+                    value: frequency,
+                    child: Text(_frequencyLabel(frequency)),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _recurringFrequency = value);
+                  }
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _frequencyLabel(RecurringTransactionFrequency frequency) {
+    return switch (frequency) {
+      RecurringTransactionFrequency.daily => 'Daily',
+      RecurringTransactionFrequency.weekly => 'Weekly',
+      RecurringTransactionFrequency.monthly => 'Monthly',
+      RecurringTransactionFrequency.yearly => 'Yearly',
+    };
   }
 
   void _handleSave() {
@@ -689,35 +741,49 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   void _createTransaction() {
     final user = context.read<AuthBloc>().state;
     if (user is AuthAuthenticated) {
-      if (_selectedType == TransactionType.income) {
-        final income = Income(
-          id: '',
-          userId: user.user.id,
-          amount: double.parse(_amountController.text),
-          date: _selectedDate,
-          notes: _descriptionController.text.trim(),
-          category: _selectedCategory,
-          budgetId: _selectedBudget?.id,
-          createdAt: DateTime.now(),
-        );
-        context.read<IncomeBloc>().add(AddIncome(income));
-      } else {
-        final transaction = Transaction(
-          id: '', 
-          userId: user.user.id,
-          title: _titleController.text.trim(),
-          description: _descriptionController.text.trim(),
-          amount: double.parse(_amountController.text),
-          type: TransactionType.expense, // Force expense
-          category: _selectedCategory, 
-          budgetId: _selectedBudget?.id, 
-          isEssential: _isEssential,
-          date: _selectedDate,
-          createdAt: DateTime.now(),
-        );
+      final now = DateTime.now();
+      final transaction = Transaction(
+        id: '',
+        userId: user.user.id,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        amount: double.parse(_amountController.text),
+        type: _selectedType,
+        category: _selectedCategory,
+        budgetId: _selectedType == TransactionType.expense ? _selectedBudget?.id : null,
+        isEssential: _selectedType == TransactionType.expense ? _isEssential : false,
+        date: _selectedDate,
+        createdAt: now,
+      );
 
-        context.read<TransactionBloc>().add(AddTransaction(transaction));
-      }
+      final recurringTransaction = _isRecurring
+          ? RecurringTransaction(
+              id: '',
+              userId: user.user.id,
+              title: transaction.title,
+              description: transaction.description,
+              amount: transaction.amount,
+              type: transaction.type,
+              category: transaction.category,
+              budgetId: transaction.budgetId,
+              isEssential: transaction.isEssential,
+              frequency: _recurringFrequency,
+              startDate: _selectedDate,
+              nextRunAt: _recurringTransactionService.calculateInitialNextRunAt(
+                _selectedDate,
+                _recurringFrequency,
+              ),
+              createdAt: now,
+              updatedAt: now,
+            )
+          : null;
+
+      context.read<TransactionBloc>().add(
+            AddTransaction(
+              transaction,
+              recurringTransaction: recurringTransaction,
+            ),
+          );
     }
   }
   }

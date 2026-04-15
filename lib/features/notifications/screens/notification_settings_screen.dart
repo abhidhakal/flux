@@ -54,6 +54,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         final prefs = data['notificationPreferences'] as Map<String, dynamic>? ?? {};
         final schedules = data['notificationSchedules'] as Map<String, dynamic>? ?? {};
         
+        if (!mounted) return;
         setState(() {
           _notificationsEnabled = enabled;
           
@@ -74,13 +75,13 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           }
         });
       }
-      
+
+      if (!mounted) return;
       setState(() => _isLoading = false);
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
-      if (mounted) {
-        AppSnackbar.showError(context, message: 'Failed to load settings');
-      }
+      AppSnackbar.showError(context, message: 'Failed to load settings');
     }
   }
 
@@ -193,7 +194,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               Switch(
                 value: _notificationsEnabled,
                 onChanged: (value) => _toggleNotifications(),
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
               ),
             ],
           ),
@@ -308,7 +309,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         Switch(
           value: value,
           onChanged: _notificationsEnabled ? onChanged : null,
-          activeColor: AppColors.primary,
+          activeThumbColor: AppColors.primary,
         ),
       ],
     );
@@ -447,7 +448,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         Switch(
           value: value,
           onChanged: _notificationsEnabled ? onChanged : null,
-          activeColor: AppColors.primary,
+          activeThumbColor: AppColors.primary,
         ),
       ],
     );
@@ -524,7 +525,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               Text('Reminder Type', style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _dailyReminderType,
+                initialValue: _dailyReminderType,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -606,10 +607,12 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     try {
       if (_notificationsEnabled) {
         await _notificationService.cancelAllScheduledNotifications();
+        if (!mounted) return;
         setState(() => _notificationsEnabled = false);
-        if (mounted) AppSnackbar.showInfo(context, message: 'Notifications disabled');
+        AppSnackbar.showInfo(context, message: 'Notifications disabled');
       } else {
         final enabled = await _notificationService.requestPermissions();
+        if (!mounted) return;
         if (enabled) {
           setState(() => _notificationsEnabled = true);
           final user = context.read<AuthBloc>().state;
@@ -624,13 +627,16 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               await BackgroundTaskService().registerDailyHealthCheck(user.user.id);
             }
           }
-          if (mounted) AppSnackbar.showSuccess(context, message: 'Notifications enabled');
+          AppSnackbar.showSuccess(context, message: 'Notifications enabled');
         } else {
-          if (mounted) AppSnackbar.showError(context, message: 'Please enable notifications in settings');
+          AppSnackbar.showError(context, message: 'Please enable notifications in settings');
         }
       }
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, message: 'Failed to toggle notifications');
+      if (!mounted) {
+        return;
+      }
+      AppSnackbar.showError(context, message: 'Failed to toggle notifications');
     }
   }
 
@@ -644,10 +650,16 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           minute: _dailyReminderMinute,
           reminderType: _dailyReminderType,
         );
-        if (mounted) AppSnackbar.showSuccess(context, message: 'Daily reminder scheduled');
+        if (!mounted) {
+          return;
+        }
+        AppSnackbar.showSuccess(context, message: 'Daily reminder scheduled');
       }
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, message: 'Failed to schedule: $e');
+      if (!mounted) {
+        return;
+      }
+      AppSnackbar.showError(context, message: 'Failed to schedule: $e');
     }
   }
 
@@ -656,10 +668,16 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       final user = context.read<AuthBloc>().state;
       if (user is AuthAuthenticated) {
         await _notificationService.cancelDailyReminder(user.user.id);
-        if (mounted) AppSnackbar.showInfo(context, message: 'Daily reminder disabled');
+        if (!mounted) {
+          return;
+        }
+        AppSnackbar.showInfo(context, message: 'Daily reminder disabled');
       }
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, message: 'Failed to disable: $e');
+      if (!mounted) {
+        return;
+      }
+      AppSnackbar.showError(context, message: 'Failed to disable: $e');
     }
   }
 
@@ -668,10 +686,16 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       final user = context.read<AuthBloc>().state;
       if (user is AuthAuthenticated) {
         await _notificationService.scheduleMorningGreeting(user.user.id, force: true);
-        if (mounted) AppSnackbar.showSuccess(context, message: 'Morning greeting scheduled');
+        if (!mounted) {
+          return;
+        }
+        AppSnackbar.showSuccess(context, message: 'Morning greeting scheduled');
       }
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, message: 'Failed to schedule greeting: $e');
+      if (!mounted) {
+        return;
+      }
+      AppSnackbar.showError(context, message: 'Failed to schedule greeting: $e');
     }
   }
 
@@ -680,10 +704,16 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       final user = context.read<AuthBloc>().state;
       if (user is AuthAuthenticated) {
         await _notificationService.cancelMorningGreeting(user.user.id);
-        if (mounted) AppSnackbar.showInfo(context, message: 'Morning greeting disabled');
+        if (!mounted) {
+          return;
+        }
+        AppSnackbar.showInfo(context, message: 'Morning greeting disabled');
       }
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, message: 'Failed to disable: $e');
+      if (!mounted) {
+        return;
+      }
+      AppSnackbar.showError(context, message: 'Failed to disable: $e');
     }
   }
 
@@ -699,13 +729,21 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
 
         if (enabled) {
           await BackgroundTaskService().registerDailyHealthCheck(user.user.id);
+        } else {
+          await BackgroundTaskService().cancelTasks(user.user.id);
         }
         
         final msg = enabled ? 'Background checks enabled' : 'Background checks disabled';
-        if (mounted) AppSnackbar.showInfo(context, message: msg);
+        if (!mounted) {
+          return;
+        }
+        AppSnackbar.showInfo(context, message: msg);
       }
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, message: 'Failed to update: $e');
+      if (!mounted) {
+        return;
+      }
+      AppSnackbar.showError(context, message: 'Failed to update: $e');
     }
   }
 }

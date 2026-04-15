@@ -9,7 +9,6 @@ import 'dart:io';
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../models/transaction_model.dart';
-import '../models/income_model.dart';
 import 'currency_service.dart';
 
 /// Service for exporting user financial data to CSV or PDF formats.
@@ -28,11 +27,10 @@ class DataExportService {
   static pw.Font? _cachedFontRegular;
   static pw.Font? _cachedFontBold;
 
-  /// Generates CSV content from transactions and income data.
-  String generateCsv(List<Transaction> transactions, List<Income> incomes) {
+  /// Generates CSV content from unified transaction data.
+  String generateCsv(List<Transaction> transactions) {
     final List<List<dynamic>> rows = [];
 
-    // Transactions section
     rows.add(['=== TRANSACTIONS ===']);
     rows.add(['Date', 'Title', 'Category', 'Amount', 'Type', 'Essential']);
     
@@ -47,28 +45,12 @@ class DataExportService {
       ]);
     }
 
-    rows.add([]); // Empty row separator
-
-    // Income section
-    rows.add(['=== INCOME ===']);
-    rows.add(['Date', 'Category', 'Amount', 'Notes']);
-    
-    for (final i in incomes) {
-      rows.add([
-        _dateFormat.format(i.date),
-        i.category,
-        i.amount.toStringAsFixed(2),
-        i.notes ?? '',
-      ]);
-    }
-
     return const ListToCsvConverter().convert(rows);
   }
 
-  /// Generates a PDF document from transactions and income data.
+  /// Generates a PDF document from unified transaction data.
   Future<Uint8List> generatePdf(
     List<Transaction> transactions,
-    List<Income> incomes,
     String userName,
     {
     String? reportScope,
@@ -111,10 +93,11 @@ class DataExportService {
     }
 
     // Calculate totals
-    final totalIncome = incomes.fold<double>(0, (sum, i) => sum + i.amount);
-    final totalExpenses = transactions
-        .where((t) => t.type == TransactionType.expense)
-        .fold<double>(0, (sum, t) => sum + t.amount);
+    final expenseTransactions = transactions.where((t) => t.isExpense).toList();
+    final incomes = transactions.where((t) => t.isIncome).toList();
+    final totalIncome = incomes.fold<double>(0, (sum, t) => sum + t.amount);
+    final totalExpenses =
+        expenseTransactions.fold<double>(0, (sum, t) => sum + t.amount);
     final netBalance = totalIncome - totalExpenses;
 
     final pageTheme = (fontRegular != null && fontBold != null)
@@ -155,12 +138,12 @@ class DataExportService {
           pw.SizedBox(height: 6),
           _buildSectionMeta(
             leftLabel: 'Entries',
-            leftValue: transactions.length.toString(),
+            leftValue: expenseTransactions.length.toString(),
             rightLabel: 'Total Expenses',
             rightValue: _formatCurrency(totalExpenses, currencySymbol),
           ),
           pw.SizedBox(height: 12),
-          _buildTransactionsTable(transactions, currencySymbol),
+          _buildTransactionsTable(expenseTransactions, currencySymbol),
           pw.SizedBox(height: 32),
           
           // Income Table
@@ -465,7 +448,7 @@ class DataExportService {
     );
   }
 
-  pw.Widget _buildIncomeTable(List<Income> incomes, String currencySymbol) {
+  pw.Widget _buildIncomeTable(List<Transaction> incomes, String currencySymbol) {
     if (incomes.isEmpty) {
       return pw.Text('No income records available for this period.', style: const pw.TextStyle(color: _textGrey, fontSize: 10));
     }
@@ -512,9 +495,9 @@ class DataExportService {
                 ),
               ),
               _buildBodyCell(
-                (i.notes?.length ?? 0) > 25
-                    ? '${i.notes!.substring(0, 25)}...'
-                    : (i.notes ?? '-'),
+                i.description.length > 25
+                    ? '${i.description.substring(0, 25)}...'
+                    : (i.description.isEmpty ? '-' : i.description),
               ),
             ],
           );
@@ -654,9 +637,11 @@ class DataExportService {
 
   /// Shares an existing file.
   Future<void> shareFile(File file) async {
-    await Share.shareXFiles(
-      [XFile(file.path)],
-      subject: 'Flux Financial Data Export',
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path)],
+        subject: 'Flux Financial Data Export',
+      ),
     );
   }
 

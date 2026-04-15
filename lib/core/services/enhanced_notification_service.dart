@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:uuid/uuid.dart';
 import '../models/notification_model.dart';
@@ -151,7 +152,7 @@ class EnhancedNotificationService {
         'updatedAt': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      print('❌ ENHANCED NOTIFICATION SERVICE: Error saving schedule: $e');
+      debugPrint('❌ ENHANCED NOTIFICATION SERVICE: Error saving schedule: $e');
     }
   }
 
@@ -169,7 +170,7 @@ class EnhancedNotificationService {
       }
       return {};
     } catch (e) {
-      print('❌ ENHANCED NOTIFICATION SERVICE: Error getting schedules: $e');
+      debugPrint('❌ ENHANCED NOTIFICATION SERVICE: Error getting schedules: $e');
       return {};
     }
   }
@@ -290,73 +291,81 @@ class EnhancedNotificationService {
 
   // --- Smart Daily Log Reminder Logic ---
 
+  ({String title, String body}) _smartDailyReminderContent({
+    required bool hasTransactionsToday,
+    required bool isForToday,
+  }) {
+    if (hasTransactionsToday && isForToday) {
+      return (
+        title: 'Nice work today',
+        body: 'You already added a transaction today. Review it or add another one if needed.',
+      );
+    }
+
+    return (
+      title: 'Add your finances',
+      body: 'You haven\'t added any transactions today yet. Take a moment to log one.',
+    );
+  }
+
+  Future<void> _scheduleOrRefreshSmartDailyLogReminder(String userId) async {
+    final schedules = await getUserNotificationSchedules(userId);
+    if (schedules['daily_reminder']?['enabled'] == true) {
+      debugPrint('🔵 ENHANCED NOTIFICATION SERVICE: Custom daily reminder enabled, skipping smart reminder.');
+      return;
+    }
+
+    final hasTransactionsToday = await TransactionService().hasTransactionsToday(userId);
+    final now = DateTime.now();
+    var scheduledDate = DateTime(now.year, now.month, now.day, 17, 0);
+
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    final isForToday =
+        scheduledDate.year == now.year &&
+        scheduledDate.month == now.month &&
+        scheduledDate.day == now.day;
+    final content = _smartDailyReminderContent(
+      hasTransactionsToday: hasTransactionsToday,
+      isForToday: isForToday,
+    );
+
+    await _pushService.cancelNotification(_smartDailyReminderId);
+    await _pushService.scheduleNotification(
+      id: _smartDailyReminderId,
+      title: content.title,
+      body: content.body,
+      scheduledDate: scheduledDate,
+      priority: NotificationPriority.high,
+      payload: 'add_transaction',
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+
+    debugPrint(
+      '✅ ENHANCED NOTIFICATION SERVICE: Smart reminder scheduled for $scheduledDate '
+      '(hasTransactionsToday=$hasTransactionsToday, isForToday=$isForToday)',
+    );
+  }
+
   // Schedule the smart daily reminder (called on app init)
   Future<void> scheduleSmartDailyLogReminder(String userId) async {
     try {
-      // 0. Check if user already has a custom daily reminder set
-      final schedules = await getUserNotificationSchedules(userId);
-      if (schedules['daily_reminder']?['enabled'] == true) {
-        print('🔵 ENHANCED NOTIFICATION SERVICE: Custom daily reminder enabled, skipping smart reminder.');
-        return;
-      }
-
-      // 1. Check if user has already added transactions today
-      final hasTransactions = await TransactionService().hasTransactionsToday(userId);
-      
-      // 2. Determine schedule time
-      final now = DateTime.now();
-      var scheduledDate = DateTime(now.year, now.month, now.day, 17, 0); // Today 5 PM
-      
-      if (hasTransactions || now.isAfter(scheduledDate)) {
-        // If already logged OR it's past 5 PM, schedule for tomorrow
-        scheduledDate = scheduledDate.add(const Duration(days: 1));
-      }
-
-      // 3. Schedule the notification
-      // We use a specific ID for this smart reminder (e.g., 2000)
-      await _pushService.scheduleNotification(
-        id: _smartDailyReminderId,
-        title: 'Add your finances',
-        body: 'You haven\'t added any finances today. Take a moment to log your expenses!',
-        scheduledDate: scheduledDate,
-        priority: NotificationPriority.high,
-        payload: 'add_transaction',
-        matchDateTimeComponents: DateTimeComponents.time,
-      );
-      
-      print('✅ ENHANCED NOTIFICATION SERVICE: Scheduled smart reminder for $scheduledDate');
-      
+      await _scheduleOrRefreshSmartDailyLogReminder(userId);
     } catch (e) {
-      print('❌ ENHANCED NOTIFICATION SERVICE: Error scheduling smart reminder: $e');
+      debugPrint('❌ ENHANCED NOTIFICATION SERVICE: Error scheduling smart reminder: $e');
     }
   }
 
   // Called when a transaction is added
   Future<void> updateDailyLogReminder(String userId) async {
     try {
-      print('🔵 ENHANCED NOTIFICATION SERVICE: Transaction added, updating daily reminder...');
-      
-      // Cancel the current reminder for today
-      await _pushService.cancelNotification(_smartDailyReminderId);
-      
-      // Schedule for tomorrow 5 PM
-      final now = DateTime.now();
-      final tomorrow5pm = DateTime(now.year, now.month, now.day, 17, 0).add(const Duration(days: 1));
-      
-      await _pushService.scheduleNotification(
-        id: _smartDailyReminderId,
-        title: 'Add your finances',
-        body: 'You haven\'t added any finances today. Take a moment to log your expenses!',
-        scheduledDate: tomorrow5pm,
-        priority: NotificationPriority.high,
-        payload: 'add_transaction',
-        matchDateTimeComponents: DateTimeComponents.time,
-      );
-      
-      print('✅ ENHANCED NOTIFICATION SERVICE: Smart reminder pushed to tomorrow $tomorrow5pm');
-      
+      debugPrint('🔵 ENHANCED NOTIFICATION SERVICE: Transaction added, updating daily reminder...');
+
+      await _scheduleOrRefreshSmartDailyLogReminder(userId);
     } catch (e) {
-      print('❌ ENHANCED NOTIFICATION SERVICE: Error updating smart reminder: $e');
+      debugPrint('❌ ENHANCED NOTIFICATION SERVICE: Error updating smart reminder: $e');
     }
   }
 
@@ -366,7 +375,7 @@ class EnhancedNotificationService {
       if (!force) {
         final schedules = await getUserNotificationSchedules(userId);
         if (schedules['morning_greeting']?['enabled'] != true) {
-          print('🔵 ENHANCED NOTIFICATION SERVICE: Morning greeting disabled, skipping schedule.');
+          debugPrint('🔵 ENHANCED NOTIFICATION SERVICE: Morning greeting disabled, skipping schedule.');
           return;
         }
       }
@@ -398,9 +407,9 @@ class EnhancedNotificationService {
         'lastScheduled': DateTime.now().toIso8601String(),
       });
       
-      print('✅ ENHANCED NOTIFICATION SERVICE: Scheduled morning greeting for $scheduledDate');
+      debugPrint('✅ ENHANCED NOTIFICATION SERVICE: Scheduled morning greeting for $scheduledDate');
     } catch (e) {
-      print('❌ ENHANCED NOTIFICATION SERVICE: Error scheduling morning greeting: $e');
+      debugPrint('❌ ENHANCED NOTIFICATION SERVICE: Error scheduling morning greeting: $e');
     }
   }
 }

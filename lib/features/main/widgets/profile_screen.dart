@@ -19,14 +19,12 @@ import '../screens/about_us_screen.dart';
 import '../screens/privacy_policy_screen.dart';
 import '../screens/terms_of_service_screen.dart';
 import '../../../core/services/widget_service.dart';
-import '../../income/income_bloc.dart';
 import '../../theme/theme_bloc.dart';
 import '../../notifications/screens/notification_settings_screen.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../budget/budget_bloc.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/models/transaction_model.dart';
-import '../../../core/models/income_model.dart';
 import '../../../core/services/user_progress_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -637,7 +635,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       }
                       Navigator.pop(context);
                       AppSnackbar.showSuccess(
-                        this.context,
+                        context,
                         message: 'Currency updated to ${country['currency']}',
                       );
                     },
@@ -868,8 +866,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           _saveButton(
                             loading: savingName,
                             onTap: () async {
-                              if (nameKey.currentState?.validate() != true)
+                              if (nameKey.currentState?.validate() != true) {
                                 return;
+                              }
                               setState(() => savingName = true);
                               try {
                                 await authService.updateProfile(
@@ -877,19 +876,23 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   displayName: nameController.text.trim(),
                                 );
                                 if (mounted) {
-                                  this
-                                      .context
+                                  context
                                       .read<AuthBloc>()
                                       .add(AuthCheckRequested());
                                   Navigator.pop(sheetCtx);
-                                  AppSnackbar.showSuccess(this.context,
-                                      message: 'Name updated');
+                                  AppSnackbar.showSuccess(
+                                    context,
+                                    message: 'Name updated',
+                                  );
                                 }
                               } catch (e) {
                                 setState(() => savingName = false);
-                                if (mounted)
-                                  AppSnackbar.showError(this.context,
-                                      message: 'Failed to update name');
+                                if (mounted) {
+                                  AppSnackbar.showError(
+                                    context,
+                                    message: 'Failed to update name',
+                                  );
+                                }
                               }
                             },
                             cs: cs,
@@ -924,10 +927,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 decoration:
                                     _inputDeco(cs, hint: 'New email address'),
                                 validator: (v) {
-                                  if (v == null || v.trim().isEmpty)
+                                  if (v == null || v.trim().isEmpty) {
                                     return 'Enter an email';
-                                  if (!v.contains('@'))
+                                  }
+                                  if (!v.contains('@')) {
                                     return 'Enter a valid email';
+                                  }
                                   return null;
                                 },
                               ),
@@ -936,8 +941,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                             _saveButton(
                               loading: savingEmail,
                               onTap: () async {
-                                if (emailKey.currentState?.validate() != true)
+                                if (emailKey.currentState?.validate() != true) {
                                   return;
+                                }
                                 setState(() => savingEmail = true);
                                 try {
                                   await authService.updateEmail(
@@ -946,15 +952,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   );
                                   if (mounted) {
                                     Navigator.pop(sheetCtx);
-                                    AppSnackbar.showSuccess(this.context,
-                                        message:
-                                            'Verification email sent — check your inbox');
+                                    AppSnackbar.showSuccess(
+                                      context,
+                                      message:
+                                          'Verification email sent — check your inbox',
+                                    );
                                   }
                                 } catch (e) {
                                   setState(() => savingEmail = false);
-                                  if (mounted)
-                                    AppSnackbar.showError(this.context,
-                                        message: 'Failed to change email');
+                                  if (mounted) {
+                                    AppSnackbar.showError(
+                                      context,
+                                      message: 'Failed to change email',
+                                    );
+                                  }
                                 }
                               },
                               cs: cs,
@@ -983,16 +994,21 @@ class _ProfileScreenState extends State<ProfileScreen>
                                           .resetPassword(user.email);
                                       if (mounted) {
                                         Navigator.pop(sheetCtx);
-                                        AppSnackbar.showSuccess(this.context,
-                                            message:
-                                                'Password reset link sent to ${user.email}');
+                                        AppSnackbar.showSuccess(
+                                          context,
+                                          message:
+                                              'Password reset link sent to ${user.email}',
+                                        );
                                       }
                                     } catch (e) {
                                       setState(() => savingPw = false);
-                                      if (mounted)
-                                        AppSnackbar.showError(this.context,
-                                            message:
-                                                'Failed to send reset email');
+                                      if (mounted) {
+                                        AppSnackbar.showError(
+                                          context,
+                                          message:
+                                              'Failed to send reset email',
+                                        );
+                                      }
                                     }
                                   },
                             style: OutlinedButton.styleFrom(
@@ -1093,8 +1109,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   onPressed: savingPw
                                       ? null
                                       : () async {
-                                          if (!pwKey.currentState!.validate())
+                                          if (!pwKey.currentState!.validate()) {
                                             return;
+                                          }
                                           setState(() => savingPw = true);
                                           try {
                                             await authService.updatePassword(
@@ -1105,7 +1122,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                             if (mounted) {
                                               Navigator.pop(sheetCtx);
                                               AppSnackbar.showSuccess(
-                                                  this.context,
+                                                  context,
                                                   message: 'Password updated');
                                             }
                                           } catch (e) {
@@ -1116,7 +1133,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                   .replaceAll(
                                                       'Exception: ', '');
                                               AppSnackbar.showError(
-                                                  this.context,
+                                                  context,
                                                   message: msg);
                                             }
                                           }
@@ -1153,7 +1170,13 @@ class _ProfileScreenState extends State<ProfileScreen>
           },
         );
       },
-    );
+    ).whenComplete(() {
+      nameController.dispose();
+      emailController.dispose();
+      currentPwController.dispose();
+      newPwController.dispose();
+      confirmPwController.dispose();
+    });
   }
 
   InputDecoration _inputDeco(ColorScheme cs,
@@ -1813,44 +1836,21 @@ class _ProfileScreenState extends State<ProfileScreen>
                   : <Transaction>[])
               .cast<Transaction>();
 
-      // Get incomes
-      final incomeState = context.read<IncomeBloc>().state;
-      List<Income> filteredIncomes =
-          (incomeState is IncomeLoaded ? incomeState.incomes : <Income>[])
-              .cast<Income>();
-
-      print('DEBUG: Total transactions: ${filteredTransactions.length}');
-
       if (budget != null) {
         // BUDGET MODE: export all transactions for the chosen budget, ignore date range
         final budgetId = budget.id;
-        print(
-            'DEBUG: Budget mode — filtering by budget "${budget.name}" (id: $budgetId)');
 
         filteredTransactions =
             filteredTransactions.where((t) => t.budgetId == budgetId).toList();
-        filteredIncomes =
-            filteredIncomes.where((i) => i.budgetId == budgetId).toList();
-
-        print(
-            'DEBUG: After budget filter — transactions: ${filteredTransactions.length}, incomes: ${filteredIncomes.length}');
       } else {
         // TIME MODE: export transactions within the selected time range, no budget filter
         final DateTime? cutoffDate =
             days > 0 ? DateTime.now().subtract(Duration(days: days)) : null;
 
         if (cutoffDate != null) {
-          print(
-              'DEBUG: Time mode — filtering since ${cutoffDate.toIso8601String()}');
           filteredTransactions = filteredTransactions
               .where((t) => t.date.isAfter(cutoffDate))
               .toList();
-          filteredIncomes =
-              filteredIncomes.where((i) => i.date.isAfter(cutoffDate)).toList();
-          print(
-              'DEBUG: After date filter — transactions: ${filteredTransactions.length}, incomes: ${filteredIncomes.length}');
-        } else {
-          print('DEBUG: Time mode — All time, no date filter applied');
         }
       }
 
@@ -1873,10 +1873,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       File generatedFile;
       if (format == 'csv') {
-        final csvContent = exportService.generateCsv(
-          filteredTransactions,
-          filteredIncomes,
-        );
+        final csvContent = exportService.generateCsv(filteredTransactions);
         generatedFile = await exportService.generateFile(
           Uint8List.fromList(csvContent.codeUnits),
           'csv',
@@ -1884,7 +1881,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       } else {
         final pdfBytes = await exportService.generatePdf(
           filteredTransactions,
-          filteredIncomes,
           userName,
           reportScope: reportScope,
           reportRange: reportRange,
@@ -1896,7 +1892,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
 
       // Close loading dialog
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+      }
 
       // Show action dialog (Share vs Download)
       if (mounted) {
@@ -1904,7 +1902,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
     } catch (e) {
       // Close loading dialog
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+      }
 
       AppSnackbar.showError(context, message: 'Export failed: $e');
     }
@@ -1962,13 +1962,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                       try {
                         final path = await exportService.saveToDownloads(file);
                         if (mounted) {
-                          AppSnackbar.showSuccess(this.context,
-                              message: 'Saved to $path');
+                          AppSnackbar.showSuccess(
+                            context,
+                            message: 'Saved to $path',
+                          );
                         }
                       } catch (e) {
                         if (mounted) {
-                          AppSnackbar.showError(this.context,
-                              message: 'Failed to save: $e');
+                          AppSnackbar.showError(
+                            context,
+                            message: 'Failed to save: $e',
+                          );
                         }
                       }
                     },

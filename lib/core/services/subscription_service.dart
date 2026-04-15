@@ -11,7 +11,7 @@ class SubscriptionService {
   SubscriptionService._internal();
 
   final InAppPurchase _inAppPurchase = InAppPurchase.instance;
-  late StreamSubscription<List<PurchaseDetails>> _subscription;
+  StreamSubscription<List<PurchaseDetails>>? _subscription;
   
   // Product IDs
   static const String _kMonthlySubscriptionId = 'premium_monthly';
@@ -37,6 +37,7 @@ class SubscriptionService {
   Stream<bool> get purchaseStream => _purchaseController.stream;
 
   bool _isInitialized = false;
+  Future<void>? _initialization;
 
   Future<void> initialize() async {
     if (_isInitialized) {
@@ -44,14 +45,30 @@ class SubscriptionService {
       return;
     }
 
+    if (_initialization != null) {
+      await _initialization;
+      await _checkPremiumStatus();
+      return;
+    }
+
+    _initialization = _initializeInternal();
+    try {
+      await _initialization;
+    } finally {
+      _initialization = null;
+    }
+  }
+
+  Future<void> _initializeInternal() async {
     _isAvailable = await _inAppPurchase.isAvailable();
-    
+
     final Stream<List<PurchaseDetails>> purchaseUpdated =
         _inAppPurchase.purchaseStream;
-    _subscription = purchaseUpdated.listen(
+    _subscription ??= purchaseUpdated.listen(
       _listenToPurchaseUpdated,
       onDone: () {
-        _subscription.cancel();
+        _subscription?.cancel();
+        _subscription = null;
       },
       onError: (error) {
         // handle error here.
@@ -263,7 +280,9 @@ class SubscriptionService {
   }
   
   void dispose() {
-    _subscription.cancel();
+    _subscription?.cancel();
+    _subscription = null;
     _purchaseController.close();
+    _isInitialized = false;
   }
 }

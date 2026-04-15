@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/budget_model.dart';
 import '../models/goal_model.dart';
@@ -28,7 +29,7 @@ class NotificationTriggerService {
         }
       }
     } catch (e) {
-      print('❌ NOTIFICATION TRIGGER: Error monitoring budget changes: $e');
+      debugPrint('❌ NOTIFICATION TRIGGER: Error monitoring budget changes: $e');
     }
   }
 
@@ -48,7 +49,7 @@ class NotificationTriggerService {
         }
       }
     } catch (e) {
-      print('❌ NOTIFICATION TRIGGER: Error monitoring goal progress: $e');
+      debugPrint('❌ NOTIFICATION TRIGGER: Error monitoring goal progress: $e');
     }
   }
 
@@ -86,7 +87,7 @@ class NotificationTriggerService {
         }
       }
     } catch (e) {
-      print('❌ NOTIFICATION TRIGGER: Error monitoring spending patterns: $e');
+      debugPrint('❌ NOTIFICATION TRIGGER: Error monitoring spending patterns: $e');
     }
   }
 
@@ -122,7 +123,7 @@ class NotificationTriggerService {
 
       await _recordAlertSent(userId, alertKey);
     } catch (e) {
-      print('❌ NOTIFICATION TRIGGER: Error triggering budget warning: $e');
+      debugPrint('❌ NOTIFICATION TRIGGER: Error triggering budget warning: $e');
     }
   }
 
@@ -157,7 +158,7 @@ class NotificationTriggerService {
 
       await _recordAlertSent(userId, alertKey);
     } catch (e) {
-      print('❌ NOTIFICATION TRIGGER: Error triggering budget critical: $e');
+      debugPrint('❌ NOTIFICATION TRIGGER: Error triggering budget critical: $e');
     }
   }
 
@@ -191,7 +192,7 @@ class NotificationTriggerService {
 
       await _recordAlertSent(userId, alertKey);
     } catch (e) {
-      print('❌ NOTIFICATION TRIGGER: Error triggering budget exceeded: $e');
+      debugPrint('❌ NOTIFICATION TRIGGER: Error triggering budget exceeded: $e');
     }
   }
 
@@ -225,7 +226,7 @@ class NotificationTriggerService {
 
       await _recordAlertSent(userId, alertKey);
     } catch (e) {
-      print('❌ NOTIFICATION TRIGGER: Error triggering goal milestone: $e');
+      debugPrint('❌ NOTIFICATION TRIGGER: Error triggering goal milestone: $e');
     }
   }
 
@@ -258,7 +259,7 @@ class NotificationTriggerService {
 
       await _recordAlertSent(userId, alertKey);
     } catch (e) {
-      print('❌ NOTIFICATION TRIGGER: Error triggering goal completed: $e');
+      debugPrint('❌ NOTIFICATION TRIGGER: Error triggering goal completed: $e');
     }
   }
 
@@ -291,7 +292,7 @@ class NotificationTriggerService {
 
       await _recordAlertSent(userId, alertKey);
     } catch (e) {
-      print('❌ NOTIFICATION TRIGGER: Error triggering spending pattern: $e');
+      debugPrint('❌ NOTIFICATION TRIGGER: Error triggering spending pattern: $e');
     }
   }
 
@@ -324,7 +325,7 @@ class NotificationTriggerService {
 
       await _recordAlertSent(userId, alertKey);
     } catch (e) {
-      print('❌ NOTIFICATION TRIGGER: Error triggering daily spending: $e');
+      debugPrint('❌ NOTIFICATION TRIGGER: Error triggering daily spending: $e');
     }
   }
 
@@ -346,7 +347,7 @@ class NotificationTriggerService {
       // For "lightweight", we prefer just local pref. If it's a new device, user gets 1 extra notify.
       return false;
     } catch (e) {
-      print('❌ NOTIFICATION TRIGGER: Error checking recent alert: $e');
+      debugPrint('❌ NOTIFICATION TRIGGER: Error checking recent alert: $e');
       return false;
     }
   }
@@ -366,7 +367,7 @@ class NotificationTriggerService {
           .doc(alertKey)
           .set({'sentAt': now});
     } catch (e) {
-      print('❌ NOTIFICATION TRIGGER: Error recording alert sent: $e');
+      debugPrint('❌ NOTIFICATION TRIGGER: Error recording alert sent: $e');
     }
   }
 
@@ -402,7 +403,7 @@ class NotificationTriggerService {
 
       await _recordAlertSent(userId, alertKey);
     } catch (e) {
-      print('❌ NOTIFICATION TRIGGER: Error triggering morning greeting: $e');
+      debugPrint('❌ NOTIFICATION TRIGGER: Error triggering morning greeting: $e');
     }
   }
 
@@ -454,7 +455,7 @@ class NotificationTriggerService {
 
       await _recordAlertSent(userId, alertKey);
     } catch (e) {
-      print('❌ NOTIFICATION TRIGGER: Error triggering daily reminder: $e');
+      debugPrint('❌ NOTIFICATION TRIGGER: Error triggering daily reminder: $e');
     }
   }
 }

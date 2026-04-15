@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'enhanced_notification_service.dart';
 import 'notification_trigger_service.dart';
+import 'recurring_transaction_service.dart';
 import '../models/budget_model.dart';
 import '../models/transaction_model.dart' as model;
 import '../models/goal_model.dart';
@@ -18,6 +20,8 @@ void callbackDispatcher() {
 
       final notificationService = EnhancedNotificationService();
       await notificationService.initialize();
+      final recurringTransactionService = RecurringTransactionService();
+      await recurringTransactionService.processDueTransactions(userId);
 
       // For daily reminders/smart notifications, we perform a health check
       // This runs in the background even if the app is closed
@@ -85,7 +89,7 @@ void callbackDispatcher() {
 
       return true;
     } catch (e) {
-      print('❌ WORKMANAGER: Task failed: $e');
+      debugPrint('WORKMANAGER: Task failed: $e');
       return false;
     }
   });
@@ -96,19 +100,21 @@ class BackgroundTaskService {
   factory BackgroundTaskService() => _instance;
   BackgroundTaskService._internal();
 
+  String _dailyHealthCheckName(String userId) => 'daily_health_check_$userId';
+
   Future<void> initialize() async {
     await Workmanager().initialize(
       callbackDispatcher,
-      isInDebugMode: false,
     );
   }
 
   Future<void> registerDailyHealthCheck(String userId) async {
     await Workmanager().registerPeriodicTask(
-      'daily_health_check_$userId',
+      _dailyHealthCheckName(userId),
       'dailyNotificationHealthCheck',
       frequency: const Duration(hours: 12),
       inputData: {'userId': userId},
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
       constraints: Constraints(
         networkType: NetworkType.connected,
       ),
@@ -116,6 +122,6 @@ class BackgroundTaskService {
   }
 
   Future<void> cancelTasks(String userId) async {
-    await Workmanager().cancelAll();
+    await Workmanager().cancelByUniqueName(_dailyHealthCheckName(userId));
   }
 }

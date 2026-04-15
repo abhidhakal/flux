@@ -25,7 +25,7 @@ class PushNotificationService {
       final String timeZoneName = timeZoneInfo.identifier;
       tz.setLocalLocation(tz.getLocation(timeZoneName));
     } catch (e) {
-      print('Failed to get local timezone: $e');
+      debugPrint('Failed to get local timezone: $e');
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
 
@@ -156,8 +156,8 @@ class PushNotificationService {
       iOS: iosDetails,
     );
 
-    print('DEBUG: Scheduling notification id=$id, date=$scheduledDate');
-    print('DEBUG: Timezone location: ${tz.local.name}');
+    debugPrint('DEBUG: Scheduling notification id=$id, date=$scheduledDate');
+    debugPrint('DEBUG: Timezone location: ${tz.local.name}');
 
     try {
       await _notifications.zonedSchedule(
@@ -170,9 +170,9 @@ class PushNotificationService {
         androidScheduleMode: fln.AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: matchDateTimeComponents,
       );
-      print('DEBUG: Successfully scheduled notification $id');
+      debugPrint('DEBUG: Successfully scheduled notification $id');
     } catch (e) {
-      print('DEBUG: Failed exact zonedSchedule, retrying with inexact mode: $e');
+      debugPrint('DEBUG: Failed exact zonedSchedule, retrying with inexact mode: $e');
       await _notifications.zonedSchedule(
         id,
         title,
@@ -183,7 +183,7 @@ class PushNotificationService {
         androidScheduleMode: fln.AndroidScheduleMode.inexactAllowWhileIdle,
         matchDateTimeComponents: matchDateTimeComponents,
       );
-      print('DEBUG: Successfully scheduled notification $id with inexact mode');
+      debugPrint('DEBUG: Successfully scheduled notification $id with inexact mode');
     }
   }
 
@@ -201,12 +201,12 @@ class PushNotificationService {
     final now = DateTime.now();
     var scheduledDate = DateTime(now.year, now.month, now.day, hour, minute);
 
-    print('DEBUG: daily scheduling - Now: $now');
-    print('DEBUG: daily scheduling - Target (Naive): $scheduledDate');
+    debugPrint('DEBUG: daily scheduling - Now: $now');
+    debugPrint('DEBUG: daily scheduling - Target (Naive): $scheduledDate');
     
     // If time has passed today, schedule for tomorrow
     if (scheduledDate.isBefore(now)) {
-      print('DEBUG: Target is before Now, adding 1 day');
+      debugPrint('DEBUG: Target is before Now, adding 1 day');
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
@@ -214,7 +214,7 @@ class PushNotificationService {
     final androidInfo = await _notifications
       .resolvePlatformSpecificImplementation<fln.AndroidFlutterLocalNotificationsPlugin>()
         ?.requestExactAlarmsPermission();
-    print('DEBUG: Exact alarm permission request result: $androidInfo');
+    debugPrint('DEBUG: Exact alarm permission request result: $androidInfo');
 
     await scheduleNotification(
       id: id,
@@ -246,7 +246,7 @@ class PushNotificationService {
   void _onNotificationTapped(fln.NotificationResponse response) {
     // Handle notification tap - you can navigate to specific screens
     // based on the payload
-    print('Notification tapped: ${response.payload}');
+    debugPrint('Notification tapped: ${response.payload}');
   }
 
   // Convert priority to Android importance

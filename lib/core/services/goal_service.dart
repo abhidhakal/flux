@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/goal_model.dart';
 
@@ -52,7 +53,7 @@ class GoalService {
           .map((doc) => Goal.fromJson(doc.data()))
           .toList();
     } catch (e) {
-      print('❌ GOAL SERVICE: Error getting user goals: $e');
+      debugPrint('❌ GOAL SERVICE: Error getting user goals: $e');
       return [];
     }
   }
@@ -246,7 +247,7 @@ class GoalService {
           .get();
       
       if (!userDoc.exists) {
-        print('⚠️ GOAL SERVICE: User not found, creating user document');
+        debugPrint('⚠️ GOAL SERVICE: User not found, creating user document');
         // Create basic user document if it doesn't exist
         await _firestore
             .collection('users')
@@ -258,7 +259,7 @@ class GoalService {
         });
       }
     } catch (e) {
-      print('❌ GOAL SERVICE: Error ensuring user exists: $e');
+      debugPrint('❌ GOAL SERVICE: Error ensuring user exists: $e');
       // Don't throw here to prevent cascading failures
     }
   }

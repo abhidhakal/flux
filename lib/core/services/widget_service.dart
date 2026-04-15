@@ -2,9 +2,7 @@ import 'package:home_widget/home_widget.dart';
 import 'currency_service.dart';
 import '../../features/goals/goals_bloc.dart';
 import '../../features/transaction/transaction_bloc.dart';
-import '../../features/income/income_bloc.dart';
 import '../../core/models/goal_model.dart';
-import '../../core/models/transaction_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -74,13 +72,13 @@ class WidgetService {
   static void refreshWidgets(BuildContext context) {
     try {
       final transactionState = context.read<TransactionBloc>().state;
-      final incomeState = context.read<IncomeBloc>().state;
       final goalsState = context.read<GoalsBloc>().state;
 
-      if (transactionState is TransactionLoaded && incomeState is IncomeLoaded) {
-        final expenses = transactionState.transactions.where((t) => t.type == TransactionType.expense).toList();
+      if (transactionState is TransactionLoaded) {
+        final expenses = transactionState.transactions.where((t) => t.isExpense).toList();
+        final incomes = transactionState.transactions.where((t) => t.isIncome).toList();
         final totalExpenses = expenses.fold(0.0, (sum, t) => sum + t.amount);
-        final totalIncome = incomeState.incomes.fold(0.0, (sum, i) => sum + i.amount);
+        final totalIncome = incomes.fold(0.0, (sum, t) => sum + t.amount);
         final balance = totalIncome - totalExpenses;
 
         updateBalanceWidget(

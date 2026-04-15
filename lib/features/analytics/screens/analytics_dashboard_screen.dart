@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
-import '../../../core/models/income_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
-import '../../income/income_bloc.dart';
 import '../analytics_bloc.dart';
 import '../widgets/category_breakdown_chart.dart';
 import '../widgets/insights_card.dart';
@@ -29,11 +27,6 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    final user = context.read<AuthBloc>().state;
-    if (user is AuthAuthenticated) {
-      context.read<TransactionBloc>().add(LoadTransactions(user.user.id));
-      context.read<IncomeBloc>().add(LoadIncome(user.user.id));
-    }
   }
 
   DateTimeRange _getActiveRange() {
@@ -85,13 +78,6 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     }).toList();
   }
 
-  List<Income> _filterIncomes(List<Income> incomes) {
-    final range = _getActiveRange();
-    return incomes.where((i) {
-      return !i.date.isBefore(range.start) && !i.date.isAfter(range.end);
-    }).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -120,103 +106,74 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
           BlocListener<TransactionBloc, TransactionState>(
             listener: (context, state) {
               if (state is TransactionLoaded) {
-                final incomeState = context.read<IncomeBloc>().state;
-                if (incomeState is IncomeLoaded) {
-                  context.read<AnalyticsBloc>().add(
-                    AnalyzeSpendingPatterns(state.transactions, incomeState.incomes),
-                  );
-                }
-              }
-            },
-          ),
-          BlocListener<IncomeBloc, IncomeState>(
-            listener: (context, state) {
-              if (state is IncomeLoaded) {
-                final transState = context.read<TransactionBloc>().state;
-                if (transState is TransactionLoaded) {
-                  context.read<AnalyticsBloc>().add(
-                    AnalyzeSpendingPatterns(transState.transactions, state.incomes),
-                  );
-                }
+                context.read<AnalyticsBloc>().add(
+                  AnalyzeSpendingPatterns(state.transactions),
+                );
               }
             },
           ),
         ],
         child: BlocBuilder<TransactionBloc, TransactionState>(
           builder: (context, transactionState) {
-            return BlocBuilder<IncomeBloc, IncomeState>(
-              builder: (context, incomeState) {
-                if (transactionState is TransactionLoading || incomeState is IncomeLoading) {
-                  return _buildLoadingState();
-                }
+            if (transactionState is TransactionLoading) {
+              return _buildLoadingState();
+            }
 
-                if (transactionState is TransactionLoaded && incomeState is IncomeLoaded) {
-                  final transactions = _filterTransactions(transactionState.transactions);
-                  final incomes = _filterIncomes(incomeState.incomes);
+            if (transactionState is TransactionLoaded) {
+              final transactions = _filterTransactions(transactionState.transactions);
 
-                  return BlocBuilder<AnalyticsBloc, AnalyticsState>(
-                    builder: (context, analyticsState) {
-                      final analysis = analyticsState is SpendingAnalysisLoaded ? analyticsState.analysis : null;
-                      
-                      return RefreshIndicator(
-                        onRefresh: () async {
-                           final user = context.read<AuthBloc>().state;
-                           if (user is AuthAuthenticated) {
-                             context.read<TransactionBloc>().add(LoadTransactions(user.user.id));
-                             context.read<IncomeBloc>().add(LoadIncome(user.user.id));
-                           }
-                        },
-                        child: SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 120),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildHealthScoreSection(analysis),
-                              const SizedBox(height: 24),
-                              _buildQuickStats(transactions, incomes),
-                              const SizedBox(height: 24),
-                              _buildEfficiencySection(analysis),
-                              const SizedBox(height: 24),
-                              _buildSmartInsightsSection(analyticsState),
-                              const SizedBox(height: 24),
-                              _buildSubscriptionsSection(analysis),
-                              const SizedBox(height: 24),
-
-                              // Main Spending Chart
-                              _buildSectionHeader('Spending Trend', 'Your weekly expense activity'),
-                              const SizedBox(height: 16),
-                              WeeklySpendingChart(transactions: transactions),
-
-                              const SizedBox(height: 24),
-                              _buildWealthProjectionSection(analysis),
-                              const SizedBox(height: 24),
-                              _buildSectionHeader('Monthly Comparison', 'Income vs Expenses'),
-                              const SizedBox(height: 16),
-                              TrendAnalysisChart(
-                                transactions: transactions,
-                                incomes: incomes,
-                              ),
-
-                              const SizedBox(height: 24),
-                              _buildSectionHeader('Category Breakdown', 'Where your money goes'),
-                              const SizedBox(height: 16),
-                              CategoryBreakdownChart(transactions: transactions),
-                              const SizedBox(height: 24),
-                              _buildRecommendationsSection(analysis),
-
-                              const SizedBox(height: 40),
-                            ],
-                          ),
-                        ),
-                      );
+              return BlocBuilder<AnalyticsBloc, AnalyticsState>(
+                builder: (context, analyticsState) {
+                  final analysis = analyticsState is SpendingAnalysisLoaded ? analyticsState.analysis : null;
+                  
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                       final user = context.read<AuthBloc>().state;
+                       if (user is AuthAuthenticated) {
+                         context.read<TransactionBloc>().add(LoadTransactions(user.user.id));
+                       }
                     },
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 120),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildHealthScoreSection(analysis),
+                          const SizedBox(height: 24),
+                          _buildQuickStats(transactions),
+                          const SizedBox(height: 24),
+                          _buildEfficiencySection(analysis),
+                          const SizedBox(height: 24),
+                          _buildSmartInsightsSection(analyticsState),
+                          const SizedBox(height: 24),
+                          _buildSubscriptionsSection(analysis),
+                          const SizedBox(height: 24),
+                          _buildSectionHeader('Spending Trend', 'Your weekly expense activity'),
+                          const SizedBox(height: 16),
+                          WeeklySpendingChart(transactions: transactions),
+                          const SizedBox(height: 24),
+                          _buildWealthProjectionSection(analysis),
+                          const SizedBox(height: 24),
+                          _buildSectionHeader('Monthly Comparison', 'Income vs Expenses'),
+                          const SizedBox(height: 16),
+                          TrendAnalysisChart(transactions: transactions),
+                          const SizedBox(height: 24),
+                          _buildSectionHeader('Category Breakdown', 'Where your money goes'),
+                          const SizedBox(height: 16),
+                          CategoryBreakdownChart(transactions: transactions),
+                          const SizedBox(height: 24),
+                          _buildRecommendationsSection(analysis),
+                          const SizedBox(height: 40),
+                        ],
+                      ),
+                    ),
                   );
-                }
+                },
+              );
+            }
 
-                return _buildEmptyState();
-              },
-            );
+            return _buildEmptyState();
           },
         ),
       ),
@@ -486,9 +443,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     );
   }
 
-  Widget _buildQuickStats(List<Transaction> transactions, List<Income> incomes) {
+  Widget _buildQuickStats(List<Transaction> transactions) {
     final expenses = transactions.where((t) => t.isExpense).fold(0.0, (sum, t) => sum + t.amount);
-    final totalIncome = incomes.fold(0.0, (sum, i) => sum + i.amount);
+    final totalIncome = transactions.where((t) => t.isIncome).fold(0.0, (sum, t) => sum + t.amount);
 
     return Row(
       children: [

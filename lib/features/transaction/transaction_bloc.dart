@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import '../../core/models/recurring_transaction_model.dart';
 import '../../core/models/transaction_model.dart';
+import '../../core/services/recurring_transaction_service.dart';
 import '../../core/services/transaction_service.dart';
 import '../../core/services/budget_service.dart';
 import '../../core/services/notification_trigger_service.dart';
@@ -25,11 +27,12 @@ class LoadTransactions extends TransactionEvent {
 
 class AddTransaction extends TransactionEvent {
   final Transaction transaction;
+  final RecurringTransaction? recurringTransaction;
 
-  const AddTransaction(this.transaction);
+  const AddTransaction(this.transaction, {this.recurringTransaction});
 
   @override
-  List<Object?> get props => [transaction];
+  List<Object?> get props => [transaction, recurringTransaction];
 }
 
 class UpdateTransaction extends TransactionEvent {
@@ -94,16 +97,19 @@ class TransactionSuccess extends TransactionState {
 // BLoC
 class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   final TransactionService _transactionService;
+  final RecurringTransactionService _recurringTransactionService;
   final BudgetService _budgetService;
   final NotificationTriggerService _notificationTriggerService;
   final EnhancedNotificationService? _enhancedNotificationService;
 
   TransactionBloc({
     required TransactionService transactionService,
+    required RecurringTransactionService recurringTransactionService,
     required BudgetService budgetService,
     required NotificationTriggerService notificationTriggerService,
     EnhancedNotificationService? enhancedNotificationService,
   })  : _transactionService = transactionService,
+        _recurringTransactionService = recurringTransactionService,
         _budgetService = budgetService,
         _notificationTriggerService = notificationTriggerService,
         _enhancedNotificationService = enhancedNotificationService,
@@ -121,6 +127,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     emit(TransactionLoading());
     
     try {
+      await _recurringTransactionService.processDueTransactions(event.userId);
       final transactions = await _transactionService.getUserTransactions(event.userId);
       emit(TransactionLoaded(transactions));
       
@@ -140,6 +147,10 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     
     try {
       await _transactionService.addTransaction(event.transaction);
+      if (event.recurringTransaction != null) {
+        await _recurringTransactionService
+            .addRecurringTransaction(event.recurringTransaction!);
+      }
       
       // Reload transactions
       final transactions = await _transactionService.getUserTransactions(event.transaction.userId);
@@ -175,6 +186,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       
       // Trigger notification checks
       _notificationTriggerService.monitorSpendingPatterns(event.transaction.userId, transactions);
+      _enhancedNotificationService?.updateDailyLogReminder(event.transaction.userId);
       
       final budgets = await _budgetService.getUserBudgets(event.transaction.userId);
       _notificationTriggerService.monitorBudgetChanges(event.transaction.userId, budgets);
@@ -197,6 +209,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       emit(TransactionLoaded(transactions, message: 'Transaction deleted successfully!'));
       
       // Check budgets after deletion
+      _enhancedNotificationService?.updateDailyLogReminder(event.userId);
       final budgets = await _budgetService.getUserBudgets(event.userId);
       _notificationTriggerService.monitorBudgetChanges(event.userId, budgets);
     } catch (e) {
