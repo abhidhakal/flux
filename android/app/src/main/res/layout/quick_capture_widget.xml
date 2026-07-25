@@ -6,7 +6,8 @@
     android:background="@drawable/widget_background"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="12dp">
+    android:padding="12dp"
+    android:elevation="6dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -22,6 +23,7 @@
             android:layout_marginEnd="6dp"
             android:layout_weight="1"
             android:background="@drawable/widget_action_tile_background"
+            android:elevation="2dp"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
@@ -52,6 +54,7 @@
             android:layout_marginStart="6dp"
             android:layout_weight="1"
             android:background="@drawable/widget_action_tile_background"
+            android:elevation="2dp"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
@@ -91,6 +94,7 @@
             android:layout_marginEnd="6dp"
             android:layout_weight="1"
             android:background="@drawable/widget_action_tile_background"
+            android:elevation="2dp"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
@@ -121,6 +125,7 @@
             android:layout_marginStart="6dp"
             android:layout_weight="1"
             android:background="@drawable/widget_action_tile_background"
+            android:elevation="2dp"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"

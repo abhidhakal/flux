@@ -298,7 +298,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                                   color: cs.outline.withOpacity(0.4)),
                             ),
                             icon: const FaIcon(FontAwesomeIcons.google,
-                                color: Color(0xFFDB4437), size: 18),
+                                color: AppColors.googleRed, size: 18),
                             label: Text(
                               'Continue with Google',
                               style: theme.textTheme.labelLarge?.copyWith(

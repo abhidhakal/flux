@@ -10,8 +10,7 @@ import '../widgets/category_breakdown_chart.dart';
 import '../widgets/insights_card.dart';
 import '../widgets/trend_analysis_chart.dart';
 import '../widgets/weekly_spending_chart.dart';
-
-enum _TimelineFilter { lastWeek, lastMonth, last3Months, custom }
+import '../../../core/utils/date_range_filter.dart';
 
 class AnalyticsDashboardScreen extends StatefulWidget {
   const AnalyticsDashboardScreen({super.key});
@@ -21,7 +20,7 @@ class AnalyticsDashboardScreen extends StatefulWidget {
 }
 
 class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
-  _TimelineFilter _timelineFilter = _TimelineFilter.lastMonth;
+  TimelineFilter _timelineFilter = TimelineFilter.lastMonth;
   DateTimeRange? _customRange;
 
   @override
@@ -29,23 +28,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     super.initState();
   }
 
-  DateTimeRange _getActiveRange() {
-    if (_timelineFilter == _TimelineFilter.custom && _customRange != null) {
-      return _customRange!;
-    }
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day, 23, 59, 59);
-    switch (_timelineFilter) {
-      case _TimelineFilter.lastWeek:
-        return DateTimeRange(start: today.subtract(const Duration(days: 6)), end: today);
-      case _TimelineFilter.lastMonth:
-        return DateTimeRange(start: DateTime(now.year, now.month - 1, now.day), end: today);
-      case _TimelineFilter.last3Months:
-        return DateTimeRange(start: DateTime(now.year, now.month - 3, now.day), end: today);
-      case _TimelineFilter.custom:
-        return DateTimeRange(start: DateTime(now.year, now.month - 1, now.day), end: today);
-    }
-  }
+  DateTimeRange _getActiveRange() =>
+      activeRangeFor(_timelineFilter, customRange: _customRange);
 
   Future<void> _pickCustomRange() async {
     final now = DateTime.now();
@@ -66,7 +50,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     if (picked != null) {
       setState(() {
         _customRange = picked;
-        _timelineFilter = _TimelineFilter.custom;
+        _timelineFilter = TimelineFilter.custom;
       });
     }
   }
@@ -444,8 +428,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   }
 
   Widget _buildQuickStats(List<Transaction> transactions) {
-    final expenses = transactions.where((t) => t.isExpense).fold(0.0, (sum, t) => sum + t.amount);
-    final totalIncome = transactions.where((t) => t.isIncome).fold(0.0, (sum, t) => sum + t.amount);
+    final expenses = transactions.totalExpenses();
+    final totalIncome = transactions.totalIncome();
 
     return Row(
       children: [
@@ -588,10 +572,10 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   }
 
   Widget _buildPeriodSelector(ColorScheme colorScheme) {
-    return PopupMenuButton<_TimelineFilter>(
+    return PopupMenuButton<TimelineFilter>(
       initialValue: _timelineFilter,
       onSelected: (filter) {
-        if (filter == _TimelineFilter.custom) {
+        if (filter == TimelineFilter.custom) {
           _pickCustomRange();
         } else {
           setState(() => _timelineFilter = filter);
@@ -608,11 +592,11 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              _timelineFilter == _TimelineFilter.lastWeek
+              _timelineFilter == TimelineFilter.lastWeek
                   ? 'Last Week'
-                  : _timelineFilter == _TimelineFilter.lastMonth
+                  : _timelineFilter == TimelineFilter.lastMonth
                       ? 'Last Month'
-                      : _timelineFilter == _TimelineFilter.last3Months
+                      : _timelineFilter == TimelineFilter.last3Months
                           ? 'Last 3 Months'
                           : 'Custom',
               style: TextStyle(
@@ -632,19 +616,19 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       ),
       itemBuilder: (context) => [
         const PopupMenuItem(
-          value: _TimelineFilter.lastWeek,
+          value: TimelineFilter.lastWeek,
           child: Text('Last Week'),
         ),
         const PopupMenuItem(
-          value: _TimelineFilter.lastMonth,
+          value: TimelineFilter.lastMonth,
           child: Text('Last Month'),
         ),
         const PopupMenuItem(
-          value: _TimelineFilter.last3Months,
+          value: TimelineFilter.last3Months,
           child: Text('Last 3 Months'),
         ),
         const PopupMenuItem(
-          value: _TimelineFilter.custom,
+          value: TimelineFilter.custom,
           child: Text('Custom Range'),
         ),
       ],

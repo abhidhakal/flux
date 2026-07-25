@@ -3,8 +3,8 @@
     <color name="ic_launcher_background">#0079DC</color>
     <color name="splash_background">#FAFBFC</color>
     <color name="splash_icon_background">#0079DC</color>
-    <color name="widget_background">#FAFBFC</color>
-    <color name="widget_card_bg">#FFFFFFFF</color>
+    <color name="widget_background">#A6FAFBFC</color>
+    <color name="widget_card_bg">#A6FFFFFF</color>
     <color name="widget_divider">#E9ECEF</color>
     <color name="widget_text_primary">#1A1A1A</color>
     <color name="widget_text_secondary">#6B7280</color>
@@ -12,7 +12,7 @@
     <color name="widget_expense">#DC3545</color>
     <color name="widget_button_bg">#0079DC</color>
     <color name="widget_button_text">#FFFFFFFF</color>
-    <color name="widget_surface_alt">#F3F7FB</color>
+    <color name="widget_surface_alt">#B3F3F7FB</color>
     <color name="widget_surface_accent">#EAF3FF</color>
     <color name="widget_goal_track">#DCE6F1</color>
     <color name="widget_goal_progress">#0079DC</color>

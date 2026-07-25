@@ -17,7 +17,8 @@ class CreateGoalScreen extends StatefulWidget {
   State<CreateGoalScreen> createState() => _CreateGoalScreenState();
 }
 
-class _CreateGoalScreenState extends State<CreateGoalScreen> {
+class _CreateGoalScreenState extends State<CreateGoalScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -29,6 +30,10 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
   bool _isRecurring = false;
   String? _recurringPeriod;
   bool _isLoading = false;
+
+  late final AnimationController _entranceController;
+  late final Animation<double> _entranceFade;
+  late final Animation<Offset> _entranceSlide;
 
   final List<Map<String, dynamic>> _colorOptions = [
     {'color': 0xFF0079DC, 'name': 'Blue'},
@@ -45,6 +50,23 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
   void initState() {
     super.initState();
     _prefillForm();
+
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: AppMotion.slow,
+    );
+    _entranceFade = CurvedAnimation(
+      parent: _entranceController,
+      curve: AppMotion.standard,
+    );
+    _entranceSlide = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _entranceController,
+      curve: AppMotion.standard,
+    ));
+    _entranceController.forward();
   }
 
   void _prefillForm() {
@@ -65,6 +87,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     _nameController.dispose();
     _descriptionController.dispose();
     _targetAmountController.dispose();
+    _entranceController.dispose();
     super.dispose();
   }
 
@@ -127,102 +150,109 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
             AppSnackbar.showError(context, message: state.message);
           }
         },
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildSectionTitle('Goal Name'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _nameController,
-                  decoration: _inputDecoration(
-                    hintText: 'e.g., Emergency Fund',
-                    icon: Icons.flag_rounded,
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter a goal name';
-                    }
-                    return null;
-                  },
+        child: FadeTransition(
+          opacity: _entranceFade,
+          child: SlideTransition(
+            position: _entranceSlide,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildSectionTitle('Goal Name'),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: _inputDecoration(
+                        hintText: 'e.g., Emergency Fund',
+                        icon: Icons.flag_rounded,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a goal name';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Target Amount
+                    _buildSectionTitle('Target Amount'),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _targetAmountController,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: _inputDecoration(
+                        hintText: 'Enter target amount',
+                        icon: Icons.account_balance_wallet_outlined,
+                        prefixText: '${CurrencyService().symbol} ',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter target amount';
+                        }
+                        final amount =
+                            double.tryParse(value.replaceAll(',', ''));
+                        if (amount == null || amount <= 0) {
+                          return 'Please enter a valid amount';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Target Date
+                    _buildSectionTitle('Deadline'),
+                    const SizedBox(height: 8),
+                    _buildDateSelector(colorScheme),
+
+                    const SizedBox(height: 20),
+
+                    // Goal Type
+                    _buildSectionTitle('Goal Type'),
+                    const SizedBox(height: 8),
+                    _buildGoalTypeSelector(colorScheme),
+
+                    const SizedBox(height: 20),
+
+                    // Description
+                    _buildSectionTitle('Description'),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _descriptionController,
+                      maxLines: 2,
+                      decoration: _inputDecoration(
+                        hintText: 'Add details (optional)',
+                        icon: Icons.description_rounded,
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Color Selection
+                    _buildSectionTitle('Color'),
+                    const SizedBox(height: 8),
+                    _buildColorSelector(colorScheme),
+
+                    const SizedBox(height: 20),
+
+                    // Recurring Toggle
+                    _buildRecurringToggle(colorScheme),
+
+                    const SizedBox(height: 32),
+
+                    // Create Button (Bottom)
+                    _buildCreateButton(colorScheme),
+
+                    const SizedBox(height: 20),
+                  ],
                 ),
-
-                const SizedBox(height: 20),
-
-                // Target Amount
-                _buildSectionTitle('Target Amount'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _targetAmountController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: _inputDecoration(
-                    hintText: 'Enter target amount',
-                    icon: Icons.account_balance_wallet_outlined,
-                    prefixText: '${CurrencyService().symbol} ',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter target amount';
-                    }
-                    final amount = double.tryParse(value.replaceAll(',', ''));
-                    if (amount == null || amount <= 0) {
-                      return 'Please enter a valid amount';
-                    }
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                // Target Date
-                _buildSectionTitle('Deadline'),
-                const SizedBox(height: 8),
-                _buildDateSelector(colorScheme),
-
-                const SizedBox(height: 20),
-
-                // Goal Type
-                _buildSectionTitle('Goal Type'),
-                const SizedBox(height: 8),
-                _buildGoalTypeSelector(colorScheme),
-
-                const SizedBox(height: 20),
-
-                // Description
-                _buildSectionTitle('Description'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _descriptionController,
-                  maxLines: 2,
-                  decoration: _inputDecoration(
-                    hintText: 'Add details (optional)',
-                    icon: Icons.description_rounded,
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Color Selection
-                _buildSectionTitle('Color'),
-                const SizedBox(height: 8),
-                _buildColorSelector(colorScheme),
-
-                const SizedBox(height: 20),
-
-                // Recurring Toggle
-                _buildRecurringToggle(colorScheme),
-
-                const SizedBox(height: 32),
-
-                // Create Button (Bottom)
-                _buildCreateButton(colorScheme),
-
-                const SizedBox(height: 20),
-              ],
+              ),
             ),
           ),
         ),
@@ -351,9 +381,13 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
       children: GoalType.values.map((type) {
         final isSelected = _selectedType == type;
         return GestureDetector(
-          onTap: () => setState(() => _selectedType = type),
+          onTap: () {
+            if (isSelected) return;
+            AppHaptics.selection();
+            setState(() => _selectedType = type);
+          },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: AppMotion.fast,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: isSelected
@@ -404,9 +438,13 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
         final isSelected = _selectedColor == colorValue;
 
         return GestureDetector(
-          onTap: () => setState(() => _selectedColor = colorValue),
+          onTap: () {
+            if (isSelected) return;
+            AppHaptics.selection();
+            setState(() => _selectedColor = colorValue);
+          },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: AppMotion.fast,
             width: 44,
             height: 44,
             decoration: BoxDecoration(
@@ -451,6 +489,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
             ),
             value: _isRecurring,
             onChanged: (value) {
+              AppHaptics.selection();
               setState(() {
                 _isRecurring = value;
                 if (!value) _recurringPeriod = null;
@@ -486,9 +525,13 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
       String value, String label, ColorScheme colorScheme) {
     final isSelected = _recurringPeriod == value;
     return GestureDetector(
-      onTap: () => setState(() => _recurringPeriod = value),
+      onTap: () {
+        if (isSelected) return;
+        AppHaptics.selection();
+        setState(() => _recurringPeriod = value);
+      },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: AppMotion.fast,
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
@@ -579,6 +622,8 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
         context.read<GoalsBloc>().add(CreateGoal(goal));
       }
+    } else {
+      AppHaptics.error();
     }
   }
 

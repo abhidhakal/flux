@@ -18,6 +18,18 @@ class AppSnackbar {
     String? actionLabel,
     IconData? icon,
   }) {
+    switch (type) {
+      case AppSnackbarType.success:
+        AppHaptics.success();
+        break;
+      case AppSnackbarType.error:
+        AppHaptics.error();
+        break;
+      case AppSnackbarType.warning:
+      case AppSnackbarType.info:
+        break;
+    }
+
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
       ..showSnackBar(_buildSnackbar(

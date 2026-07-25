@@ -6,6 +6,7 @@ import '../models/goal_model.dart';
 import '../models/transaction_model.dart';
 import '../models/notification_model.dart';
 import 'enhanced_notification_service.dart';
+import 'transaction_service.dart';
 
 class NotificationTriggerService {
   final EnhancedNotificationService _notificationService = EnhancedNotificationService();
@@ -412,8 +413,14 @@ class NotificationTriggerService {
     try {
       final today = DateTime.now();
       final alertKey = 'daily_reminder_${type}_${today.year}_${today.month}_${today.day}';
-      
+
       if (await _hasRecentAlert(userId, alertKey)) return;
+
+      // Don't nag about logging expenses if the user already has today.
+      if (type == 'expense_log' &&
+          await TransactionService().hasTransactionsToday(userId)) {
+        return;
+      }
 
       String title = 'Daily Reminder';
       String message = 'Don\'t forget to check your finances today!';

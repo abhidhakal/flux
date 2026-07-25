@@ -77,8 +77,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF0079DC),
-                  Color(0xFF0056B3),
+                  AppColors.primary,
+                  AppColors.primaryDark,
                   Color(0xFF003D80),
                 ],
                 stops: [0.0, 0.55, 1.0],

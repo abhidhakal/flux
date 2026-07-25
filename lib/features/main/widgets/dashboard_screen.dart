@@ -263,11 +263,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
   Widget _buildBalanceCard(List<Transaction> transactions) {
-    final expenses = transactions.where((t) => t.isExpense).toList();
-    final incomes = transactions.where((t) => t.isIncome).toList();
-    final totalExpenses = expenses.fold(0.0, (sum, t) => sum + t.amount);
-    final totalIncome = incomes.fold(0.0, (sum, t) => sum + t.amount);
-    final balance = totalIncome - totalExpenses;
+    final totalExpenses = transactions.totalExpenses();
+    final totalIncome = transactions.totalIncome();
+    final balance = transactions.netBalance;
     
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -308,7 +306,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   'Income',
                   CurrencyService().formatAmount(totalIncome),
                   Icons.arrow_upward_rounded,
-                  const Color(0xFF22C55E),
+                  AppColors.success,
                   colorScheme,
                 ),
               ),
@@ -322,7 +320,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   'Expense',
                   CurrencyService().formatAmount(totalExpenses),
                   Icons.arrow_downward_rounded,
-                  const Color(0xFFEF4444),
+                  AppColors.error,
                   colorScheme,
                 ),
               ),
@@ -638,12 +636,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: isExpense ? const Color(0xFFFEE2E2) : const Color(0xFFDCFCE7),
+                          color: (isExpense ? AppColors.error : AppColors.success).withValues(
+                            alpha: theme.brightness == Brightness.dark ? 0.16 : 0.12,
+                          ),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(
                           isExpense ? Icons.shopping_bag_outlined : Icons.attach_money_rounded,
-                          color: isExpense ? const Color(0xFFEF4444) : const Color(0xFF22C55E),
+                          color: isExpense ? AppColors.error : AppColors.success,
                           size: 20,
                         ),
                       ),

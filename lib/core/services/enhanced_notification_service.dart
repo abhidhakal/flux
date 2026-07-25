@@ -290,63 +290,47 @@ class EnhancedNotificationService {
   }
 
   // --- Smart Daily Log Reminder Logic ---
-
-  ({String title, String body}) _smartDailyReminderContent({
-    required bool hasTransactionsToday,
-    required bool isForToday,
-  }) {
-    if (hasTransactionsToday && isForToday) {
-      return (
-        title: 'Nice work today',
-        body: 'You already added a transaction today. Review it or add another one if needed.',
-      );
-    }
-
-    return (
-      title: 'Add your finances',
-      body: 'You haven\'t added any transactions today yet. Take a moment to log one.',
-    );
-  }
-
+  //
+  // This is deliberately a one-shot notification, re-scheduled fresh on every
+  // refresh (app open, transaction added/updated/deleted) rather than a
+  // repeating `matchDateTimeComponents` alarm. A repeating alarm bakes its
+  // content in at schedule time and then fires unchanged every day — if the
+  // day it was scheduled on rolled over to "tomorrow" (e.g. refreshed after
+  // 5pm), tomorrow's occurrence would carry today's stale data. By always
+  // recomputing "should today's slot fire at all" at refresh time, and never
+  // asserting anything about a day that hasn't happened yet, the reminder
+  // can't go stale across day boundaries.
   Future<void> _scheduleOrRefreshSmartDailyLogReminder(String userId) async {
+    // Clear any previously scheduled occurrence — it may be stale.
+    await _pushService.cancelNotification(_smartDailyReminderId);
+
     final schedules = await getUserNotificationSchedules(userId);
     if (schedules['daily_reminder']?['enabled'] == true) {
       debugPrint('🔵 ENHANCED NOTIFICATION SERVICE: Custom daily reminder enabled, skipping smart reminder.');
       return;
     }
 
-    final hasTransactionsToday = await TransactionService().hasTransactionsToday(userId);
     final now = DateTime.now();
     var scheduledDate = DateTime(now.year, now.month, now.day, 17, 0);
 
     if (scheduledDate.isBefore(now)) {
+      // Today's slot already passed — next thing worth reminding about is tomorrow.
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    } else if (await TransactionService().hasTransactionsToday(userId)) {
+      // Already logged today — nothing to remind about today, check back tomorrow.
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    final isForToday =
-        scheduledDate.year == now.year &&
-        scheduledDate.month == now.month &&
-        scheduledDate.day == now.day;
-    final content = _smartDailyReminderContent(
-      hasTransactionsToday: hasTransactionsToday,
-      isForToday: isForToday,
-    );
-
-    await _pushService.cancelNotification(_smartDailyReminderId);
     await _pushService.scheduleNotification(
       id: _smartDailyReminderId,
-      title: content.title,
-      body: content.body,
+      title: 'Add your finances',
+      body: 'You haven\'t added any transactions today yet. Take a moment to log one.',
       scheduledDate: scheduledDate,
       priority: NotificationPriority.high,
       payload: 'add_transaction',
-      matchDateTimeComponents: DateTimeComponents.time,
     );
 
-    debugPrint(
-      '✅ ENHANCED NOTIFICATION SERVICE: Smart reminder scheduled for $scheduledDate '
-      '(hasTransactionsToday=$hasTransactionsToday, isForToday=$isForToday)',
-    );
+    debugPrint('✅ ENHANCED NOTIFICATION SERVICE: Smart reminder scheduled for $scheduledDate');
   }
 
   // Schedule the smart daily reminder (called on app init)

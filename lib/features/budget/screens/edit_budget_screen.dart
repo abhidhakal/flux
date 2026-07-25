@@ -286,8 +286,14 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
         final isSelected = _selectedPeriod == period;
         return Expanded(
           child: GestureDetector(
-            onTap: () => setState(() => _selectedPeriod = period),
-            child: Container(
+            onTap: () {
+              if (isSelected) return;
+              AppHaptics.selection();
+              setState(() => _selectedPeriod = period);
+            },
+            child: AnimatedContainer(
+              duration: AppMotion.fast,
+              curve: AppMotion.standard,
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
@@ -346,14 +352,20 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
           style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
         ),
         value: value,
-        onChanged: onChanged,
+        onChanged: (v) {
+          AppHaptics.selection();
+          onChanged(v);
+        },
         activeThumbColor: AppColors.primary,
       ),
     );
   }
 
   Future<void> _handleSave() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      AppHaptics.error();
+      return;
+    }
 
     final selectedStatus = _isActive;
     final wasActive = widget.budget.isActive;

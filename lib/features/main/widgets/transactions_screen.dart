@@ -14,10 +14,10 @@ import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/page_transitions.dart';
 import '../../../shared/widgets/skeleton_components.dart';
 import '../../../core/widgets/app_banner_ad.dart';
+import 'transaction_tile.dart';
+import '../../../core/utils/date_range_filter.dart';
 
 // ─── Filter enums ────────────────────────────────────────────────────────────
-
-enum _TimelineFilter { lastWeek, lastMonth, last3Months, custom }
 
 enum _TypeFilter { all, expenses, income }
 
@@ -40,7 +40,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   final Set<String> _selectedIds = {};
 
   // Filters
-  _TimelineFilter _timelineFilter = _TimelineFilter.lastMonth;
+  TimelineFilter _timelineFilter = TimelineFilter.lastMonth;
   _TypeFilter _typeFilter = _TypeFilter.all;
   String? _selectedBudgetId; // null = all budgets
   DateTimeRange? _customRange;
@@ -72,23 +72,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   // ─── Date range helper ────────────────────────────────────────────────────
 
-  DateTimeRange _getActiveRange() {
-    if (_timelineFilter == _TimelineFilter.custom && _customRange != null) {
-      return _customRange!;
-    }
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day, 23, 59, 59);
-    switch (_timelineFilter) {
-      case _TimelineFilter.lastWeek:
-        return DateTimeRange(start: today.subtract(const Duration(days: 6)), end: today);
-      case _TimelineFilter.lastMonth:
-        return DateTimeRange(start: DateTime(now.year, now.month - 1, now.day), end: today);
-      case _TimelineFilter.last3Months:
-        return DateTimeRange(start: DateTime(now.year, now.month - 3, now.day), end: today);
-      case _TimelineFilter.custom:
-        return DateTimeRange(start: DateTime(now.year, now.month - 1, now.day), end: today);
-    }
-  }
+  DateTimeRange _getActiveRange() =>
+      activeRangeFor(_timelineFilter, customRange: _customRange);
 
   Future<void> _pickCustomRange() async {
     final now = DateTime.now();
@@ -109,7 +94,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     if (picked != null) {
       setState(() {
         _customRange = picked;
-        _timelineFilter = _TimelineFilter.custom;
+        _timelineFilter = TimelineFilter.custom;
       });
     }
   }
@@ -435,17 +420,17 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     final colorScheme = Theme.of(context).colorScheme;
 
     String customLabel = 'Custom';
-    if (_timelineFilter == _TimelineFilter.custom && _customRange != null) {
+    if (_timelineFilter == TimelineFilter.custom && _customRange != null) {
       final s = _customRange!.start;
       final e = _customRange!.end;
       customLabel = '${s.day}/${s.month}–${e.day}/${e.month}';
     }
 
     final timelinePills = [
-      _timelinePill('Week', _TimelineFilter.lastWeek),
-      _timelinePill('Month', _TimelineFilter.lastMonth),
-      _timelinePill('3 Months', _TimelineFilter.last3Months),
-      _timelinePill(customLabel, _TimelineFilter.custom, icon: Icons.date_range_rounded, onCustomTap: _pickCustomRange),
+      _timelinePill('Week', TimelineFilter.lastWeek),
+      _timelinePill('Month', TimelineFilter.lastMonth),
+      _timelinePill('3 Months', TimelineFilter.last3Months),
+      _timelinePill(customLabel, TimelineFilter.custom, icon: Icons.date_range_rounded, onCustomTap: _pickCustomRange),
     ];
 
     return Padding(
@@ -523,7 +508,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     return count;
   }
 
-  Widget _timelinePill(String label, _TimelineFilter filter,
+  Widget _timelinePill(String label, TimelineFilter filter,
       {IconData? icon, VoidCallback? onCustomTap}) {
     final selected = _timelineFilter == filter;
     final colorScheme = Theme.of(context).colorScheme;
@@ -823,135 +808,23 @@ class _TransactionsScreenState extends State<TransactionsScreen>
             ],
           ),
         ),
-        ...items.map((item) => _buildTransactionTile(item)),
+        ...items.map((item) => TransactionTile(
+              item: item,
+              isSelectionMode: _isSelectionMode,
+              isSelected: _selectedIds.contains(item.id),
+              onTap: () => _isSelectionMode
+                  ? _toggleSelection(item.id)
+                  : _showEditDialog(item),
+              onLongPress: () {
+                if (!_isSelectionMode) {
+                  setState(() {
+                    _isSelectionMode = true;
+                    _selectedIds.add(item.id);
+                  });
+                }
+              },
+            )),
       ],
-    );
-  }
-
-  Widget _buildTransactionTile(Transaction item) {
-    final title = item.title;
-    final subtitle = item.description.isNotEmpty ? item.description : item.category;
-    final amount = item.amount;
-    final date = item.date;
-    final id = item.id;
-    final isIncome = item.isIncome;
-    final colorScheme = Theme.of(context).colorScheme;
-    final accentColor = isIncome ? AppColors.success : AppColors.error;
-
-    return GestureDetector(
-      onTap: () => _isSelectionMode ? _toggleSelection(id) : _showEditDialog(item),
-      onLongPress: () {
-        if (!_isSelectionMode) setState(() {
-          _isSelectionMode = true;
-          _selectedIds.add(id);
-        });
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppTheme.cardSurface(context),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: _selectedIds.contains(id)
-                ? AppColors.primary
-                : colorScheme.outline.withOpacity(0.10),
-            width: _selectedIds.contains(id) ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            // Leading icon / checkbox
-            if (_isSelectionMode)
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _selectedIds.contains(id) ? AppColors.primary : Colors.transparent,
-                    border: Border.all(
-                      color: _selectedIds.contains(id) ? AppColors.primary : colorScheme.outline,
-                      width: 1.5,
-                    ),
-                  ),
-                  child: _selectedIds.contains(id)
-                      ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
-                      : null,
-                ),
-              )
-            else
-              Container(
-                width: 44,
-                height: 44,
-                margin: const EdgeInsets.only(right: 14),
-                decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  isIncome ? Icons.add_rounded : Icons.remove_rounded,
-                  color: accentColor,
-                  size: 22,
-                ),
-              ),
-
-            // Title + subtitle
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurface.withOpacity(0.55),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-
-            // Amount + time
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${isIncome ? '+' : '-'}${CurrencyService().formatAmount(amount)}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: accentColor,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _formatTime(date),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: colorScheme.onSurface.withOpacity(0.45),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1086,9 +959,6 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
       ][m - 1];
-
-  String _formatTime(DateTime date) =>
-      '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 
   void _showEditDialog(Transaction item) {
     EditTransactionScreen.showEditTransactionPopup(context, item);

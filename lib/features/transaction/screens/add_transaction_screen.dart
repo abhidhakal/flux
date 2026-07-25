@@ -21,12 +21,13 @@ class AddTransactionScreen extends StatefulWidget {
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
 }
 
-class _AddTransactionScreenState extends State<AddTransactionScreen> {
+class _AddTransactionScreenState extends State<AddTransactionScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
-  
+
   TransactionType _selectedType = TransactionType.expense;
   String _selectedCategory = 'Food & Dining';
   DateTime _selectedDate = DateTime.now();
@@ -39,6 +40,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Budget? _selectedBudget;
   final RecurringTransactionService _recurringTransactionService =
       RecurringTransactionService();
+
+  late final AnimationController _entranceController;
+  late final Animation<double> _entranceFade;
+  late final Animation<Offset> _entranceSlide;
 
   @override
   void initState() {
@@ -53,6 +58,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     if (user is AuthAuthenticated) {
       context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
     }
+
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: AppMotion.slow,
+    );
+    _entranceFade = CurvedAnimation(
+      parent: _entranceController,
+      curve: AppMotion.standard,
+    );
+    _entranceSlide = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _entranceController,
+      curve: AppMotion.standard,
+    ));
+    _entranceController.forward();
   }
 
   @override
@@ -60,6 +82,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     _titleController.dispose();
     _descriptionController.dispose();
     _amountController.dispose();
+    _entranceController.dispose();
     super.dispose();
   }
 
@@ -91,7 +114,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 ? SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: saveIconColor),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: saveIconColor),
                   )
                 : Text(
                     'Save',
@@ -107,13 +131,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         listener: (context, state) {
           if (state is BudgetLoaded) {
             setState(() {
-              _availableBudgets = state.budgets
-                  .where((budget) => budget.isActive)
-                  .toList();
+              _availableBudgets =
+                  state.budgets.where((budget) => budget.isActive).toList();
               // Auto-select budget if category matches
               if (_selectedBudget == null && _availableBudgets.isNotEmpty) {
                 _selectedBudget = _availableBudgets
-                    .where((b) => b.category.toLowerCase() == _selectedCategory.toLowerCase())
+                    .where((b) =>
+                        b.category.toLowerCase() ==
+                        _selectedCategory.toLowerCase())
                     .firstOrNull;
               }
             });
@@ -140,49 +165,55 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               AppSnackbar.showError(context, message: state.message);
             }
           },
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildSectionTitle('Transaction Type'),
-                  const SizedBox(height: 8),
-                  _buildTransactionTypeSelector(),
-                  const SizedBox(height: 20),
-                  _buildSectionTitle('Title'),
-                  const SizedBox(height: 8),
-                  _buildTitleField(),
-                  const SizedBox(height: 20),
-                  _buildSectionTitle('Description'),
-                  const SizedBox(height: 8),
-                  _buildDescriptionField(),
-                  const SizedBox(height: 20),
-                  _buildSectionTitle('Amount'),
-                  const SizedBox(height: 8),
-                  _buildAmountField(),
-                  const SizedBox(height: 20),
-                  _buildSectionTitle('Category'),
-                  const SizedBox(height: 8),
-                  _buildCategorySelector(),
-                  if (_selectedType == TransactionType.expense) ...[
-                    const SizedBox(height: 20),
-                    _buildSectionTitle('Budget'),
-                    const SizedBox(height: 8),
-                    _buildBudgetSelector(),
-                    const SizedBox(height: 20),
-                    _buildEssentialToggle(),
-                  ],
-                  const SizedBox(height: 20),
-                  _buildRecurringSection(),
-                  const SizedBox(height: 20),
-                  _buildSectionTitle('Date'),
-                  const SizedBox(height: 8),
-                  _buildDateSelector(),
-                  const SizedBox(height: 32),
-                  _buildSaveButton(),
-                ],
+          child: FadeTransition(
+            opacity: _entranceFade,
+            child: SlideTransition(
+              position: _entranceSlide,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildSectionTitle('Transaction Type'),
+                      const SizedBox(height: 8),
+                      _buildTransactionTypeSelector(),
+                      const SizedBox(height: 20),
+                      _buildSectionTitle('Title'),
+                      const SizedBox(height: 8),
+                      _buildTitleField(),
+                      const SizedBox(height: 20),
+                      _buildSectionTitle('Description'),
+                      const SizedBox(height: 8),
+                      _buildDescriptionField(),
+                      const SizedBox(height: 20),
+                      _buildSectionTitle('Amount'),
+                      const SizedBox(height: 8),
+                      _buildAmountField(),
+                      const SizedBox(height: 20),
+                      _buildSectionTitle('Category'),
+                      const SizedBox(height: 8),
+                      _buildCategorySelector(),
+                      const SizedBox(height: 20),
+                      _buildSectionTitle('Budget'),
+                      const SizedBox(height: 8),
+                      _buildBudgetSelector(),
+                      if (_selectedType == TransactionType.expense) ...[
+                        const SizedBox(height: 20),
+                        _buildEssentialToggle(),
+                      ],
+                      const SizedBox(height: 20),
+                      _buildRecurringSection(),
+                      const SizedBox(height: 20),
+                      _buildSectionTitle('Date'),
+                      const SizedBox(height: 8),
+                      _buildDateSelector(),
+                      const SizedBox(height: 32),
+                      _buildSaveButton(),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -224,6 +255,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final isSelected = _selectedType == type;
     return GestureDetector(
       onTap: () {
+        if (isSelected) return;
+        AppHaptics.selection();
         setState(() {
           _selectedType = type;
           // Update category based on type
@@ -234,12 +267,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           }
         });
       },
-      child: Container(
+      child: AnimatedContainer(
+        duration: AppMotion.fast,
+        curve: AppMotion.standard,
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.1) : Theme.of(context).colorScheme.surface,
+          color: isSelected
+              ? color.withValues(alpha: 0.1)
+              : Theme.of(context).colorScheme.surface,
           border: Border.all(
-            color: isSelected ? color : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+            color: isSelected
+                ? color
+                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
             width: 2,
           ),
           borderRadius: BorderRadius.circular(8),
@@ -248,14 +287,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           children: [
             Icon(
               icon,
-              color: isSelected ? color : Theme.of(context).colorScheme.onSurface,
+              color:
+                  isSelected ? color : Theme.of(context).colorScheme.onSurface,
               size: 24,
             ),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? color : Theme.of(context).colorScheme.onSurface,
+                color: isSelected
+                    ? color
+                    : Theme.of(context).colorScheme.onSurface,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
@@ -375,7 +417,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
+          border: Border.all(
+              color:
+                  Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -398,7 +442,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-
   Widget _buildSaveButton() {
     return ElevatedButton(
       onPressed: _isLoading ? null : _handleSave,
@@ -411,7 +454,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           ? const SizedBox(
               height: 20,
               width: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white),
             )
           : const Text(
               'Save Transaction',
@@ -476,9 +520,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             initialValue: _selectedBudget,
             isExpanded: true,
             decoration: InputDecoration(
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               hintText: 'Select a budget (Optional)',
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               suffixIcon: _selectedBudget != null
                   ? IconButton(
                       icon: const Icon(Icons.clear, size: 18),
@@ -514,7 +560,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           'Total: ${CurrencyService().formatAmount(budget.amount)}',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.7),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -559,8 +608,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             child: Row(
               children: [
                 Icon(
-                  _selectedBudget!.isOverBudget ? Icons.warning : Icons.info_outline,
-                  color: _selectedBudget!.isOverBudget ? AppColors.error : AppColors.primary,
+                  _selectedBudget!.isOverBudget
+                      ? Icons.warning
+                      : Icons.info_outline,
+                  color: _selectedBudget!.isOverBudget
+                      ? AppColors.error
+                      : AppColors.primary,
                   size: 16,
                 ),
                 const SizedBox(width: 8),
@@ -573,7 +626,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       fontSize: 12,
                       color: _selectedBudget!.isOverBudget
                           ? Theme.of(context).colorScheme.error
-                          : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                          : Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.8),
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -587,7 +643,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-
   Widget _buildEssentialToggle() {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
@@ -598,7 +653,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       child: SwitchListTile(
         title: Text(
           'Mark as Essential',
-          style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onBackground),
+          style: TextStyle(
+              fontWeight: FontWeight.w600, color: colorScheme.onBackground),
         ),
         subtitle: Text(
           'Is this a "Need" (Housing, Bills) or a "Want"?',
@@ -687,8 +743,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         // Check if this expense would exceed the budget
         final expenseAmount = double.parse(_amountController.text);
         final remainingBudget = _selectedBudget!.remaining;
-        
+
         if (expenseAmount > remainingBudget) {
+          AppHaptics.error();
           // Show warning but allow the transaction
           showDialog(
             context: context,
@@ -733,8 +790,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           return;
         }
       }
-      
+
       _createTransaction();
+    } else {
+      AppHaptics.error();
     }
   }
 
@@ -750,8 +809,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         amount: double.parse(_amountController.text),
         type: _selectedType,
         category: _selectedCategory,
-        budgetId: _selectedType == TransactionType.expense ? _selectedBudget?.id : null,
-        isEssential: _selectedType == TransactionType.expense ? _isEssential : false,
+        budgetId: _selectedBudget?.id,
+        isEssential:
+            _selectedType == TransactionType.expense ? _isEssential : false,
         date: _selectedDate,
         createdAt: now,
       );
@@ -786,4 +846,4 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           );
     }
   }
-  }
+}

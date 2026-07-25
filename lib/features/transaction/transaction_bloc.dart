@@ -159,13 +159,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       
       // Trigger notification checks
       _notificationTriggerService.monitorSpendingPatterns(event.transaction.userId, transactions);
-      
-      // Update smart daily reminder since user just added a transaction
-      _enhancedNotificationService?.updateDailyLogReminder(event.transaction.userId);
-      
-      // Also check budgets as they are affected by transactions
-      final budgets = await _budgetService.getUserBudgets(event.transaction.userId);
-      _notificationTriggerService.monitorBudgetChanges(event.transaction.userId, budgets);
+      await _runPostMutationChecks(event.transaction.userId);
     } catch (e) {
       emit(TransactionError('Failed to add transaction: $e'));
     }
@@ -186,10 +180,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       
       // Trigger notification checks
       _notificationTriggerService.monitorSpendingPatterns(event.transaction.userId, transactions);
-      _enhancedNotificationService?.updateDailyLogReminder(event.transaction.userId);
-      
-      final budgets = await _budgetService.getUserBudgets(event.transaction.userId);
-      _notificationTriggerService.monitorBudgetChanges(event.transaction.userId, budgets);
+      await _runPostMutationChecks(event.transaction.userId);
     } catch (e) {
       emit(TransactionError('Failed to update transaction: $e'));
     }
@@ -209,11 +200,17 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       emit(TransactionLoaded(transactions, message: 'Transaction deleted successfully!'));
       
       // Check budgets after deletion
-      _enhancedNotificationService?.updateDailyLogReminder(event.userId);
-      final budgets = await _budgetService.getUserBudgets(event.userId);
-      _notificationTriggerService.monitorBudgetChanges(event.userId, budgets);
+      await _runPostMutationChecks(event.userId);
     } catch (e) {
       emit(TransactionError('Failed to delete transaction: $e'));
     }
+  }
+
+  // Shared tail for add/update/delete: refresh the daily-log reminder and
+  // re-check budget thresholds now that a transaction changed spent amounts.
+  Future<void> _runPostMutationChecks(String userId) async {
+    _enhancedNotificationService?.updateDailyLogReminder(userId);
+    final budgets = await _budgetService.getUserBudgets(userId);
+    _notificationTriggerService.monitorBudgetChanges(userId, budgets);
   }
 }

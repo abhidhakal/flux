@@ -182,39 +182,28 @@ class BudgetService {
       // Use a batch for atomic updates
       final batch = _firestore.batch();
 
-      // Create a map to track spent amounts for each budget
-      final Map<String, double> budgetSpentMap = {};
+      // Index active budgets by ID so each transaction is a O(1) lookup
+      // instead of a linear scan (was O(transactions * budgets)).
+      final activeBudgetIds = {
+        for (final budget in budgets)
+          if (budget.isActive) budget.id: budget,
+      };
 
-      // Initialize all budgets with 0 spent
-      for (final budget in budgets) {
-        budgetSpentMap[budget.id] = 0.0;
-      }
+      // Create a map to track spent amounts for each budget
+      final Map<String, double> budgetSpentMap = {
+        for (final budget in budgets) budget.id: 0.0,
+      };
 
       // Calculate spent amounts from transactions
       for (final transaction in transactions) {
         // Only process transactions with budget assignments
         if (transaction.isActive &&
             transaction.budgetId != null &&
-            transaction.budgetId!.isNotEmpty) {
-          final matchingBudget = budgets.firstWhere(
-            (budget) => budget.id == transaction.budgetId && budget.isActive,
-            orElse: () => Budget(
-              id: '',
-              userId: '',
-              name: '',
-              amount: 0,
-              period: BudgetPeriod.monthly,
-              category: '',
-              startDate: DateTime.now(),
-              endDate: DateTime.now(),
-              createdAt: DateTime.now(),
-            ),
-          );
-
-          if (matchingBudget.id.isNotEmpty) {
-            budgetSpentMap[matchingBudget.id] =
-                (budgetSpentMap[matchingBudget.id] ?? 0.0) + transaction.amount;
-          }
+            transaction.budgetId!.isNotEmpty &&
+            activeBudgetIds.containsKey(transaction.budgetId)) {
+          budgetSpentMap[transaction.budgetId!] =
+              (budgetSpentMap[transaction.budgetId!] ?? 0.0) +
+                  transaction.amount;
         }
       }
 

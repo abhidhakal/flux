@@ -172,26 +172,16 @@ class TransactionService {
       final startOfDay = DateTime(now.year, now.month, now.day);
       final startOfTomorrow = startOfDay.add(const Duration(days: 1));
 
-      // Fetch recent transactions for user (filtering in Dart to avoid index issues)
-      // We sort by date descending to get the latest ones effectively
+      // Filter by createdAt range server-side instead of fetching the whole
+      // user history just to check "did anything happen today".
       final querySnapshot = await _firestore
           .collection('transactions')
           .where('userId', isEqualTo: userId)
+          .where('createdAt', isGreaterThanOrEqualTo: startOfDay.toIso8601String())
+          .where('createdAt', isLessThan: startOfTomorrow.toIso8601String())
           .get();
 
-      // Count only active transactions that were actually added today.
-      final hasToday = querySnapshot.docs.any((doc) {
-        final data = doc.data();
-        if (data['isActive'] == false) return false;
-
-        final timestamp = data['createdAt'] ?? data['date'];
-        if (timestamp == null) return false;
-
-        final addedAt = DateTime.parse(timestamp as String);
-        return !addedAt.isBefore(startOfDay) && addedAt.isBefore(startOfTomorrow);
-      });
-
-      return hasToday;
+      return querySnapshot.docs.any((doc) => doc.data()['isActive'] != false);
     } catch (e) {
       debugPrint('❌ TRANSACTION SERVICE: Error checking today transactions: $e');
       return false;

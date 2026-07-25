@@ -84,6 +84,9 @@ class AppColors {
   static const Color budgetWarning = Color(0xFFFFB300);
   static const Color budgetOver = Color(0xFFDC3545);
 
+  // Brand colors (third-party)
+  static const Color googleRed = Color(0xFFDB4437);
+
   // Gradient colors - Modern Gradients
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [primary, primaryLight],
@@ -884,4 +887,41 @@ class AppTheme {
       ),
     );
   }
+}
+
+/// Motion + haptics rules for the app. Any transient UI animation (button
+/// press states, entrance transitions, toggles) should use these tokens
+/// instead of ad-hoc `Duration`/`Curve` literals, so motion feels consistent
+/// screen to screen. Haptics follow the same idea: use [AppHaptics] at the
+/// moments listed below rather than calling `HapticFeedback` directly, so the
+/// vocabulary (what a "selection" vs a "success" feels like) stays uniform.
+class AppMotion {
+  const AppMotion._();
+
+  // Durations
+  static const Duration fast = Duration(milliseconds: 150); // micro-interactions: toggles, button presses
+  static const Duration medium = Duration(milliseconds: 250); // card/section transitions
+  static const Duration slow = Duration(milliseconds: 400); // screen-level entrances
+
+  // Curves
+  static const Curve standard = Curves.easeOutCubic; // default for most transitions
+  static const Curve emphasized = Curves.easeOutBack; // draws attention (success states, confirmations)
+}
+
+/// Haptic feedback vocabulary. Call at the point of user action, not on
+/// result arrival (e.g. on button tap, not after the async call resolves).
+class AppHaptics {
+  const AppHaptics._();
+
+  /// Selecting/toggling something (type pickers, switches, chips).
+  static void selection() => HapticFeedback.selectionClick();
+
+  /// A lightweight, frequent tap (icon buttons, list taps).
+  static void tap() => HapticFeedback.lightImpact();
+
+  /// A primary action succeeded (save, submit, confirm).
+  static void success() => HapticFeedback.mediumImpact();
+
+  /// A primary action failed or was blocked (validation error, request failure).
+  static void error() => HapticFeedback.heavyImpact();
 }

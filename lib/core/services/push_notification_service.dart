@@ -5,6 +5,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import '../models/notification_model.dart';
+import '../constants/app_theme.dart';
 
 class PushNotificationService {
   static final PushNotificationService _instance = PushNotificationService._internal();
@@ -104,7 +105,7 @@ class PushNotificationService {
       importance: _getAndroidImportance(priority),
       priority: _getAndroidPriority(priority),
       icon: '@mipmap/launcher_icon',
-      color: const Color(0xFF0079DC),
+      color: AppColors.primary,
       playSound: true,
       enableVibration: true,
     );
@@ -142,7 +143,7 @@ class PushNotificationService {
       importance: _getAndroidImportance(priority),
       priority: _getAndroidPriority(priority),
       icon: '@mipmap/launcher_icon',
-      color: const Color(0xFF0079DC),
+      color: AppColors.primary,
     );
 
     const iosDetails = fln.DarwinNotificationDetails(

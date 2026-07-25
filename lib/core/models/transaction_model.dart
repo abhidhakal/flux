@@ -45,9 +45,6 @@ class Transaction extends Equatable {
   bool get isExpense => type == TransactionType.expense;
   bool get isIncome => type == TransactionType.income;
 
-  // For budget matching - exact category comparison
-  String get categoryForBudget => category;
-
   Transaction copyWith({
     String? id,
     String? userId,
@@ -159,4 +156,14 @@ class Transaction extends Equatable {
         createdAt,
         metadata,
       ];
+}
+
+extension TransactionListTotals on List<Transaction> {
+  double totalIncome() =>
+      where((t) => t.isIncome).fold(0.0, (sum, t) => sum + t.amount);
+
+  double totalExpenses() =>
+      where((t) => t.isExpense).fold(0.0, (sum, t) => sum + t.amount);
+
+  double get netBalance => totalIncome() - totalExpenses();
 }

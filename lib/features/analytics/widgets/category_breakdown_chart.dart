@@ -155,16 +155,18 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
     }).toList();
   }
 
+  static const List<Color> _categoryColors = [
+    AppColors.primary,
+    Color(0xFF10B981), // Green
+    Color(0xFFFF6B6B), // Coral
+    Color(0xFFFFB300), // Amber
+    Color(0xFF805AD5), // Purple
+    Color(0xFF607D8B), // Slate
+    Color(0xFFE91E63), // Pink
+  ];
+
   List<PieChartSectionData> _getPieSections(List<Map<String, dynamic>> categoryData) {
-    final colors = [
-      AppColors.primary,
-      const Color(0xFF10B981), // Green
-      const Color(0xFFFF6B6B), // Coral
-      const Color(0xFFFFB300), // Amber
-      const Color(0xFF805AD5), // Purple
-      const Color(0xFF607D8B), // Slate
-      const Color(0xFFE91E63), // Pink
-    ];
+    final colors = _categoryColors;
 
     final total = categoryData.fold(0.0, (sum, item) => sum + (item['amount'] as double));
 
@@ -193,15 +195,7 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
   }
 
   Widget _buildLegend(List<Map<String, dynamic>> categoryData, BuildContext context) {
-    final colors = [
-      AppColors.primary,
-      const Color(0xFF10B981),
-      const Color(0xFFFF6B6B),
-      const Color(0xFFFFB300),
-      const Color(0xFF805AD5),
-      const Color(0xFF607D8B),
-      const Color(0xFFE91E63),
-    ];
+    final colors = _categoryColors;
 
     final total = categoryData.fold(0.0, (sum, item) => sum + (item['amount'] as double));
     final halfLength = (categoryData.length / 2).ceil();
