@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../core/models/recurring_transaction_model.dart';
@@ -125,12 +126,13 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     Emitter<TransactionState> emit,
   ) async {
     emit(TransactionLoading());
-    
+
     try {
       await _recurringTransactionService.processDueTransactions(event.userId);
-      final transactions = await _transactionService.getUserTransactions(event.userId);
+      final transactions =
+          await _transactionService.getUserTransactions(event.userId);
       emit(TransactionLoaded(transactions));
-      
+
       // Schedule/Check smart daily reminder
       _enhancedNotificationService?.scheduleSmartDailyLogReminder(event.userId);
       _enhancedNotificationService?.scheduleMorningGreeting(event.userId);
@@ -144,21 +146,24 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     Emitter<TransactionState> emit,
   ) async {
     emit(TransactionLoading());
-    
+
     try {
       await _transactionService.addTransaction(event.transaction);
       if (event.recurringTransaction != null) {
         await _recurringTransactionService
             .addRecurringTransaction(event.recurringTransaction!);
       }
-      
+
       // Reload transactions
-      final transactions = await _transactionService.getUserTransactions(event.transaction.userId);
+      final transactions = await _transactionService
+          .getUserTransactions(event.transaction.userId);
       // Emit Loaded with Success Message
-      emit(TransactionLoaded(transactions, message: 'Transaction added successfully!'));
-      
+      emit(TransactionLoaded(transactions,
+          message: 'Transaction added successfully!'));
+
       // Trigger notification checks
-      _notificationTriggerService.monitorSpendingPatterns(event.transaction.userId, transactions);
+      _notificationTriggerService.monitorSpendingPatterns(
+          event.transaction.userId, transactions);
       await _runPostMutationChecks(event.transaction.userId);
     } catch (e) {
       emit(TransactionError('Failed to add transaction: $e'));
@@ -170,16 +175,19 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     Emitter<TransactionState> emit,
   ) async {
     emit(TransactionLoading());
-    
+
     try {
       await _transactionService.updateTransaction(event.transaction);
-      
+
       // Reload transactions
-      final transactions = await _transactionService.getUserTransactions(event.transaction.userId);
-      emit(TransactionLoaded(transactions, message: 'Transaction updated successfully!'));
-      
+      final transactions = await _transactionService
+          .getUserTransactions(event.transaction.userId);
+      emit(TransactionLoaded(transactions,
+          message: 'Transaction updated successfully!'));
+
       // Trigger notification checks
-      _notificationTriggerService.monitorSpendingPatterns(event.transaction.userId, transactions);
+      _notificationTriggerService.monitorSpendingPatterns(
+          event.transaction.userId, transactions);
       await _runPostMutationChecks(event.transaction.userId);
     } catch (e) {
       emit(TransactionError('Failed to update transaction: $e'));
@@ -191,14 +199,16 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     Emitter<TransactionState> emit,
   ) async {
     emit(TransactionLoading());
-    
+
     try {
       await _transactionService.deleteTransaction(event.transactionId);
-      
+
       // Reload transactions after deletion using userId from event
-      final transactions = await _transactionService.getUserTransactions(event.userId);
-      emit(TransactionLoaded(transactions, message: 'Transaction deleted successfully!'));
-      
+      final transactions =
+          await _transactionService.getUserTransactions(event.userId);
+      emit(TransactionLoaded(transactions,
+          message: 'Transaction deleted successfully!'));
+
       // Check budgets after deletion
       await _runPostMutationChecks(event.userId);
     } catch (e) {
@@ -210,7 +220,14 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   // re-check budget thresholds now that a transaction changed spent amounts.
   Future<void> _runPostMutationChecks(String userId) async {
     _enhancedNotificationService?.updateDailyLogReminder(userId);
-    final budgets = await _budgetService.getUserBudgets(userId);
-    _notificationTriggerService.monitorBudgetChanges(userId, budgets);
+    // Best-effort: the transaction mutation already succeeded by the time
+    // this runs, so a budget-monitoring failure here shouldn't flip an
+    // already-emitted success state into an error.
+    try {
+      final budgets = await _budgetService.getUserBudgets(userId);
+      _notificationTriggerService.monitorBudgetChanges(userId, budgets);
+    } catch (e) {
+      debugPrint('❌ TRANSACTION BLOC: Post-mutation budget check failed: $e');
+    }
   }
 }

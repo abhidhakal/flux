@@ -168,7 +168,7 @@ class GoalsBloc extends Bloc<GoalsEvent, GoalsState> {
     Emitter<GoalsState> emit,
   ) async {
     emit(GoalsLoading());
-    
+
     try {
       final goals = await _goalService.getUserGoals(event.userId);
       emit(GoalsLoaded(goals));
@@ -182,10 +182,10 @@ class GoalsBloc extends Bloc<GoalsEvent, GoalsState> {
     Emitter<GoalsState> emit,
   ) async {
     emit(GoalsLoading());
-    
+
     try {
       await _goalService.createGoal(event.goal);
-      
+
       // Reload goals immediately after creation
       final goals = await _goalService.getUserGoals(event.goal.userId);
       emit(GoalsLoaded(goals));
@@ -200,14 +200,14 @@ class GoalsBloc extends Bloc<GoalsEvent, GoalsState> {
     Emitter<GoalsState> emit,
   ) async {
     emit(GoalsLoading());
-    
+
     try {
       await _goalService.updateGoal(event.goal);
-      
+
       // Reload goals immediately after update
       final goals = await _goalService.getUserGoals(event.goal.userId);
       emit(GoalsLoaded(goals));
-      
+
       // Trigger notification check
       _notificationTriggerService.monitorGoalProgress(event.goal.userId, goals);
     } catch (e) {
@@ -220,7 +220,7 @@ class GoalsBloc extends Bloc<GoalsEvent, GoalsState> {
     Emitter<GoalsState> emit,
   ) async {
     emit(GoalsLoading());
-    
+
     try {
       await _goalService.deleteGoal(event.goalId);
       // Reload goals for provided user
@@ -237,15 +237,15 @@ class GoalsBloc extends Bloc<GoalsEvent, GoalsState> {
     Emitter<GoalsState> emit,
   ) async {
     emit(GoalsLoading());
-    
+
     try {
       await _goalService.updateGoalProgress(event.goalId, event.amount);
-      
+
       // Reload goals
       final goals = await _goalService.getUserGoals(event.userId);
       emit(GoalsLoaded(goals));
       emit(const GoalsSuccess('Progress added successfully'));
-      
+
       // Trigger notification check
       _notificationTriggerService.monitorGoalProgress(event.userId, goals);
     } catch (e) {
@@ -258,7 +258,7 @@ class GoalsBloc extends Bloc<GoalsEvent, GoalsState> {
     Emitter<GoalsState> emit,
   ) async {
     emit(GoalsLoading());
-    
+
     try {
       final statistics = await _goalService.getGoalStatistics(event.userId);
       emit(GoalStatisticsLoaded(statistics));
@@ -272,7 +272,7 @@ class GoalsBloc extends Bloc<GoalsEvent, GoalsState> {
     Emitter<GoalsState> emit,
   ) async {
     emit(GoalsLoading());
-    
+
     try {
       final existingGoals = await _goalService.getUserGoals(event.userId);
       final recommendations = await _goalService.generateGoalRecommendations(

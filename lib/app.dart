@@ -40,8 +40,10 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
-  final EnhancedNotificationService _notificationService = EnhancedNotificationService();
-  final NotificationTriggerService _triggerService = NotificationTriggerService();
+  final EnhancedNotificationService _notificationService =
+      EnhancedNotificationService();
+  final NotificationTriggerService _triggerService =
+      NotificationTriggerService();
   final AuthService _authService = AuthService();
   final BudgetService _budgetService = BudgetService();
   final TransactionService _transactionService = TransactionService();
@@ -153,7 +155,8 @@ class _AppViewState extends State<AppView> {
   void _setupHomeWidget() {
     HomeWidget.setAppGroupId('group.com.klivostudios.flux');
     HomeWidget.initiallyLaunchedFromHomeWidget().then(_handleWidgetLaunch);
-    _widgetClickSubscription = HomeWidget.widgetClicked.listen(_handleWidgetLaunch);
+    _widgetClickSubscription =
+        HomeWidget.widgetClicked.listen(_handleWidgetLaunch);
   }
 
   void _handleWidgetLaunch(Uri? uri) {
@@ -167,7 +170,7 @@ class _AppViewState extends State<AppView> {
     if (authState is AuthAuthenticated && _pendingUri != null) {
       final uri = _pendingUri!;
       _pendingUri = null;
-      
+
       // Use a slight delay to ensure the MainScreen is fully mounted and ready
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Future.delayed(const Duration(milliseconds: 500), () {
@@ -224,16 +227,22 @@ class _AppViewState extends State<AppView> {
         BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state is AuthAuthenticated) {
-              context.read<TransactionBloc>().add(LoadTransactions(state.user.id));
+              context
+                  .read<TransactionBloc>()
+                  .add(LoadTransactions(state.user.id));
               context.read<BudgetBloc>().add(LoadBudgets(state.user.id));
-              context.read<NotificationsBloc>().add(LoadNotifications(state.user.id));
+              context
+                  .read<NotificationsBloc>()
+                  .add(LoadNotifications(state.user.id));
               context.read<GoalsBloc>().add(LoadGoals(state.user.id));
 
               if (FeatureFlagService.isSubscriptionEnabled) {
-                context.read<SubscriptionBloc>().add(SubscriptionCheckRequested());
+                context
+                    .read<SubscriptionBloc>()
+                    .add(SubscriptionCheckRequested());
               }
               _checkPendingWidgetLaunch();
-              
+
               // Register background health checks for notifications
               BackgroundTaskService().registerDailyHealthCheck(state.user.id);
             }
@@ -279,7 +288,8 @@ class _AppViewState extends State<AppView> {
                       statusBarBrightness: Brightness.light,
                       systemNavigationBarColor: AppColors.lightBackground,
                       systemNavigationBarIconBrightness: Brightness.dark,
-                      systemNavigationBarDividerColor: AppColors.lightBackground,
+                      systemNavigationBarDividerColor:
+                          AppColors.lightBackground,
                     );
               return AnnotatedRegion<SystemUiOverlayStyle>(
                 value: overlay,

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../core/constants/app_theme.dart';
+import '../../../core/constants/goal_type_icons.dart';
 import '../../../core/models/goal_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../goals_bloc.dart';
 import '../../auth/auth_bloc.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class GoalCard extends StatelessWidget {
   final Goal goal;
@@ -22,7 +24,7 @@ class GoalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -78,7 +80,7 @@ class GoalCard extends StatelessWidget {
   Widget _buildHeader(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final goalColor = Color(goal.color);
-    
+
     return Row(
       children: [
         Container(
@@ -165,7 +167,7 @@ class GoalCard extends StatelessWidget {
   Widget _buildProgressSection(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final goalColor = Color(goal.color);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -202,9 +204,9 @@ class GoalCard extends StatelessWidget {
             ),
           ],
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Amount row
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -241,8 +243,8 @@ class GoalCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: goal.daysRemaining <= 30 
-                        ? AppColors.error 
+                    color: goal.daysRemaining <= 30
+                        ? AppColors.error
                         : colorScheme.primary,
                   ),
                 ),
@@ -259,7 +261,7 @@ class GoalCard extends StatelessWidget {
         width: double.infinity,
         child: OutlinedButton.icon(
           onPressed: () => _showCompletionDialog(context),
-          icon: const Icon(Icons.celebration_outlined, size: 18),
+          icon: const Icon(LucideIcons.partyPopper, size: 18),
           label: const Text('View Achievement'),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -286,7 +288,8 @@ class GoalCard extends StatelessWidget {
                 ),
                 elevation: 0,
               ),
-              child: const Text('Add Progress', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: const Text('Add Progress',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ),
           const SizedBox(width: 12),
@@ -300,7 +303,7 @@ class GoalCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          icon: const Icon(Icons.more_horiz),
+          icon: const Icon(LucideIcons.moreHorizontal),
         ),
       ],
     );
@@ -313,7 +316,7 @@ class GoalCard extends StatelessWidget {
     if (authState is AuthAuthenticated) {
       userId = authState.user.id;
     }
-    
+
     final colorScheme = Theme.of(context).colorScheme;
     final amountController = TextEditingController();
     final focusNode = FocusNode();
@@ -370,7 +373,8 @@ class GoalCard extends StatelessWidget {
                 controller: amountController,
                 focusNode: focusNode,
                 autofocus: true,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 32,
@@ -390,7 +394,8 @@ class GoalCard extends StatelessWidget {
                   final raw = amountController.text.replaceAll(',', '').trim();
                   final amount = double.tryParse(raw);
                   if (amount == null || amount <= 0) {
-                    AppSnackbar.showError(context, message: 'Please enter a valid amount');
+                    AppSnackbar.showError(context,
+                        message: 'Please enter a valid amount');
                     return;
                   }
                   goalsBloc.add(UpdateGoalProgress(
@@ -421,7 +426,8 @@ class GoalCard extends StatelessWidget {
                 onPressed: () => Navigator.pop(context),
                 child: Text(
                   'Cancel',
-                  style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
+                  style:
+                      TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
                 ),
               ),
             ],
@@ -462,7 +468,7 @@ class GoalCard extends StatelessWidget {
                 ),
               ),
               ListTile(
-                leading: const Icon(Icons.edit),
+                leading: const Icon(LucideIcons.pencil),
                 title: const Text('Edit Goal'),
                 onTap: () {
                   Navigator.pop(context);
@@ -471,7 +477,7 @@ class GoalCard extends StatelessWidget {
               ),
               if (goal.status == GoalStatus.active) ...[
                 ListTile(
-                  leading: const Icon(Icons.pause),
+                  leading: const Icon(LucideIcons.pause),
                   title: const Text('Pause Goal'),
                   onTap: () {
                     Navigator.pop(context);
@@ -480,7 +486,7 @@ class GoalCard extends StatelessWidget {
                 ),
               ] else if (goal.status == GoalStatus.paused) ...[
                 ListTile(
-                  leading: const Icon(Icons.play_arrow),
+                  leading: const Icon(LucideIcons.play),
                   title: const Text('Resume Goal'),
                   onTap: () {
                     Navigator.pop(context);
@@ -489,8 +495,9 @@ class GoalCard extends StatelessWidget {
                 ),
               ],
               ListTile(
-                leading: const Icon(Icons.delete, color: AppColors.error),
-                title: const Text('Delete Goal', style: TextStyle(color: AppColors.error)),
+                leading: const Icon(LucideIcons.trash2, color: AppColors.error),
+                title: const Text('Delete Goal',
+                    style: TextStyle(color: AppColors.error)),
                 onTap: () {
                   Navigator.pop(context);
                   _deleteGoal(context);
@@ -513,7 +520,8 @@ class GoalCard extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.celebration, color: AppColors.success, size: 64),
+            const Icon(LucideIcons.partyPopper,
+                color: AppColors.success, size: 64),
             const SizedBox(height: 16),
             Text('Congratulations! You completed "${goal.name}"'),
           ],
@@ -529,11 +537,15 @@ class GoalCard extends StatelessWidget {
   }
 
   void _pauseGoal(BuildContext context) {
-    context.read<GoalsBloc>().add(UpdateGoal(goal.copyWith(status: GoalStatus.paused)));
+    context
+        .read<GoalsBloc>()
+        .add(UpdateGoal(goal.copyWith(status: GoalStatus.paused)));
   }
 
   void _resumeGoal(BuildContext context) {
-    context.read<GoalsBloc>().add(UpdateGoal(goal.copyWith(status: GoalStatus.active)));
+    context
+        .read<GoalsBloc>()
+        .add(UpdateGoal(goal.copyWith(status: GoalStatus.active)));
   }
 
   void _deleteGoal(BuildContext context) {
@@ -542,7 +554,7 @@ class GoalCard extends StatelessWidget {
     if (authState is AuthAuthenticated) {
       userId = authState.user.id;
     }
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -566,24 +578,5 @@ class GoalCard extends StatelessWidget {
     );
   }
 
-  IconData _getIconForType(GoalType type) {
-    switch (type) {
-      case GoalType.savings:
-        return Icons.savings_outlined;
-      case GoalType.investment:
-        return Icons.trending_up;
-      case GoalType.debt:
-        return Icons.credit_card;
-      case GoalType.emergency:
-        return Icons.emergency_outlined;
-      case GoalType.vacation:
-        return Icons.beach_access;
-      case GoalType.home:
-        return Icons.home;
-      case GoalType.education:
-        return Icons.school;
-      case GoalType.other:
-        return Icons.star_border;
-    }
-  }
+  IconData _getIconForType(GoalType type) => type.icon;
 }

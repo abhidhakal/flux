@@ -17,7 +17,11 @@ import '../../subscription/subscription_bloc.dart';
 import 'goal_templates_screen.dart';
 import 'edit_goal_screen.dart';
 import '../../../shared/widgets/page_transitions.dart';
+import '../../../shared/widgets/app_bottom_sheet.dart';
+import '../../../shared/widgets/empty_state_view.dart';
+import '../../../shared/widgets/stat_tile.dart';
 import '../../../core/services/feature_flag_service.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class GoalsScreen extends StatefulWidget {
   const GoalsScreen({super.key});
@@ -26,7 +30,8 @@ class GoalsScreen extends StatefulWidget {
   State<GoalsScreen> createState() => _GoalsScreenState();
 }
 
-class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin {
+class _GoalsScreenState extends State<GoalsScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   String _selectedFilter = 'All'; // All, Active, Paused
 
@@ -39,12 +44,13 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
   void _loadGoalsIfNeeded(BuildContext context) {
     final goalsState = context.read<GoalsBloc>().state;
     final user = context.read<AuthBloc>().state;
-    
+
     // Reload goals if:
     // - Not already loaded or loading
     // - OR current state is GoalsSuccess (transient state after create/delete/update)
-    if (user is AuthAuthenticated && 
-        (goalsState is! GoalsLoaded && goalsState is! GoalsLoading || goalsState is GoalsSuccess)) {
+    if (user is AuthAuthenticated &&
+        (goalsState is! GoalsLoaded && goalsState is! GoalsLoading ||
+            goalsState is GoalsSuccess)) {
       context.read<GoalsBloc>().add(LoadGoals(user.user.id));
     }
   }
@@ -59,7 +65,7 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Scaffold(
       backgroundColor: AppTheme.pageBackground(context),
       appBar: AppBar(
@@ -88,7 +94,7 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.add, color: colorScheme.onBackground),
+            icon: Icon(LucideIcons.plus, color: colorScheme.onBackground),
             onPressed: () => _showAddGoalOptions(context),
           ),
         ],
@@ -102,10 +108,10 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
         child: BlocConsumer<GoalsBloc, GoalsState>(
           // Only rebuild on data states, not on success/transient states
           buildWhen: (previous, current) {
-            return current is GoalsLoaded || 
-                   current is GoalsLoading || 
-                   current is GoalsInitial || 
-                   current is GoalsError;
+            return current is GoalsLoaded ||
+                current is GoalsLoading ||
+                current is GoalsInitial ||
+                current is GoalsError;
           },
           listener: (context, state) {
             // Show snackbar on success/error
@@ -150,96 +156,89 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
 
   void _showAddGoalOptions(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
+
+    AppBottomSheet.show(
+      context,
+      radius: 24,
+      isScrollControlled: false,
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Add New Goal',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: colorScheme.onSurface.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(2),
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
+              child: const Icon(LucideIcons.pencil, color: AppColors.primary),
             ),
-            const SizedBox(height: 24),
-            Text(
-              'Add New Goal',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.edit_outlined, color: AppColors.primary),
-              ),
-              title: const Text('Create Custom Goal', style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: const Text('Design a goal from scratch'),
-              onTap: () {
-                Navigator.pop(context);
-                final subscriptionState = context.read<SubscriptionBloc>().state;
-                if (!FeatureFlagService.isSubscriptionEnabled ||
-                    subscriptionState is SubscriptionPremium) {
-                  context.pushSmooth(
-                    const CreateGoalScreen(),
-                    transitionType: PageTransitionType.slideFromBottom,
-                  );
-                } else {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const PaywallScreen()),
-                  );
-                }
-              },
-            ),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colorScheme.secondary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.description_outlined, color: colorScheme.secondary),
-              ),
-              title: const Text('Use Template', style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: const Text('Choose from common savings goals'),
-              onTap: () {
-                Navigator.pop(context);
+            title: const Text('Create Custom Goal',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text('Design a goal from scratch'),
+            onTap: () {
+              Navigator.pop(context);
+              final subscriptionState = context.read<SubscriptionBloc>().state;
+              if (!FeatureFlagService.isSubscriptionEnabled ||
+                  subscriptionState is SubscriptionPremium) {
                 context.pushSmooth(
-                  const GoalTemplatesScreen(),
-                  transitionType: PageTransitionType.slideFromRight,
+                  const CreateGoalScreen(),
+                  transitionType: PageTransitionType.slideFromBottom,
                 );
-              },
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const PaywallScreen()),
+                );
+              }
+            },
+          ),
+          ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colorScheme.secondary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(LucideIcons.fileText, color: colorScheme.secondary),
             ),
-            const SizedBox(height: 16),
-          ],
-        ),
+            title: const Text('Use Template',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text('Choose from common savings goals'),
+            onTap: () {
+              Navigator.pop(context);
+              context.pushSmooth(
+                const GoalTemplatesScreen(),
+                transitionType: PageTransitionType.slideFromRight,
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+        ],
       ),
     );
   }
 
   Widget _buildTabBarView(List<Goal> goals) {
     // Filter goals based on selected filter for Goals tab
-    final goalsForTab = goals.where((g) => g.status != GoalStatus.completed && g.status != GoalStatus.cancelled).toList();
-    final completedGoals = goals.where((g) => g.status == GoalStatus.completed).toList();
+    final goalsForTab = goals
+        .where((g) =>
+            g.status != GoalStatus.completed &&
+            g.status != GoalStatus.cancelled)
+        .toList();
+    final completedGoals =
+        goals.where((g) => g.status == GoalStatus.completed).toList();
 
     return TabBarView(
       controller: _tabController,
@@ -253,15 +252,17 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
 
   Widget _buildGoalsTab(List<Goal> allGoalsForTab) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     // Apply filter
     List<Goal> filteredGoals;
     switch (_selectedFilter) {
       case 'Active':
-        filteredGoals = allGoalsForTab.where((g) => g.status == GoalStatus.active).toList();
+        filteredGoals =
+            allGoalsForTab.where((g) => g.status == GoalStatus.active).toList();
         break;
       case 'Paused':
-        filteredGoals = allGoalsForTab.where((g) => g.status == GoalStatus.paused).toList();
+        filteredGoals =
+            allGoalsForTab.where((g) => g.status == GoalStatus.paused).toList();
         break;
       default:
         filteredGoals = allGoalsForTab;
@@ -282,16 +283,19 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
               child: Container(
                 padding: const EdgeInsets.all(16),
-                decoration: AppTheme.surfaceDecoration(context, radius: 20, subtle: true),
+                decoration: AppTheme.surfaceDecoration(context,
+                    radius: 20, subtle: true),
                 child: Column(
                   children: [
                     Row(
                       children: [
                         Expanded(child: _buildFilterChip('All', colorScheme)),
                         const SizedBox(width: 8),
-                        Expanded(child: _buildFilterChip('Active', colorScheme)),
+                        Expanded(
+                            child: _buildFilterChip('Active', colorScheme)),
                         const SizedBox(width: 8),
-                        Expanded(child: _buildFilterChip('Paused', colorScheme)),
+                        Expanded(
+                            child: _buildFilterChip('Paused', colorScheme)),
                       ],
                     ),
                     if (filteredGoals.isNotEmpty) ...[
@@ -310,11 +314,15 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.flag_outlined, size: 64, color: colorScheme.onSurfaceVariant),
+                    Icon(LucideIcons.flag,
+                        size: 64, color: colorScheme.onSurfaceVariant),
                     const SizedBox(height: 16),
                     Text(
                       'No ${_selectedFilter == 'All' ? '' : _selectedFilter.toLowerCase()} goals',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: colorScheme.onSurface),
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface),
                     ),
                   ],
                 ),
@@ -338,7 +346,8 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
                     onEditGoal: (goal) {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => EditGoalScreen(goal: goal)),
+                        MaterialPageRoute(
+                            builder: (context) => EditGoalScreen(goal: goal)),
                       );
                     },
                   ),
@@ -364,12 +373,14 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
       },
       selectedColor: colorScheme.primary,
       labelStyle: TextStyle(
-        color: isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+        color:
+            isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
       ),
       backgroundColor: AppTheme.cardSurface(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      side: BorderSide(color: colorScheme.outline.withOpacity(isSelected ? 0 : 0.08)),
+      side: BorderSide(
+          color: colorScheme.outline.withOpacity(isSelected ? 0 : 0.08)),
     );
   }
 
@@ -377,7 +388,8 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
     final currency = CurrencyService().symbol;
     final totalTarget = goals.fold(0.0, (sum, g) => sum + g.targetAmount);
     final totalProgress = goals.fold(0.0, (sum, g) => sum + g.currentAmount);
-    final averageProgress = totalTarget > 0 ? (totalProgress / totalTarget * 100) : 0.0;
+    final averageProgress =
+        totalTarget > 0 ? (totalProgress / totalTarget * 100) : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -386,21 +398,36 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildOverviewStat('${goals.length}', 'Goals', colorScheme),
-          Container(width: 1, height: 40, color: colorScheme.outline.withOpacity(0.1)),
-          _buildOverviewStat('$currency${totalTarget.toStringAsFixed(0)}', 'Target', colorScheme),
-          Container(width: 1, height: 40, color: colorScheme.outline.withOpacity(0.1)),
-          _buildOverviewStat('${averageProgress.toStringAsFixed(0)}%', 'Progress', colorScheme),
+          Container(
+              width: 1,
+              height: 40,
+              color: colorScheme.outline.withOpacity(0.1)),
+          _buildOverviewStat('$currency${totalTarget.toStringAsFixed(0)}',
+              'Target', colorScheme),
+          Container(
+              width: 1,
+              height: 40,
+              color: colorScheme.outline.withOpacity(0.1)),
+          _buildOverviewStat('${averageProgress.toStringAsFixed(0)}%',
+              'Progress', colorScheme),
         ],
       ),
     );
   }
 
-  Widget _buildOverviewStat(String value, String label, ColorScheme colorScheme) {
+  Widget _buildOverviewStat(
+      String value, String label, ColorScheme colorScheme) {
     return Column(
       children: [
-        Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+        Text(value,
+            style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface)),
         const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
+        Text(label,
+            style:
+                TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
       ],
     );
   }
@@ -421,14 +448,10 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
                 const SizedBox(height: 120),
-                Center(
-                  child: Column(
-                    children: [
-                      Icon(Icons.check_circle_outline, size: 64, color: colorScheme.onSurfaceVariant),
-                      const SizedBox(height: 16),
-                      Text('No Completed Goals', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
-                    ],
-                  ),
+                const EmptyStateView(
+                  icon: LucideIcons.checkCircle2,
+                  title: 'No Completed Goals',
+                  titleFontSize: 18,
                 ),
               ],
             )
@@ -440,7 +463,8 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
                     padding: const EdgeInsets.all(20),
                     child: Container(
                       padding: const EdgeInsets.all(20),
-                      decoration: AppTheme.surfaceDecoration(context, radius: 20),
+                      decoration:
+                          AppTheme.surfaceDecoration(context, radius: 20),
                       child: Row(
                         children: [
                           Container(
@@ -449,15 +473,24 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
                               color: AppColors.success.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(Icons.check_circle_rounded, color: AppColors.success),
+                            child: const Icon(LucideIcons.checkCircle2,
+                                color: AppColors.success),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('${completedGoals.length} Goals Completed', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
-                                Text('$currency${completedGoals.fold(0.0, (sum, g) => sum + g.targetAmount).toStringAsFixed(0)} saved', style: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant)),
+                                Text('${completedGoals.length} Goals Completed',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurface)),
+                                Text(
+                                    '$currency${completedGoals.fold(0.0, (sum, g) => sum + g.targetAmount).toStringAsFixed(0)} saved',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        color: colorScheme.onSurfaceVariant)),
                               ],
                             ),
                           ),
@@ -478,10 +511,16 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
                           if (authState is AuthAuthenticated) {
                             userId = authState.user.id;
                           }
-                          context.read<GoalsBloc>().add(DeleteGoal(goalId, userId));
+                          context
+                              .read<GoalsBloc>()
+                              .add(DeleteGoal(goalId, userId));
                         },
                         onEditGoal: (goal) {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => EditGoalScreen(goal: goal)));
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      EditGoalScreen(goal: goal)));
                         },
                       ),
                       childCount: completedGoals.length,
@@ -495,9 +534,10 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
   }
 
   Widget _buildInsightsTab(List<Goal> allGoals) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final activeGoals = allGoals.where((g) => g.status == GoalStatus.active).toList();
-    final completedGoals = allGoals.where((g) => g.status == GoalStatus.completed).toList();
+    final activeGoals =
+        allGoals.where((g) => g.status == GoalStatus.active).toList();
+    final completedGoals =
+        allGoals.where((g) => g.status == GoalStatus.completed).toList();
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -512,30 +552,56 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Statistics', style: AppTheme.sectionTitleStyle(context).copyWith(fontSize: 18)),
+            Text('Statistics',
+                style:
+                    AppTheme.sectionTitleStyle(context).copyWith(fontSize: 18)),
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(child: _buildStatCard('Active', activeGoals.length.toString(), Icons.flag, AppColors.primary, colorScheme)),
+                Expanded(
+                    child: _statCard('Active', activeGoals.length.toString(),
+                        LucideIcons.flag, AppColors.primary)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildStatCard('Completed', completedGoals.length.toString(), Icons.check_circle, AppColors.success, colorScheme)),
+                Expanded(
+                    child: _statCard(
+                        'Completed',
+                        completedGoals.length.toString(),
+                        LucideIcons.checkCircle2,
+                        AppColors.success)),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _buildStatCard('Overdue', activeGoals.where((g) => g.isOverdue).length.toString(), Icons.warning, AppColors.error, colorScheme)),
+                Expanded(
+                    child: _statCard(
+                        'Overdue',
+                        activeGoals.where((g) => g.isOverdue).length.toString(),
+                        LucideIcons.alertTriangle,
+                        AppColors.error)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildStatCard('Near Deadline', activeGoals.where((g) => g.daysRemaining <= 30 && g.daysRemaining > 0).length.toString(), Icons.schedule, AppColors.warning, colorScheme)),
+                Expanded(
+                    child: _statCard(
+                        'Near Deadline',
+                        activeGoals
+                            .where((g) =>
+                                g.daysRemaining <= 30 && g.daysRemaining > 0)
+                            .length
+                            .toString(),
+                        LucideIcons.clock,
+                        AppColors.warning)),
               ],
             ),
             const SizedBox(height: 24),
-            Text('Progress Chart', style: AppTheme.sectionTitleStyle(context).copyWith(fontSize: 18)),
+            Text('Progress Chart',
+                style:
+                    AppTheme.sectionTitleStyle(context).copyWith(fontSize: 18)),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: AppTheme.surfaceDecoration(context, radius: 20),
-              child: SizedBox(height: 200, child: GoalProgressChart(goals: allGoals)),
+              child: SizedBox(
+                  height: 200, child: GoalProgressChart(goals: allGoals)),
             ),
             const SizedBox(height: 100),
           ],
@@ -544,65 +610,43 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color, ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: AppTheme.surfaceDecoration(context, radius: 20, subtle: true),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(height: 12),
-          Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
-          const SizedBox(height: 4),
-          Text(title, style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
-        ],
-      ),
+  Widget _statCard(String title, String value, IconData icon, Color color) {
+    return StatTile(
+      label: title,
+      value: value,
+      icon: icon,
+      accentColor: color,
+      radius: 20,
+      valueFirst: true,
+      centered: true,
+      valueFontSize: 24,
     );
   }
 
   Widget _buildErrorState(String message) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: AppColors.error),
-          const SizedBox(height: 16),
-          Text('Error loading goals', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
-          const SizedBox(height: 8),
-          Text(message, style: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant), textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () {
-              final user = context.read<AuthBloc>().state;
-              if (user is AuthAuthenticated) {
-                context.read<GoalsBloc>().add(LoadGoals(user.user.id));
-              }
-            },
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
+    return EmptyStateView(
+      icon: LucideIcons.alertCircle,
+      iconColor: AppColors.error,
+      title: 'Error loading goals',
+      subtitle: message,
+      actionLabel: 'Retry',
+      onAction: () {
+        final user = context.read<AuthBloc>().state;
+        if (user is AuthAuthenticated) {
+          context.read<GoalsBloc>().add(LoadGoals(user.user.id));
+        }
+      },
     );
   }
 
   Widget _buildEmptyState() {
     final colorScheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.flag, size: 64, color: colorScheme.primary),
-          const SizedBox(height: 16),
-          Text('No Goals Yet', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
-          const SizedBox(height: 8),
-          Text('Create your first financial goal to get started', style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant), textAlign: TextAlign.center),
-        ],
-      ),
+    return EmptyStateView(
+      icon: LucideIcons.flag,
+      iconColor: colorScheme.primary,
+      title: 'No Goals Yet',
+      titleFontSize: 24,
+      subtitle: 'Create your first financial goal to get started',
     );
   }
 
@@ -613,15 +657,29 @@ class _GoalsScreenState extends State<GoalsScreen> with TickerProviderStateMixin
         ListView(padding: const EdgeInsets.all(16), children: [
           SkeletonComponents.card(height: 80, context: context),
           const SizedBox(height: 16),
-          ...List.generate(3, (index) => Padding(padding: const EdgeInsets.only(bottom: 16), child: SkeletonComponents.goalCard(context: context))),
+          ...List.generate(
+              3,
+              (index) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: SkeletonComponents.goalCard(context: context))),
         ]),
         ListView(padding: const EdgeInsets.all(16), children: [
           SkeletonComponents.card(height: 80, context: context),
           const SizedBox(height: 16),
-          ...List.generate(2, (index) => Padding(padding: const EdgeInsets.only(bottom: 16), child: SkeletonComponents.goalCard(context: context))),
+          ...List.generate(
+              2,
+              (index) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: SkeletonComponents.goalCard(context: context))),
         ]),
         ListView(padding: const EdgeInsets.all(16), children: [
-          Row(children: [Expanded(child: SkeletonComponents.card(height: 100, context: context)), const SizedBox(width: 12), Expanded(child: SkeletonComponents.card(height: 100, context: context))]),
+          Row(children: [
+            Expanded(
+                child: SkeletonComponents.card(height: 100, context: context)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: SkeletonComponents.card(height: 100, context: context))
+          ]),
           const SizedBox(height: 24),
           SkeletonComponents.chart(height: 200, context: context),
         ]),

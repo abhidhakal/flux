@@ -3,6 +3,7 @@ import '../../../core/constants/app_theme.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../../budget/screens/edit_budget_screen.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class BudgetCard extends StatelessWidget {
   final Budget budget;
@@ -25,28 +26,16 @@ class BudgetCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Determine card color based on budget status
-    Color cardColor;
-    Color borderColor;
-    if (muted) {
-      cardColor = colorScheme.surfaceContainerHighest.withValues(alpha: 0.6);
-      borderColor = colorScheme.outline.withValues(alpha: 0.35);
-    } else if (spent <= 0) {
-      cardColor = AppColors.primary.withValues(alpha: 0.06);
-      borderColor = AppColors.primary.withValues(alpha: 0.28);
-    } else if (isOverBudget) {
-      cardColor = AppColors.error.withValues(alpha: 0.08);
-      borderColor = AppColors.error.withValues(alpha: 0.35);
-    } else if (percentage > 80) {
-      cardColor = AppColors.warning.withValues(alpha: 0.08);
-      borderColor = AppColors.warning.withValues(alpha: 0.3);
-    } else {
-      cardColor = AppTheme.cardSurface(context);
-      borderColor = colorScheme.outline.withValues(alpha: 0.12);
-    }
+    // Card stays neutral for every status - the icon chip and progress bar
+    // carry the color signal instead of washing the whole card background.
+    final cardColor = muted
+        ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
+        : AppTheme.cardSurface(context);
+    final borderColor = colorScheme.outline.withValues(alpha: muted ? 0.2 : 0.12);
 
     return InkWell(
       onTap: () => EditBudgetScreen.showEditBudgetSheet(context, budget),
+      onLongPress: onDelete,
       borderRadius: BorderRadius.circular(AppTheme.radius16),
       child: Card(
         margin: EdgeInsets.zero, // Card margin handled by ListView separator
@@ -81,12 +70,12 @@ class BudgetCard extends StatelessWidget {
                     ),
                     child: Icon(
                       muted
-                          ? Icons.pause_circle_filled_rounded
+                          ? LucideIcons.pauseCircle
                           : isOverBudget
-                              ? Icons.warning
+                              ? LucideIcons.alertTriangle
                               : percentage > 80
-                                  ? Icons.trending_up_rounded
-                                  : Icons.wallet_rounded,
+                                  ? LucideIcons.trendingUp
+                                  : LucideIcons.wallet,
                       color: muted
                           ? colorScheme.onSurface.withValues(alpha: 0.65)
                           : isOverBudget
@@ -114,11 +103,11 @@ class BudgetCard extends StatelessWidget {
                         Row(
                           children: [
                             Text(
-                              '${budget.category} • ${budget.period.name.toUpperCase()}',
+                              '${budget.category} • ${_periodLabel(budget.period.name)}',
                               style: TextStyle(
                                 fontSize: 12,
-                                color:
-                                    colorScheme.onSurface.withValues(alpha: 0.6),
+                                color: colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
                               ),
                             ),
                             if (!budget.isActive) ...[
@@ -127,8 +116,8 @@ class BudgetCard extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color:
-                                      colorScheme.outline.withValues(alpha: 0.16),
+                                  color: colorScheme.outline
+                                      .withValues(alpha: 0.16),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -145,12 +134,6 @@ class BudgetCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                  ),
-                  IconButton(
-                    onPressed: onDelete,
-                    icon:
-                        const Icon(Icons.delete_outline, color: AppColors.error),
-                    tooltip: 'Delete Budget',
                   ),
                 ],
               ),
@@ -174,15 +157,21 @@ class BudgetCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              LinearProgressIndicator(
-                value: (percentage / 100).clamp(0.0, 1.0),
-                backgroundColor: colorScheme.outline.withValues(alpha: 0.3),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  muted
-                      ? colorScheme.onSurface.withValues(alpha: 0.3)
-                      : isOverBudget
-                          ? AppColors.error
-                          : AppColors.primary,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(99),
+                child: LinearProgressIndicator(
+                  value: (percentage / 100).clamp(0.0, 1.0),
+                  minHeight: 6,
+                  backgroundColor: colorScheme.outline.withValues(alpha: 0.3),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    muted
+                        ? colorScheme.onSurface.withValues(alpha: 0.3)
+                        : isOverBudget
+                            ? AppColors.error
+                            : percentage > 80
+                                ? AppColors.warning
+                                : AppColors.primary,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -202,7 +191,7 @@ class BudgetCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${CurrencyService().formatAmount(total - spent)} remaining',
+                    '${CurrencyService().formatAmount(budget.remaining)} remaining',
                     style: TextStyle(
                       fontSize: 12,
                       color: colorScheme.onSurface.withValues(alpha: 0.6),
@@ -210,11 +199,12 @@ class BudgetCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (!muted && !isOverBudget) _buildPaceLine(context, percentage),
               if (isOverBudget && !muted)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    'Over budget by ${CurrencyService().formatAmount(spent - total)}',
+                    'Over budget by ${CurrencyService().formatAmount(-budget.remaining)}',
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.error,
@@ -236,6 +226,41 @@ class BudgetCard extends StatelessWidget {
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  String _periodLabel(String name) =>
+      name.isEmpty ? name : name[0].toUpperCase() + name.substring(1);
+
+  // How spend% compares to how far through the period we are - lets a user
+  // tell "60% spent, day 5 of 30" (way ahead of pace) apart from "60% spent,
+  // day 25 of 30" (fine), which the raw percentage alone can't show.
+  Widget _buildPaceLine(BuildContext context, double percentage) {
+    final totalDays = budget.endDate.difference(budget.startDate).inDays;
+    if (totalDays <= 0) return const SizedBox.shrink();
+
+    final now = DateTime.now();
+    final daysLeft = budget.endDate.difference(now).inDays;
+    if (daysLeft < 0) return const SizedBox.shrink();
+
+    final daysElapsed =
+        now.difference(budget.startDate).inDays.clamp(0, totalDays);
+    final expectedPercentage = daysElapsed / totalDays * 100;
+    final isPacingFast = percentage > expectedPercentage + 10;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Text(
+        '$daysLeft day${daysLeft == 1 ? '' : 's'} left'
+        '${isPacingFast ? ' · spending faster than pace' : ''}',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: isPacingFast ? FontWeight.w600 : FontWeight.normal,
+          color: isPacingFast
+              ? AppColors.warning
+              : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
         ),
       ),
     );

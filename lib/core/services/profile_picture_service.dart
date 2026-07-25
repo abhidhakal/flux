@@ -16,7 +16,7 @@ class ProfilePictureTooLargeException implements Exception {
       'Profile picture must be smaller than ${maxSizeInBytes ~/ (1024 * 1024)} MB.';
 }
 
-class ProfilePictureService {
+class ProfilePictureService extends ChangeNotifier {
   static final ProfilePictureService _instance =
       ProfilePictureService._internal();
   static const int maxFileSizeInBytes = 2 * 1024 * 1024;
@@ -118,6 +118,7 @@ class ProfilePictureService {
         rethrow;
       }
     }
+    notifyListeners();
   }
 
   Future<void> loadProfileImage({required String userId}) async {
@@ -137,6 +138,7 @@ class ProfilePictureService {
           _profileImage = File(imagePath);
         }
 
+        notifyListeners();
         return;
       }
 
@@ -147,6 +149,7 @@ class ProfilePictureService {
           userId: userId,
         );
         _profileImageUrl = null;
+        notifyListeners();
         return;
       }
     } catch (e) {
@@ -160,6 +163,7 @@ class ProfilePictureService {
     } else {
       _profileImage = null;
     }
+    notifyListeners();
   }
 
   Future<void> removeProfileImage({required String userId}) async {

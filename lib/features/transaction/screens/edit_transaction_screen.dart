@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
+import '../../../core/utils/date_format_utils.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
 import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/app_bottom_sheet.dart';
+import '../../../shared/widgets/field_label.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class EditTransactionScreen {
   const EditTransactionScreen._();
@@ -16,33 +20,17 @@ class EditTransactionScreen {
   // Static method to show edit transaction popup
   static void showEditTransactionPopup(
       BuildContext context, Transaction transaction) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
+    AppBottomSheet.show(
+      context,
+      radius: 20,
       isScrollControlled: true,
-      builder: (context) => Container(
+      padding: EdgeInsets.zero,
+      builder: (context) => SizedBox(
         height: MediaQuery.of(context).size.height * 0.9,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
         child: SafeArea(
           bottom: true,
           child: Column(
             children: [
-              // Handle bar
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
               // Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -192,19 +180,19 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                   children: [
                     Expanded(
                       child: _buildTypeButton(
-                        TransactionType.income,
-                        'Income',
-                        Icons.add_circle_outline_rounded,
-                        AppColors.success,
+                        TransactionType.expense,
+                        'Expense',
+                        LucideIcons.minusCircle,
+                        AppColors.error,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: _buildTypeButton(
-                        TransactionType.expense,
-                        'Expense',
-                        Icons.remove_circle_outline_rounded,
-                        AppColors.error,
+                        TransactionType.income,
+                        'Income',
+                        LucideIcons.plusCircle,
+                        AppColors.success,
                       ),
                     ),
                   ],
@@ -212,7 +200,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                 const SizedBox(height: 24),
 
                 // Title
-                _buildSectionTitle('Title'),
+                _buildSectionTitle('Title', icon: LucideIcons.type),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _titleController,
@@ -221,7 +209,6 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    prefixIcon: const Icon(Icons.title_rounded),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -233,7 +220,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                 const SizedBox(height: 16),
 
                 // Description
-                _buildSectionTitle('Description'),
+                _buildSectionTitle('Description', icon: LucideIcons.fileText),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _descriptionController,
@@ -242,14 +229,13 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    prefixIcon: const Icon(Icons.description_rounded),
                   ),
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
 
                 // Amount
-                _buildSectionTitle('Amount'),
+                _buildSectionTitle('Amount', icon: LucideIcons.dollarSign),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _amountController,
@@ -259,8 +245,22 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    prefixIcon: const Icon(Icons.attach_money_rounded),
-                    prefixText: '${CurrencyService().symbol} ',
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.only(left: 14, right: 4),
+                      child: Align(
+                        widthFactor: 1,
+                        child: Text(
+                          CurrencyService().symbol,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ),
+                    prefixIconConstraints:
+                        const BoxConstraints(minWidth: 0, minHeight: 0),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -276,7 +276,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                 const SizedBox(height: 16),
 
                 // Category
-                _buildSectionTitle('Category'),
+                _buildSectionTitle('Category', icon: LucideIcons.tag),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: _selectedCategory,
@@ -284,7 +284,6 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    prefixIcon: const Icon(Icons.category_rounded),
                   ),
                   items: (_selectedType == TransactionType.income
                           ? _incomeCategories
@@ -315,11 +314,11 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_today_rounded,
+                        Icon(LucideIcons.calendar,
                             color: colorScheme.onBackground),
                         const SizedBox(width: 12),
                         Text(
-                          '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                          formatShortDate(_selectedDate),
                           style: TextStyle(
                               fontSize: 16, color: colorScheme.onBackground),
                         ),
@@ -368,7 +367,8 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, {IconData? icon}) {
+    if (icon != null) return FieldLabel(icon: icon, label: title);
     final colorScheme = Theme.of(context).colorScheme;
     return Text(
       title,
@@ -403,7 +403,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
       child: AnimatedContainer(
         duration: AppMotion.fast,
         curve: AppMotion.standard,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
         decoration: BoxDecoration(
           color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
           border: Border.all(
@@ -412,15 +412,16 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
           ),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Column(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
               color:
                   isSelected ? color : Theme.of(context).colorScheme.onSurface,
-              size: 24,
+              size: 26,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
@@ -488,7 +489,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_rounded, color: colorScheme.error),
+                    Icon(LucideIcons.alertTriangle, color: colorScheme.error),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -565,8 +566,8 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                   children: [
                     Icon(
                       _selectedBudget!.isOverBudget
-                          ? Icons.warning_rounded
-                          : Icons.info_outline_rounded,
+                          ? LucideIcons.alertTriangle
+                          : LucideIcons.info,
                       color: _selectedBudget!.isOverBudget
                           ? colorScheme.error
                           : colorScheme.primary,

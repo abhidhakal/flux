@@ -8,7 +8,8 @@ class NetworkService {
   NetworkService._internal();
 
   final Connectivity _connectivity = Connectivity();
-  final StreamController<bool> _connectionController = StreamController<bool>.broadcast();
+  final StreamController<bool> _connectionController =
+      StreamController<bool>.broadcast();
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   // Stream to listen to connection changes
@@ -30,7 +31,8 @@ class NetworkService {
     await _checkConnectivity();
 
     // Listen to connectivity changes (new API: List<ConnectivityResult>)
-    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) {
+    _connectivitySubscription = _connectivity.onConnectivityChanged
+        .listen((List<ConnectivityResult> results) {
       if (results.isNotEmpty) {
         _updateConnectionStatus(results.first);
       } else {
@@ -43,7 +45,8 @@ class NetworkService {
   // Check current connectivity status
   Future<void> _checkConnectivity() async {
     try {
-      final results = await _connectivity.checkConnectivity(); // returns List<ConnectivityResult>
+      final results = await _connectivity
+          .checkConnectivity(); // returns List<ConnectivityResult>
       if (results.isNotEmpty) {
         _updateConnectionStatus(results.first);
       } else {
@@ -64,7 +67,8 @@ class NetworkService {
     // Only emit if status changed
     if (wasOnline != _isOnline) {
       _connectionController.add(_isOnline);
-      debugPrint('🌐 NETWORK SERVICE: Connection status changed - ${_isOnline ? "Online" : "Offline"}');
+      debugPrint(
+          '🌐 NETWORK SERVICE: Connection status changed - ${_isOnline ? "Online" : "Offline"}');
     }
   }
 
@@ -74,7 +78,8 @@ class NetworkService {
   // Check if device is online (asynchronous)
   Future<bool> isOnlineAsync() async {
     try {
-      final results = await _connectivity.checkConnectivity(); // List<ConnectivityResult>
+      final results =
+          await _connectivity.checkConnectivity(); // List<ConnectivityResult>
       return results.any((r) => r != ConnectivityResult.none);
     } catch (e) {
       debugPrint('❌ NETWORK SERVICE: Error checking online status: $e');

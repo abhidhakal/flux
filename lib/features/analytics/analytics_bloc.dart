@@ -130,7 +130,7 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
     Emitter<AnalyticsState> emit,
   ) async {
     emit(AnalyticsLoading());
-    
+
     try {
       final analysis = _aiService.analyzeSpendingPatterns(event.transactions);
       emit(SpendingAnalysisLoaded(analysis));
@@ -144,7 +144,7 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
     Emitter<AnalyticsState> emit,
   ) async {
     emit(AnalyticsLoading());
-    
+
     try {
       final recommendations = _aiService.generateBudgetRecommendations(
         event.transactions,
@@ -161,7 +161,7 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
     Emitter<AnalyticsState> emit,
   ) async {
     emit(AnalyticsLoading());
-    
+
     try {
       final predictions = _aiService.predictFutureSpending(event.transactions);
       emit(FutureSpendingPredicted(predictions));
@@ -175,7 +175,7 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
     Emitter<AnalyticsState> emit,
   ) async {
     emit(AnalyticsLoading());
-    
+
     try {
       final category = _aiService.categorizeTransaction(
         event.title,

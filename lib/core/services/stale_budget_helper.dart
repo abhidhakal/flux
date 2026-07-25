@@ -31,7 +31,7 @@ class StaleBudgetHelper {
     for (final budget in budgets) {
       if (!budget.isActive) continue;
 
-      final percentage = budget.amount > 0 ? (budget.spent / budget.amount) * 100 : 0.0;
+      final percentage = budget.progressPercentage;
       if (percentage < 95) continue;
 
       // Find the most recent transaction linked to this budget
@@ -43,7 +43,8 @@ class StaleBudgetHelper {
         }
       }
 
-      final daysSinceTx = lastTxDate == null ? 999 : now.difference(lastTxDate).inDays;
+      final daysSinceTx =
+          lastTxDate == null ? 999 : now.difference(lastTxDate).inDays;
 
       if (daysSinceTx >= 3) {
         staleBudgets.add(_StaleBudgetInfo(
@@ -56,11 +57,12 @@ class StaleBudgetHelper {
 
     if (staleBudgets.isNotEmpty && context.mounted) {
       // Record that we checked today
-      await prefs.setInt('${_lastCheckKey}_$userId', now.millisecondsSinceEpoch);
+      await prefs.setInt(
+          '${_lastCheckKey}_$userId', now.millisecondsSinceEpoch);
       if (!context.mounted) {
         return;
       }
-      
+
       // Show dialog for the first stale budget found
       // (Or we could show a list if multiple are stale, but sticking to original behavior)
       final info = staleBudgets.first;
@@ -82,8 +84,10 @@ class StaleBudgetHelper {
     int daysSinceTx,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
-    final daysLabel = daysSinceTx >= 999 ? 'no transactions recorded' : '$daysSinceTx days ago';
-    
+    final daysLabel = daysSinceTx >= 999
+        ? 'no transactions recorded'
+        : '$daysSinceTx days ago';
+
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -95,14 +99,15 @@ class StaleBudgetHelper {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Keep Active', style: TextStyle(color: colorScheme.onSurface)),
+            child: Text('Keep Active',
+                style: TextStyle(color: colorScheme.onSurface)),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.of(ctx).pop();
               budgetBloc.add(
-                    UpdateBudget(budget.copyWith(isActive: false)),
-                  );
+                UpdateBudget(budget.copyWith(isActive: false)),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: colorScheme.primary,
@@ -122,8 +127,8 @@ class _StaleBudgetInfo {
   final int daysSinceTx;
 
   _StaleBudgetInfo({
-    required this.budget, 
-    required this.percentage, 
+    required this.budget,
+    required this.percentage,
     required this.daysSinceTx,
   });
 }

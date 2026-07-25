@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/transaction_model.dart';
 import '../models/budget_model.dart';
+import 'user_bootstrap.dart';
 
 class TransactionService {
   final firestore.FirebaseFirestore _firestore =
@@ -13,7 +14,8 @@ class TransactionService {
   Future<void> addTransaction(Transaction transaction) async {
     try {
       debugPrint('🔵 TRANSACTION SERVICE: Adding transaction');
-      debugPrint('🔵 Transaction: ${transaction.title} - \$${transaction.amount}');
+      debugPrint(
+          '🔵 Transaction: ${transaction.title} - \$${transaction.amount}');
       debugPrint('🔵 Category: ${transaction.category}');
       debugPrint('🔵 Type: ${transaction.type.name}');
 
@@ -128,7 +130,8 @@ class TransactionService {
   // Get user transactions
   Future<List<Transaction>> getUserTransactions(String userId) async {
     try {
-      debugPrint('🔵 TRANSACTION SERVICE: Getting transactions for user: $userId');
+      debugPrint(
+          '🔵 TRANSACTION SERVICE: Getting transactions for user: $userId');
 
       // Ensure user document exists
       await _ensureUserExists(userId);
@@ -157,7 +160,8 @@ class TransactionService {
 
       transactions.sort((a, b) => b.date.compareTo(a.date));
 
-      debugPrint('✅ TRANSACTION SERVICE: Found ${transactions.length} transactions');
+      debugPrint(
+          '✅ TRANSACTION SERVICE: Found ${transactions.length} transactions');
       return transactions;
     } catch (e) {
       debugPrint('❌ TRANSACTION SERVICE: Error getting transactions: $e');
@@ -177,13 +181,15 @@ class TransactionService {
       final querySnapshot = await _firestore
           .collection('transactions')
           .where('userId', isEqualTo: userId)
-          .where('createdAt', isGreaterThanOrEqualTo: startOfDay.toIso8601String())
+          .where('createdAt',
+              isGreaterThanOrEqualTo: startOfDay.toIso8601String())
           .where('createdAt', isLessThan: startOfTomorrow.toIso8601String())
           .get();
 
       return querySnapshot.docs.any((doc) => doc.data()['isActive'] != false);
     } catch (e) {
-      debugPrint('❌ TRANSACTION SERVICE: Error checking today transactions: $e');
+      debugPrint(
+          '❌ TRANSACTION SERVICE: Error checking today transactions: $e');
       return false;
     }
   }
@@ -234,7 +240,8 @@ class TransactionService {
       final budgetRef = _firestore.collection('budgets').doc(budget.id);
       batch.update(budgetRef, {'spent': newSpent});
 
-      debugPrint('✅ TRANSACTION SERVICE: Budget updated - new spent: \$$newSpent');
+      debugPrint(
+          '✅ TRANSACTION SERVICE: Budget updated - new spent: \$$newSpent');
     } catch (e) {
       debugPrint('❌ TRANSACTION SERVICE: Error updating budget: $e');
       throw Exception('Failed to update budget: $e');
@@ -351,6 +358,7 @@ class TransactionService {
       }
     } catch (e) {
       debugPrint('❌ TRANSACTION SERVICE: Error adjusting budget: $e');
+      throw Exception('Failed to adjust budget: $e');
     }
   }
 
@@ -388,8 +396,9 @@ class TransactionService {
         final category = data['category'] as String? ?? 'Salary';
         final notes = data['notes'] as String? ?? '';
         final dateValue = data['date'] as String?;
-        final createdAtValue =
-            (data['createdAt'] as String?) ?? dateValue ?? DateTime.now().toIso8601String();
+        final createdAtValue = (data['createdAt'] as String?) ??
+            dateValue ??
+            DateTime.now().toIso8601String();
 
         final transaction = Transaction(
           id: transactionId,
@@ -466,23 +475,6 @@ class TransactionService {
     }
   }
 
-  // Private method to ensure user document exists
-  Future<void> _ensureUserExists(String userId) async {
-    try {
-      final userDoc = await _firestore.collection('users').doc(userId).get();
-
-      if (!userDoc.exists) {
-        debugPrint('⚠️ TRANSACTION SERVICE: User not found, creating user document');
-        // Create basic user document if it doesn't exist
-        await _firestore.collection('users').doc(userId).set({
-          'id': userId,
-          'createdAt': DateTime.now().toIso8601String(),
-          'lastLoginAt': DateTime.now().toIso8601String(),
-        });
-      }
-    } catch (e) {
-      debugPrint('❌ TRANSACTION SERVICE: Error ensuring user exists: $e');
-      // Don't throw here to prevent cascading failures
-    }
-  }
+  Future<void> _ensureUserExists(String userId) =>
+      ensureUserExists(_firestore, userId, logTag: 'TRANSACTION SERVICE');
 }

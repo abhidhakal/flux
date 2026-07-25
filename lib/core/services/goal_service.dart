@@ -2,9 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/goal_model.dart';
+import 'user_bootstrap.dart';
 
 class GoalService {
-  final firestore.FirebaseFirestore _firestore = firestore.FirebaseFirestore.instance;
+  final firestore.FirebaseFirestore _firestore =
+      firestore.FirebaseFirestore.instance;
   final Uuid _uuid = const Uuid();
 
   // Create a new goal
@@ -42,7 +44,7 @@ class GoalService {
     try {
       // Ensure user document exists
       await _ensureUserExists(userId);
-      
+
       final querySnapshot = await _firestore
           .collection('goals')
           .where('userId', isEqualTo: userId)
@@ -54,7 +56,7 @@ class GoalService {
           .toList();
     } catch (e) {
       debugPrint('❌ GOAL SERVICE: Error getting user goals: $e');
-      return [];
+      throw Exception('Failed to load goals: $e');
     }
   }
 
@@ -99,22 +101,20 @@ class GoalService {
     try {
       final goalRef = _firestore.collection('goals').doc(goalId);
       final goalDoc = await goalRef.get();
-      
+
       if (!goalDoc.exists) {
         throw Exception('Goal not found');
       }
 
       final goal = Goal.fromJson(goalDoc.data()!);
       final newAmount = goal.currentAmount + amount;
-      
+
       // Check if goal is completed
-      final newStatus = newAmount >= goal.targetAmount 
-          ? GoalStatus.completed 
-          : goal.status;
-      
-      final completedAt = newStatus == GoalStatus.completed 
-          ? DateTime.now() 
-          : goal.completedAt;
+      final newStatus =
+          newAmount >= goal.targetAmount ? GoalStatus.completed : goal.status;
+
+      final completedAt =
+          newStatus == GoalStatus.completed ? DateTime.now() : goal.completedAt;
 
       await goalRef.update({
         'currentAmount': newAmount,
@@ -130,20 +130,27 @@ class GoalService {
   Future<Map<String, dynamic>> getGoalStatistics(String userId) async {
     try {
       final goals = await getUserGoals(userId);
-      
-      final activeGoals = goals.where((g) => g.status == GoalStatus.active).toList();
-      final completedGoals = goals.where((g) => g.status == GoalStatus.completed).toList();
-      
-      final totalActiveAmount = activeGoals.fold(0.0, (sum, g) => sum + g.targetAmount);
-      final totalActiveProgress = activeGoals.fold(0.0, (sum, g) => sum + g.currentAmount);
-      final totalCompletedAmount = completedGoals.fold(0.0, (sum, g) => sum + g.targetAmount);
-      
-      final averageProgress = activeGoals.isNotEmpty 
+
+      final activeGoals =
+          goals.where((g) => g.status == GoalStatus.active).toList();
+      final completedGoals =
+          goals.where((g) => g.status == GoalStatus.completed).toList();
+
+      final totalActiveAmount =
+          activeGoals.fold(0.0, (sum, g) => sum + g.targetAmount);
+      final totalActiveProgress =
+          activeGoals.fold(0.0, (sum, g) => sum + g.currentAmount);
+      final totalCompletedAmount =
+          completedGoals.fold(0.0, (sum, g) => sum + g.targetAmount);
+
+      final averageProgress = activeGoals.isNotEmpty
           ? (totalActiveProgress / totalActiveAmount * 100).clamp(0.0, 100.0)
           : 0.0;
-      
+
       final overdueGoals = activeGoals.where((g) => g.isOverdue).length;
-      final nearDeadlineGoals = activeGoals.where((g) => g.daysRemaining <= 30 && g.daysRemaining > 0).length;
+      final nearDeadlineGoals = activeGoals
+          .where((g) => g.daysRemaining <= 30 && g.daysRemaining > 0)
+          .length;
 
       return {
         'totalGoals': goals.length,
@@ -168,9 +175,10 @@ class GoalService {
     List<Goal> existingGoals,
   ) async {
     final recommendations = <Map<String, dynamic>>[];
-    
+
     // Emergency fund recommendation (3-6 months of expenses)
-    final emergencyFundGoal = existingGoals.where((g) => g.type == GoalType.emergency).isEmpty;
+    final emergencyFundGoal =
+        existingGoals.where((g) => g.type == GoalType.emergency).isEmpty;
     if (emergencyFundGoal) {
       final emergencyAmount = monthlyIncome * 6; // 6 months of income
       recommendations.add({
@@ -186,7 +194,8 @@ class GoalService {
     }
 
     // Debt repayment recommendation
-    final debtGoals = existingGoals.where((g) => g.type == GoalType.debt).length;
+    final debtGoals =
+        existingGoals.where((g) => g.type == GoalType.debt).length;
     if (debtGoals < 2) {
       recommendations.add({
         'type': GoalType.debt,
@@ -201,7 +210,8 @@ class GoalService {
     }
 
     // Investment recommendation
-    final investmentGoals = existingGoals.where((g) => g.type == GoalType.investment).isEmpty;
+    final investmentGoals =
+        existingGoals.where((g) => g.type == GoalType.investment).isEmpty;
     if (investmentGoals) {
       recommendations.add({
         'type': GoalType.investment,
@@ -216,7 +226,8 @@ class GoalService {
     }
 
     // Vacation fund recommendation
-    final vacationGoals = existingGoals.where((g) => g.type == GoalType.vacation).isEmpty;
+    final vacationGoals =
+        existingGoals.where((g) => g.type == GoalType.vacation).isEmpty;
     if (vacationGoals) {
       recommendations.add({
         'type': GoalType.vacation,
@@ -238,29 +249,6 @@ class GoalService {
     return _uuid.v4();
   }
 
-  // Private method to ensure user document exists
-  Future<void> _ensureUserExists(String userId) async {
-    try {
-      final userDoc = await _firestore
-          .collection('users')
-          .doc(userId)
-          .get();
-      
-      if (!userDoc.exists) {
-        debugPrint('⚠️ GOAL SERVICE: User not found, creating user document');
-        // Create basic user document if it doesn't exist
-        await _firestore
-            .collection('users')
-            .doc(userId)
-            .set({
-          'id': userId,
-          'createdAt': DateTime.now().toIso8601String(),
-          'lastLoginAt': DateTime.now().toIso8601String(),
-        });
-      }
-    } catch (e) {
-      debugPrint('❌ GOAL SERVICE: Error ensuring user exists: $e');
-      // Don't throw here to prevent cascading failures
-    }
-  }
+  Future<void> _ensureUserExists(String userId) =>
+      ensureUserExists(_firestore, userId, logTag: 'GOAL SERVICE');
 }

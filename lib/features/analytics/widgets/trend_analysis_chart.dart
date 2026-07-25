@@ -3,12 +3,13 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/services/currency_service.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class TrendAnalysisChart extends StatelessWidget {
   final List<Transaction> transactions;
 
   const TrendAnalysisChart({
-    super.key, 
+    super.key,
     required this.transactions,
   });
 
@@ -20,14 +21,15 @@ class TrendAnalysisChart extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(AppTheme.radius12),
-          border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+          border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
         ),
         child: const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.bar_chart,
+                LucideIcons.barChart3,
                 size: 48,
                 color: AppColors.textSecondary,
               ),
@@ -57,13 +59,14 @@ class TrendAnalysisChart extends StatelessWidget {
     final monthlyData = _getMonthlyData();
     final maxAmount = _getMaxY(monthlyData);
     final interval = _getYAxisInterval(maxAmount);
-    
+
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radius12),
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+        border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
       ),
       child: Column(
         children: [
@@ -87,11 +90,12 @@ class TrendAnalysisChart extends StatelessWidget {
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final monthData = monthlyData[group.x.toInt()];
                       final isIncome = rodIndex == 0;
-                      final amount = isIncome ? monthData['income'] : monthData['expense'];
+                      final amount =
+                          isIncome ? monthData['income'] : monthData['expense'];
                       final label = isIncome ? 'Income' : 'Expenses';
-                      
+
                       return BarTooltipItem(
-                        '$label\n${CurrencyService().formatAmount(amount).replaceAll('.00', '')}',
+                        '$label\n${CurrencyService().formatAmountCompact(amount)}',
                         TextStyle(
                           color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.w600,
@@ -112,16 +116,22 @@ class TrendAnalysisChart extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (double value, TitleMeta meta) {
-                        if (value.toInt() >= 0 && value.toInt() < monthlyData.length) {
+                        if (value.toInt() >= 0 &&
+                            value.toInt() < monthlyData.length) {
                           return Padding(
-                            padding: const EdgeInsets.only(top: AppTheme.spacing8),
+                            padding:
+                                const EdgeInsets.only(top: AppTheme.spacing8),
                             child: Text(
                               monthlyData[value.toInt()]['month'],
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 9, // Reduced font size for consistency
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize:
+                                        9, // Reduced font size for consistency
+                                  ),
                             ),
                           );
                         }
@@ -137,14 +147,17 @@ class TrendAnalysisChart extends StatelessWidget {
                       interval: interval,
                       getTitlesWidget: (double value, TitleMeta meta) {
                         return Padding(
-                          padding: const EdgeInsets.only(right: AppTheme.spacing4),
+                          padding:
+                              const EdgeInsets.only(right: AppTheme.spacing4),
                           child: Text(
-                            CurrencyService().formatAmount(value).replaceAll('.00', ''),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 9, // Reduced font size to prevent overflow
-                            ),
+                            CurrencyService().formatAmountCompact(value),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize:
+                                          9, // Reduced font size to prevent overflow
+                                    ),
                           ),
                         );
                       },
@@ -158,7 +171,10 @@ class TrendAnalysisChart extends StatelessWidget {
                   horizontalInterval: interval,
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
-                      color: Theme.of(context).colorScheme.outline.withOpacity(0.05),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withOpacity(0.05),
                       strokeWidth: 1,
                     );
                   },
@@ -173,15 +189,17 @@ class TrendAnalysisChart extends StatelessWidget {
 
   List<Map<String, dynamic>> _getMonthlyData() {
     final Map<String, Map<String, double>> monthlyData = {};
-    
+
     // Add expenses
     for (final transaction in transactions) {
       if (transaction.isExpense) {
-        final monthKey = '${transaction.date.year}-${transaction.date.month.toString().padLeft(2, '0')}';
+        final monthKey =
+            '${transaction.date.year}-${transaction.date.month.toString().padLeft(2, '0')}';
         if (!monthlyData.containsKey(monthKey)) {
           monthlyData[monthKey] = {'income': 0, 'expense': 0};
         }
-        monthlyData[monthKey]!['expense'] = monthlyData[monthKey]!['expense']! + transaction.amount;
+        monthlyData[monthKey]!['expense'] =
+            monthlyData[monthKey]!['expense']! + transaction.amount;
       }
     }
 
@@ -197,7 +215,9 @@ class TrendAnalysisChart extends StatelessWidget {
 
     final sortedMonths = monthlyData.keys.toList()..sort();
     // Limit to last 6 months
-    final displayMonths = sortedMonths.length > 6 ? sortedMonths.sublist(sortedMonths.length - 6) : sortedMonths;
+    final displayMonths = sortedMonths.length > 6
+        ? sortedMonths.sublist(sortedMonths.length - 6)
+        : sortedMonths;
 
     return displayMonths.map((month) {
       final parts = month.split('-');
@@ -212,17 +232,28 @@ class TrendAnalysisChart extends StatelessWidget {
 
   String _getMonthName(int month) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     return months[month - 1];
   }
 
-  List<BarChartGroupData> _getBarGroups(List<Map<String, dynamic>> monthlyData) {
+  List<BarChartGroupData> _getBarGroups(
+      List<Map<String, dynamic>> monthlyData) {
     return monthlyData.asMap().entries.map((entry) {
       final index = entry.key;
       final data = entry.value;
-      
+
       return BarChartGroupData(
         x: index,
         barRods: [
@@ -251,13 +282,15 @@ class TrendAnalysisChart extends StatelessWidget {
 
   double _getMaxY(List<Map<String, dynamic>> monthlyData) {
     if (monthlyData.isEmpty) return 1000;
-    
+
     double maxAmount = 0;
     for (final data in monthlyData) {
-      final max = data['income'] > data['expense'] ? data['income'].toDouble() : data['expense'].toDouble();
+      final max = data['income'] > data['expense']
+          ? data['income'].toDouble()
+          : data['expense'].toDouble();
       if (max > maxAmount) maxAmount = max;
     }
-    
+
     // Round up to a nice number
     final interval = _getYAxisInterval(maxAmount);
     return ((maxAmount / interval).ceil() + 1) * interval;
@@ -289,7 +322,8 @@ class TrendAnalysisChart extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppTheme.spacing4),
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+        Text(label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
       ],
     );
   }

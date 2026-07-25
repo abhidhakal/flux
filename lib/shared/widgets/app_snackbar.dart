@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_theme.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 enum AppSnackbarType {
   success,
@@ -89,7 +90,8 @@ class AppSnackbar {
                 // Content
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 14),
                     child: Row(
                       children: [
                         Icon(icon ?? defaultIcon, color: accentColor, size: 20),
@@ -146,13 +148,13 @@ class AppSnackbar {
   static IconData _defaultIcon(AppSnackbarType type) {
     switch (type) {
       case AppSnackbarType.success:
-        return Icons.check_circle_rounded;
+        return LucideIcons.checkCircle2;
       case AppSnackbarType.error:
-        return Icons.error_rounded;
+        return LucideIcons.alertCircle;
       case AppSnackbarType.warning:
-        return Icons.warning_rounded;
+        return LucideIcons.alertTriangle;
       case AppSnackbarType.info:
-        return Icons.info_rounded;
+        return LucideIcons.info;
     }
   }
 
@@ -164,8 +166,12 @@ class AppSnackbar {
     VoidCallback? onAction,
     String? actionLabel,
   }) =>
-      show(context, message: message, type: AppSnackbarType.success,
-          duration: duration, onAction: onAction, actionLabel: actionLabel);
+      show(context,
+          message: message,
+          type: AppSnackbarType.success,
+          duration: duration,
+          onAction: onAction,
+          actionLabel: actionLabel);
 
   static void showError(
     BuildContext context, {
@@ -174,8 +180,12 @@ class AppSnackbar {
     VoidCallback? onAction,
     String? actionLabel,
   }) =>
-      show(context, message: message, type: AppSnackbarType.error,
-          duration: duration, onAction: onAction, actionLabel: actionLabel);
+      show(context,
+          message: message,
+          type: AppSnackbarType.error,
+          duration: duration,
+          onAction: onAction,
+          actionLabel: actionLabel);
 
   static void showWarning(
     BuildContext context, {
@@ -184,8 +194,12 @@ class AppSnackbar {
     VoidCallback? onAction,
     String? actionLabel,
   }) =>
-      show(context, message: message, type: AppSnackbarType.warning,
-          duration: duration, onAction: onAction, actionLabel: actionLabel);
+      show(context,
+          message: message,
+          type: AppSnackbarType.warning,
+          duration: duration,
+          onAction: onAction,
+          actionLabel: actionLabel);
 
   static void showInfo(
     BuildContext context, {
@@ -194,6 +208,10 @@ class AppSnackbar {
     VoidCallback? onAction,
     String? actionLabel,
   }) =>
-      show(context, message: message, type: AppSnackbarType.info,
-          duration: duration, onAction: onAction, actionLabel: actionLabel);
+      show(context,
+          message: message,
+          type: AppSnackbarType.info,
+          duration: duration,
+          onAction: onAction,
+          actionLabel: actionLabel);
 }

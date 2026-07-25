@@ -1,10 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:equatable/equatable.dart';
 
-enum TransactionType {
-  income,
-  expense
-}
+enum TransactionType { income, expense }
 
 /// Represents a financial transaction, either income or expense.
 class Transaction extends Equatable {

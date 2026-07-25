@@ -23,7 +23,7 @@ class AdService {
       }
       return;
     }
-    
+
     _isInitializing = true;
     try {
       await MobileAds.instance.initialize();

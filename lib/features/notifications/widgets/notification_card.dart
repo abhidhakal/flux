@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/notification_model.dart' as app_notification;
+import 'package:lucide_icons/lucide_icons.dart';
 
 class NotificationCard extends StatelessWidget {
   final app_notification.Notification notification;
@@ -30,7 +31,7 @@ class NotificationCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Icon(
-          Icons.delete,
+          LucideIcons.trash2,
           color: Colors.white,
         ),
       ),
@@ -70,8 +71,8 @@ class NotificationCard extends StatelessWidget {
                             notification.title,
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: notification.isUnread 
-                                  ? FontWeight.bold 
+                              fontWeight: notification.isUnread
+                                  ? FontWeight.bold
                                   : FontWeight.w600,
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
@@ -81,7 +82,10 @@ class NotificationCard extends StatelessWidget {
                             notification.typeDisplayName,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.7),
                             ),
                           ),
                         ],
@@ -95,7 +99,10 @@ class NotificationCard extends StatelessWidget {
                   notification.message,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.7),
                     height: 1.4,
                   ),
                 ),
@@ -107,10 +114,14 @@ class NotificationCard extends StatelessWidget {
                       _formatTimeAgo(notification.age),
                       style: TextStyle(
                         fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.7),
                       ),
                     ),
-                    if (notification.isActionable && notification.actionTitle != null)
+                    if (notification.isActionable &&
+                        notification.actionTitle != null)
                       TextButton(
                         onPressed: onTap,
                         child: Text(
@@ -137,35 +148,35 @@ class NotificationCard extends StatelessWidget {
 
     switch (notification.type) {
       case app_notification.NotificationType.budgetAlert:
-        icon = Icons.account_balance_wallet;
+        icon = LucideIcons.wallet;
         color = AppColors.error;
         break;
       case app_notification.NotificationType.spendingReminder:
-        icon = Icons.receipt_long;
+        icon = LucideIcons.scrollText;
         color = AppColors.warning;
         break;
       case app_notification.NotificationType.financialTip:
-        icon = Icons.lightbulb;
+        icon = LucideIcons.lightbulb;
         color = AppColors.primary;
         break;
       case app_notification.NotificationType.goalMilestone:
-        icon = Icons.flag;
+        icon = LucideIcons.flag;
         color = AppColors.success;
         break;
       case app_notification.NotificationType.billReminder:
-        icon = Icons.schedule;
+        icon = LucideIcons.clock;
         color = AppColors.warning;
         break;
       case app_notification.NotificationType.savingsReminder:
-        icon = Icons.savings;
+        icon = LucideIcons.piggyBank;
         color = AppColors.success;
         break;
       case app_notification.NotificationType.debtAlert:
-        icon = Icons.credit_card;
+        icon = LucideIcons.creditCard;
         color = AppColors.error;
         break;
       case app_notification.NotificationType.achievement:
-        icon = Icons.emoji_events;
+        icon = LucideIcons.trophy;
         color = AppColors.accent;
         break;
     }
@@ -192,19 +203,19 @@ class NotificationCard extends StatelessWidget {
     switch (notification.priority) {
       case app_notification.NotificationPriority.low:
         chipColor = AppColors.success;
-        icon = Icons.info;
+        icon = LucideIcons.info;
         break;
       case app_notification.NotificationPriority.medium:
         chipColor = AppColors.warning;
-        icon = Icons.priority_high;
+        icon = LucideIcons.zap;
         break;
       case app_notification.NotificationPriority.high:
         chipColor = AppColors.error;
-        icon = Icons.warning;
+        icon = LucideIcons.alertTriangle;
         break;
       case app_notification.NotificationPriority.urgent:
         chipColor = AppColors.error;
-        icon = Icons.error;
+        icon = LucideIcons.alertCircle;
         break;
     }
 

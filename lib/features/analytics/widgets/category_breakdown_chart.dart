@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/services/currency_service.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class CategoryBreakdownChart extends StatefulWidget {
   final List<Transaction> transactions;
@@ -23,7 +24,8 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
     }
 
     final categoryData = _getCategoryData();
-    final totalSpending = categoryData.fold(0.0, (sum, item) => sum + (item['amount'] as double));
+    final totalSpending =
+        categoryData.fold(0.0, (sum, item) => sum + (item['amount'] as double));
 
     return Column(
       children: [
@@ -42,7 +44,8 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
                           touchedIndex = -1;
                           return;
                         }
-                        touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                        touchedIndex = pieTouchResponse
+                            .touchedSection!.touchedSectionIndex;
                       });
                     },
                   ),
@@ -60,12 +63,15 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
                       'Total',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     Text(
-                      CurrencyService().formatAmount(totalSpending).replaceAll(RegExp(r'\.00$'), ''),
+                      CurrencyService().formatAmountCompact(totalSpending),
                       style: TextStyle(
                         fontSize: 20,
                         color: Theme.of(context).colorScheme.onSurface,
@@ -86,43 +92,44 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
   }
 
   Widget _buildEmptyState() {
-     return Container(
-        height: 200,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppTheme.radius12),
-          border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.pie_chart_outline_rounded,
-                size: 48,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radius12),
+        border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              LucideIcons.pieChart,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No category data',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
-              const SizedBox(height: 8),
-              Text(
-                'No category data',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
+      ),
+    );
   }
 
   List<Map<String, dynamic>> _getCategoryData() {
     final Map<String, double> categoryTotals = {};
-    
+
     for (final transaction in widget.transactions) {
       if (transaction.isExpense) {
-        categoryTotals[transaction.category] = 
+        categoryTotals[transaction.category] =
             (categoryTotals[transaction.category] ?? 0) + transaction.amount;
       }
     }
@@ -133,13 +140,16 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
     // Consolidate smaller categories into "Other" if too many
     if (sortedCategories.length > 5) {
       final top5 = sortedCategories.take(5).toList();
-      final otherValue = sortedCategories.skip(5).fold(0.0, (sum, entry) => sum + entry.value);
-      
-      final result = top5.map((entry) => {
-        'category': entry.key,
-        'amount': entry.value,
-      }).toList();
-      
+      final otherValue =
+          sortedCategories.skip(5).fold(0.0, (sum, entry) => sum + entry.value);
+
+      final result = top5
+          .map((entry) => {
+                'category': entry.key,
+                'amount': entry.value,
+              })
+          .toList();
+
       if (otherValue > 0) {
         result.add({
           'category': 'Other',
@@ -149,10 +159,12 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
       return result;
     }
 
-    return sortedCategories.map((entry) => {
-      'category': entry.key,
-      'amount': entry.value,
-    }).toList();
+    return sortedCategories
+        .map((entry) => {
+              'category': entry.key,
+              'amount': entry.value,
+            })
+        .toList();
   }
 
   static const List<Color> _categoryColors = [
@@ -165,16 +177,20 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
     Color(0xFFE91E63), // Pink
   ];
 
-  List<PieChartSectionData> _getPieSections(List<Map<String, dynamic>> categoryData) {
+  List<PieChartSectionData> _getPieSections(
+      List<Map<String, dynamic>> categoryData) {
     final colors = _categoryColors;
 
-    final total = categoryData.fold(0.0, (sum, item) => sum + (item['amount'] as double));
+    final total =
+        categoryData.fold(0.0, (sum, item) => sum + (item['amount'] as double));
 
     return categoryData.asMap().entries.map((entry) {
       final index = entry.key;
       final data = entry.value;
       final isTouched = index == touchedIndex;
-      final fontSize = isTouched ? 16.0 : 0.0; // Hide titles on chart, show only on interaction or legend
+      final fontSize = isTouched
+          ? 16.0
+          : 0.0; // Hide titles on chart, show only on interaction or legend
       final radius = isTouched ? 28.0 : 20.0;
       final color = colors[index % colors.length];
       final percentage = ((data['amount'] as double) / total * 100);
@@ -194,10 +210,12 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
     }).toList();
   }
 
-  Widget _buildLegend(List<Map<String, dynamic>> categoryData, BuildContext context) {
+  Widget _buildLegend(
+      List<Map<String, dynamic>> categoryData, BuildContext context) {
     final colors = _categoryColors;
 
-    final total = categoryData.fold(0.0, (sum, item) => sum + (item['amount'] as double));
+    final total =
+        categoryData.fold(0.0, (sum, item) => sum + (item['amount'] as double));
     final halfLength = (categoryData.length / 2).ceil();
     final firstHalf = categoryData.take(halfLength).toList();
     final secondHalf = categoryData.skip(halfLength).toList();
@@ -205,20 +223,21 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: Column(children: _buildLegendItems(firstHalf, colors, 0, total, context))),
+        Expanded(
+            child: Column(
+                children:
+                    _buildLegendItems(firstHalf, colors, 0, total, context))),
         const SizedBox(width: 16),
-        Expanded(child: Column(children: _buildLegendItems(secondHalf, colors, halfLength, total, context))),
+        Expanded(
+            child: Column(
+                children: _buildLegendItems(
+                    secondHalf, colors, halfLength, total, context))),
       ],
     );
   }
 
-  List<Widget> _buildLegendItems(
-    List<Map<String, dynamic>> items, 
-    List<Color> colors, 
-    int startIndex, 
-    double total, 
-    BuildContext context
-  ) {
+  List<Widget> _buildLegendItems(List<Map<String, dynamic>> items,
+      List<Color> colors, int startIndex, double total, BuildContext context) {
     return items.asMap().entries.map((entry) {
       final index = entry.key + startIndex;
       final data = entry.value;
@@ -253,10 +272,13 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
-                    '${percentage.toStringAsFixed(1)}% • ${CurrencyService().formatAmount(data['amount']).replaceAll('.00', '')}',
+                    '${percentage.toStringAsFixed(1)}% • ${CurrencyService().formatAmountCompact(data['amount'])}',
                     style: TextStyle(
                       fontSize: 11,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.6),
                     ),
                   ),
                 ],

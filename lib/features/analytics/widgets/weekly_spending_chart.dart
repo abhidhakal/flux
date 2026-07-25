@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/services/currency_service.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class WeeklySpendingChart extends StatelessWidget {
   final List<Transaction> transactions;
@@ -24,7 +25,7 @@ class WeeklySpendingChart extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.calendar_view_week,
+                LucideIcons.calendarDays,
                 size: 48,
                 color: AppColors.textSecondary,
               ),
@@ -54,13 +55,14 @@ class WeeklySpendingChart extends StatelessWidget {
     final weeklyData = _getWeeklyData();
     final maxAmount = _getMaxY(weeklyData);
     final interval = _getYAxisInterval(maxAmount);
-    
+
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radius24),
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+        border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
       ),
       child: Column(
         children: [
@@ -78,7 +80,7 @@ class WeeklySpendingChart extends StatelessWidget {
                       final date = dayData['date'] as DateTime;
                       final dateString = '${date.day}/${date.month}';
                       return BarTooltipItem(
-                        '$dateString (${dayData['dayName']})\n${CurrencyService().formatAmount(dayData['amount']).replaceAll('.00', '')}',
+                        '$dateString (${dayData['dayName']})\n${CurrencyService().formatAmountCompact(dayData['amount'])}',
                         TextStyle(
                           color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.w600,
@@ -99,15 +101,20 @@ class WeeklySpendingChart extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (double value, TitleMeta meta) {
-                        if (value.toInt() >= 0 && value.toInt() < weeklyData.length) {
+                        if (value.toInt() >= 0 &&
+                            value.toInt() < weeklyData.length) {
                           final dayData = weeklyData[value.toInt()];
                           final dayName = dayData['dayName'];
                           return Padding(
-                            padding: const EdgeInsets.only(top: AppTheme.spacing8),
+                            padding:
+                                const EdgeInsets.only(top: AppTheme.spacing8),
                             child: Text(
                               dayName,
                               style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.5),
                                 fontWeight: FontWeight.w600,
                                 fontSize: 10,
                               ),
@@ -127,9 +134,12 @@ class WeeklySpendingChart extends StatelessWidget {
                       interval: interval,
                       getTitlesWidget: (double value, TitleMeta meta) {
                         return Text(
-                          CurrencyService().formatAmount(value).replaceAll('.00', ''),
+                          CurrencyService().formatAmountCompact(value),
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.5),
                             fontWeight: FontWeight.w600,
                             fontSize: 10,
                           ),
@@ -145,7 +155,10 @@ class WeeklySpendingChart extends StatelessWidget {
                   horizontalInterval: interval,
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
-                      color: Theme.of(context).colorScheme.outline.withOpacity(0.05),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withOpacity(0.05),
                       strokeWidth: 1,
                     );
                   },
@@ -160,31 +173,34 @@ class WeeklySpendingChart extends StatelessWidget {
 
   List<Map<String, dynamic>> _getWeeklyData() {
     final Map<String, double> dailyTotals = {};
-    
+
     for (final transaction in transactions) {
       if (transaction.isExpense) {
         // Get the date string (YYYY-MM-DD format)
-        final dateString = '${transaction.date.year}-${transaction.date.month.toString().padLeft(2, '0')}-${transaction.date.day.toString().padLeft(2, '0')}';
-        dailyTotals[dateString] = (dailyTotals[dateString] ?? 0) + transaction.amount;
+        final dateString =
+            '${transaction.date.year}-${transaction.date.month.toString().padLeft(2, '0')}-${transaction.date.day.toString().padLeft(2, '0')}';
+        dailyTotals[dateString] =
+            (dailyTotals[dateString] ?? 0) + transaction.amount;
       }
     }
 
     // Get the last 7 days of data
     final days = <Map<String, dynamic>>[];
     final now = DateTime.now();
-    
+
     for (int i = 6; i >= 0; i--) {
       final date = DateTime(now.year, now.month, now.day - i);
-      final dateString = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      final dateString =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      
+
       days.add({
         'date': date,
         'dayName': dayNames[date.weekday - 1],
         'amount': dailyTotals[dateString] ?? 0.0,
       });
     }
-    
+
     return days;
   }
 
@@ -192,7 +208,7 @@ class WeeklySpendingChart extends StatelessWidget {
     return weeklyData.asMap().entries.map((entry) {
       final index = entry.key;
       final data = entry.value;
-      
+
       return BarChartGroupData(
         x: index,
         barRods: [
@@ -212,7 +228,9 @@ class WeeklySpendingChart extends StatelessWidget {
 
   double _getMaxY(List<Map<String, dynamic>> weeklyData) {
     if (weeklyData.isEmpty) return 1000;
-    final maxAmount = weeklyData.map((data) => data['amount'] as double).reduce((a, b) => a > b ? a : b);
+    final maxAmount = weeklyData
+        .map((data) => data['amount'] as double)
+        .reduce((a, b) => a > b ? a : b);
     return maxAmount * 1.2; // Add 20% padding
   }
 

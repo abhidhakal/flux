@@ -6,19 +6,19 @@ import 'app.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Background Tasks
   await BackgroundTaskService().initialize();
 
   // Initialize Firebase
   await Firebase.initializeApp();
-  
+
   // Enable offline persistence for Firestore
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
-  
+
   runApp(const MyApp());
 }
 

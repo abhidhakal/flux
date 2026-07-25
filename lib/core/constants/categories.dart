@@ -28,9 +28,9 @@ class AppCategories {
 
   // All categories combined
   static List<String> get allCategories => [
-    ...expenseCategories,
-    ...incomeCategories,
-  ];
+        ...expenseCategories,
+        ...incomeCategories,
+      ];
 
   // Category icons mapping
   static const Map<String, String> categoryIcons = {

@@ -6,9 +6,11 @@ import '../../../core/models/recurring_transaction_model.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../../../core/services/recurring_transaction_service.dart';
+import '../../../core/utils/date_format_utils.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../auth/auth_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class RecurringTransactionsScreen extends StatefulWidget {
   const RecurringTransactionsScreen({super.key});
@@ -74,7 +76,8 @@ class _RecurringTransactionsScreenState
     }
   }
 
-  Future<void> _deleteRecurringTransaction(RecurringTransaction recurring) async {
+  Future<void> _deleteRecurringTransaction(
+      RecurringTransaction recurring) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -103,7 +106,8 @@ class _RecurringTransactionsScreenState
     }
 
     try {
-      await _recurringTransactionService.deleteRecurringTransaction(recurring.id);
+      await _recurringTransactionService
+          .deleteRecurringTransaction(recurring.id);
       if (!mounted) {
         return;
       }
@@ -169,7 +173,7 @@ class _RecurringTransactionsScreenState
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Icon(
-                      Icons.repeat_rounded,
+                      LucideIcons.repeat,
                       size: 36,
                       color: AppColors.primary,
                     ),
@@ -212,8 +216,9 @@ class _RecurringTransactionsScreenState
 
   Widget _buildRecurringTile(RecurringTransaction recurring) {
     final colorScheme = Theme.of(context).colorScheme;
-    final accentColor =
-        recurring.type == TransactionType.income ? AppColors.success : AppColors.error;
+    final accentColor = recurring.type == TransactionType.income
+        ? AppColors.success
+        : AppColors.error;
     final statusColor = switch (recurring.status) {
       RecurringTransactionStatus.active => AppColors.success,
       RecurringTransactionStatus.paused => Colors.orange,
@@ -237,8 +242,8 @@ class _RecurringTransactionsScreenState
                 ),
                 child: Icon(
                   recurring.type == TransactionType.income
-                      ? Icons.add_rounded
-                      : Icons.remove_rounded,
+                      ? LucideIcons.plus
+                      : LucideIcons.minus,
                   color: accentColor,
                 ),
               ),
@@ -257,7 +262,7 @@ class _RecurringTransactionsScreenState
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${_frequencyLabel(recurring.frequency)} • ${recurring.category}',
+                      '${recurring.frequency.label} • ${recurring.category}',
                       style: TextStyle(
                         color: colorScheme.onSurface.withValues(alpha: 0.62),
                       ),
@@ -294,7 +299,7 @@ class _RecurringTransactionsScreenState
               Expanded(
                 child: _metaItem(
                   label: 'Next run',
-                  value: _formatDate(recurring.nextRunAt),
+                  value: formatShortDate(recurring.nextRunAt),
                 ),
               ),
             ],
@@ -313,13 +318,14 @@ class _RecurringTransactionsScreenState
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: recurring.status == RecurringTransactionStatus.ended
-                      ? null
-                      : () => _toggleStatus(recurring),
+                  onPressed:
+                      recurring.status == RecurringTransactionStatus.ended
+                          ? null
+                          : () => _toggleStatus(recurring),
                   icon: Icon(
                     recurring.status == RecurringTransactionStatus.active
-                        ? Icons.pause_rounded
-                        : Icons.play_arrow_rounded,
+                        ? LucideIcons.pause
+                        : LucideIcons.play,
                   ),
                   label: Text(
                     recurring.status == RecurringTransactionStatus.active
@@ -332,7 +338,7 @@ class _RecurringTransactionsScreenState
               Expanded(
                 child: TextButton.icon(
                   onPressed: () => _deleteRecurringTransaction(recurring),
-                  icon: const Icon(Icons.delete_outline_rounded),
+                  icon: const Icon(LucideIcons.trash2),
                   label: const Text('Delete'),
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.error,
@@ -372,18 +378,5 @@ class _RecurringTransactionsScreenState
         ),
       ],
     );
-  }
-
-  String _frequencyLabel(RecurringTransactionFrequency frequency) {
-    return switch (frequency) {
-      RecurringTransactionFrequency.daily => 'Daily',
-      RecurringTransactionFrequency.weekly => 'Weekly',
-      RecurringTransactionFrequency.monthly => 'Monthly',
-      RecurringTransactionFrequency.yearly => 'Yearly',
-    };
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
   }
 }

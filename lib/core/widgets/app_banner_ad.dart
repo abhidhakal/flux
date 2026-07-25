@@ -16,12 +16,12 @@ class _AppBannerAdState extends State<AppBannerAd> {
   BannerAd? _bannerAd;
   bool _isLoaded = false;
   StreamSubscription<bool>? _purchaseSubscription;
-  
+
   @override
   void initState() {
     super.initState();
     _loadAd();
-    
+
     // Listen for premium purchase updates to hide ads dynamically
     _purchaseSubscription = SubscriptionService().purchaseStream.listen((_) {
       if (mounted) {
@@ -37,10 +37,11 @@ class _AppBannerAdState extends State<AppBannerAd> {
     await AdService().ensureInitialized();
     if (!mounted) return;
 
-    final AnchoredAdaptiveBannerAdSize? size = switch (Platform.isAndroid || Platform.isIOS) {
-       true => await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
-        MediaQuery.of(context).size.width.truncate(),
-      ),
+    final AnchoredAdaptiveBannerAdSize? size =
+        switch (Platform.isAndroid || Platform.isIOS) {
+      true => await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
+          MediaQuery.of(context).size.width.truncate(),
+        ),
       _ => null,
     };
 

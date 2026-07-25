@@ -1,126 +1,284 @@
 import '../models/transaction_model.dart';
 import 'currency_service.dart';
 
+class _SpendingTrend {
+  final String label;
+  final double recentTotal;
+  final double previousTotal;
+  const _SpendingTrend(
+      {required this.label,
+      required this.recentTotal,
+      required this.previousTotal});
+}
+
 class AIIntelligenceService {
   // Smart categorization based on transaction title and description
   String categorizeTransaction(String title, String description) {
     final text = '${title.toLowerCase()} ${description.toLowerCase()}';
-    
+
     // Food & Dining patterns
     if (_matchesPattern(text, [
-      'restaurant', 'food', 'meal', 'dinner', 'lunch', 'breakfast',
-      'cafe', 'coffee', 'pizza', 'burger', 'sushi', 'mcdonalds',
-      'starbucks', 'uber eats', 'doordash', 'grubhub', 'delivery'
+      'restaurant',
+      'food',
+      'meal',
+      'dinner',
+      'lunch',
+      'breakfast',
+      'cafe',
+      'coffee',
+      'pizza',
+      'burger',
+      'sushi',
+      'mcdonalds',
+      'starbucks',
+      'uber eats',
+      'doordash',
+      'grubhub',
+      'delivery'
     ])) {
       return 'Food & Dining';
     }
-    
+
     // Transportation patterns
     if (_matchesPattern(text, [
-      'uber', 'lyft', 'taxi', 'gas', 'fuel', 'parking', 'metro',
-      'bus', 'train', 'subway', 'car', 'auto', 'transportation',
-      'shell', 'exxon', 'bp', 'chevron', 'toll', 'parking'
+      'uber',
+      'lyft',
+      'taxi',
+      'gas',
+      'fuel',
+      'parking',
+      'metro',
+      'bus',
+      'train',
+      'subway',
+      'car',
+      'auto',
+      'transportation',
+      'shell',
+      'exxon',
+      'bp',
+      'chevron',
+      'toll',
+      'parking'
     ])) {
       return 'Transportation';
     }
-    
+
     // Entertainment patterns
     if (_matchesPattern(text, [
-      'netflix', 'spotify', 'hulu', 'disney', 'amazon prime',
-      'movie', 'cinema', 'theater', 'concert', 'show', 'game',
-      'entertainment', 'fun', 'amusement', 'park', 'museum'
+      'netflix',
+      'spotify',
+      'hulu',
+      'disney',
+      'amazon prime',
+      'movie',
+      'cinema',
+      'theater',
+      'concert',
+      'show',
+      'game',
+      'entertainment',
+      'fun',
+      'amusement',
+      'park',
+      'museum'
     ])) {
       return 'Entertainment';
     }
-    
+
     // Shopping patterns
     if (_matchesPattern(text, [
-      'amazon', 'walmart', 'target', 'costco', 'best buy',
-      'shopping', 'store', 'mall', 'clothing', 'shoes', 'apparel',
-      'electronics', 'furniture', 'home', 'decor', 'fashion'
+      'amazon',
+      'walmart',
+      'target',
+      'costco',
+      'best buy',
+      'shopping',
+      'store',
+      'mall',
+      'clothing',
+      'shoes',
+      'apparel',
+      'electronics',
+      'furniture',
+      'home',
+      'decor',
+      'fashion'
     ])) {
       return 'Shopping';
     }
-    
+
     // Utilities patterns
     if (_matchesPattern(text, [
-      'electric', 'gas', 'water', 'internet', 'wifi', 'phone',
-      'utility', 'bill', 'power', 'energy', 'at&t', 'verizon',
-      'comcast', 'spectrum', 'cable', 'electricity'
+      'electric',
+      'gas',
+      'water',
+      'internet',
+      'wifi',
+      'phone',
+      'utility',
+      'bill',
+      'power',
+      'energy',
+      'at&t',
+      'verizon',
+      'comcast',
+      'spectrum',
+      'cable',
+      'electricity'
     ])) {
       return 'Bills & Utilities';
     }
-    
+
     // Healthcare patterns
     if (_matchesPattern(text, [
-      'doctor', 'hospital', 'medical', 'pharmacy', 'cvs',
-      'walgreens', 'health', 'dental', 'vision', 'insurance',
-      'medicine', 'prescription', 'clinic', 'physician'
+      'doctor',
+      'hospital',
+      'medical',
+      'pharmacy',
+      'cvs',
+      'walgreens',
+      'health',
+      'dental',
+      'vision',
+      'insurance',
+      'medicine',
+      'prescription',
+      'clinic',
+      'physician'
     ])) {
       return 'Healthcare';
     }
-    
+
     // Education patterns
     if (_matchesPattern(text, [
-      'school', 'university', 'college', 'course', 'class',
-      'education', 'tuition', 'books', 'textbook', 'student',
-      'learning', 'training', 'workshop', 'seminar'
+      'school',
+      'university',
+      'college',
+      'course',
+      'class',
+      'education',
+      'tuition',
+      'books',
+      'textbook',
+      'student',
+      'learning',
+      'training',
+      'workshop',
+      'seminar'
     ])) {
       return 'Education';
     }
-    
+
     // Housing patterns
     if (_matchesPattern(text, [
-      'rent', 'mortgage', 'apartment', 'house', 'home',
-      'real estate', 'property', 'landlord', 'maintenance',
-      'repair', 'renovation', 'furniture', 'appliance'
+      'rent',
+      'mortgage',
+      'apartment',
+      'house',
+      'home',
+      'real estate',
+      'property',
+      'landlord',
+      'maintenance',
+      'repair',
+      'renovation',
+      'furniture',
+      'appliance'
     ])) {
       return 'Housing';
     }
-    
+
     // Insurance patterns
     if (_matchesPattern(text, [
-      'insurance', 'coverage', 'policy', 'premium', 'claim',
-      'auto insurance', 'home insurance', 'life insurance',
-      'health insurance', 'geico', 'state farm', 'allstate'
+      'insurance',
+      'coverage',
+      'policy',
+      'premium',
+      'claim',
+      'auto insurance',
+      'home insurance',
+      'life insurance',
+      'health insurance',
+      'geico',
+      'state farm',
+      'allstate'
     ])) {
       return 'Insurance';
     }
-    
+
     // Personal Care patterns
     if (_matchesPattern(text, [
-      'salon', 'spa', 'beauty', 'cosmetic', 'makeup',
-      'haircut', 'manicure', 'pedicure', 'massage', 'gym',
-      'fitness', 'workout', 'personal care', 'wellness'
+      'salon',
+      'spa',
+      'beauty',
+      'cosmetic',
+      'makeup',
+      'haircut',
+      'manicure',
+      'pedicure',
+      'massage',
+      'gym',
+      'fitness',
+      'workout',
+      'personal care',
+      'wellness'
     ])) {
       return 'Personal Care';
     }
-    
+
     // Travel patterns
     if (_matchesPattern(text, [
-      'hotel', 'flight', 'airline', 'airport', 'vacation',
-      'travel', 'trip', 'booking', 'reservation', 'airbnb',
-      'expedia', 'booking.com', 'hotels.com', 'tourism'
+      'hotel',
+      'flight',
+      'airline',
+      'airport',
+      'vacation',
+      'travel',
+      'trip',
+      'booking',
+      'reservation',
+      'airbnb',
+      'expedia',
+      'booking.com',
+      'hotels.com',
+      'tourism'
     ])) {
       return 'Travel';
     }
-    
+
     // Gifts patterns
     if (_matchesPattern(text, [
-      'gift', 'present', 'birthday', 'anniversary', 'wedding',
-      'celebration', 'party', 'donation', 'charity', 'fundraiser'
+      'gift',
+      'present',
+      'birthday',
+      'anniversary',
+      'wedding',
+      'celebration',
+      'party',
+      'donation',
+      'charity',
+      'fundraiser'
     ])) {
       return 'Gifts';
     }
-    
+
     // Income patterns
     if (_matchesPattern(text, [
-      'salary', 'paycheck', 'income', 'deposit', 'transfer',
-      'payment', 'reimbursement', 'refund', 'bonus', 'commission'
+      'salary',
+      'paycheck',
+      'income',
+      'deposit',
+      'transfer',
+      'payment',
+      'reimbursement',
+      'refund',
+      'bonus',
+      'commission'
     ])) {
       return 'Salary';
     }
-    
+
     // Default to "Other" if no pattern matches
     return 'Other';
   }
@@ -137,7 +295,9 @@ class AIIntelligenceService {
         'topCategories': [],
         'spendingTrend': 'stable',
         'insights': ['No data to analyze yet.'],
-        'recommendations': ['Start tracking your income and expenses to get AI insights'],
+        'recommendations': [
+          'Start tracking your income and expenses to get AI insights'
+        ],
         'subscriptions': [],
         'projectedSavings': 0.0,
         'efficiency': {'needs': 0.0, 'wants': 0.0, 'savings': 0.0},
@@ -148,152 +308,93 @@ class AIIntelligenceService {
     final incomes = transactions.where((t) => t.isIncome).toList();
     final totalSpent = expenses.fold(0.0, (sum, t) => sum + t.amount);
     final totalIncome = incomes.fold<double>(0.0, (sum, t) => sum + t.amount);
-    final averageSpent = expenses.isNotEmpty ? totalSpent / expenses.length : 0.0;
-    
-    final savingsRate = totalIncome > 0 ? ((totalIncome - totalSpent) / totalIncome * 100) : 0.0;
+    final averageSpent =
+        expenses.isNotEmpty ? totalSpent / expenses.length : 0.0;
 
-    // 1. Category analysis
-    final categoryTotals = <String, double>{};
-    for (final transaction in expenses) {
-      categoryTotals[transaction.category] = 
-          (categoryTotals[transaction.category] ?? 0) + transaction.amount;
-    }
+    final savingsRate = totalIncome > 0
+        ? ((totalIncome - totalSpent) / totalIncome * 100)
+        : 0.0;
 
-    final sortedCategories = categoryTotals.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    
-    final topCategories = sortedCategories.take(3).map((e) => {
-      'category': e.key,
-      'amount': e.value,
-      'percentage': totalSpent > 0 ? (e.value / totalSpent * 100).toStringAsFixed(1) : '0.0',
-    }).toList();
+    final topCategories = _topCategories(expenses, totalSpent);
+    final subscriptions = _detectSubscriptions(expenses);
+    final efficiency = _efficiencySplit(expenses, totalIncome, savingsRate);
 
-    // 2. Subscription Detection (Crude detection based on recurring titles/amounts)
-    final Map<String, List<Transaction>> merchantHistory = {};
-    for (final t in expenses) {
-      final key = t.title.toLowerCase().trim();
-      merchantHistory.putIfAbsent(key, () => []).add(t);
-    }
+    final trend = _spendingTrend(expenses);
+    final recentTotal = trend.recentTotal;
+    final previousTotal = trend.previousTotal;
+    final spendingTrend = trend.label;
 
-    final subscriptions = <Map<String, dynamic>>[];
-    merchantHistory.forEach((title, txs) {
-      if (txs.length >= 2) {
-        // Simple logic: if same amount or same merchant appears frequently
-        final amounts = txs.map((e) => e.amount).toSet();
-        if (amounts.length == 1 || txs.length >= 3) {
-          subscriptions.add({
-            'title': txs.first.title,
-            'amount': txs.first.amount,
-            'frequency': 'Monthly', // Assume monthly for simplicity
-            'category': txs.first.category,
-          });
-        }
-      }
-    });
+    int healthScore = _healthScore(
+      savingsRate: savingsRate,
+      efficiency: efficiency,
+      totalIncome: totalIncome,
+      totalSpent: totalSpent,
+      spendingTrend: spendingTrend,
+    );
 
-    // 3. Efficiency Calculation (50/30/20 rule)
-    double needs = 0, wants = 0;
-    for (final t in expenses) {
-      // Prioritize user-defined essential status, fallback to category mapping
-      if (t.isEssential) {
-        needs += t.amount;
-      } else if (['Housing', 'Bills & Utilities', 'Healthcare', 'Transportation', 'Education'].contains(t.category)) {
-        // Fallback for transactions where user hasn't toggled it yet
-        needs += t.amount;
-      } else {
-        wants += t.amount;
-      }
-    }
-    final efficiency = {
-      'needs': totalIncome > 0 ? (needs / totalIncome * 100) : 0.0,
-      'wants': totalIncome > 0 ? (wants / totalIncome * 100) : 0.0,
-      'savings': savingsRate > 0 ? savingsRate : 0.0,
-    };
-
-    // 4. Financial Health Score (0-100)
-    int healthScore = 50; // Base score
-    healthScore += (savingsRate / 2).clamp(-20, 25).toInt(); // up to +25 for 50% savings
-    if (efficiency['needs']! < 50) healthScore += 10;
-    if (efficiency['wants']! < 30) healthScore += 10;
-    if (totalIncome > totalSpent) healthScore += 5;
-    
-    // Recent trend impact
-    final now = DateTime.now();
-    final thirtyDaysAgo = now.subtract(const Duration(days: 30));
-    final sixtyDaysAgo = now.subtract(const Duration(days: 60));
-
-    final recentExpenses = expenses.where((t) => t.date.isAfter(thirtyDaysAgo)).toList();
-    final previousExpenses = expenses.where((t) => t.date.isAfter(sixtyDaysAgo) && t.date.isBefore(thirtyDaysAgo)).toList();
-
-    final recentTotal = recentExpenses.fold(0.0, (sum, t) => sum + t.amount);
-    final previousTotal = previousExpenses.fold(0.0, (sum, t) => sum + t.amount);
-
-    String spendingTrend = 'stable';
-    if (previousTotal > 0) {
-      final change = (recentTotal - previousTotal) / previousTotal;
-      if (change > 0.1) {
-        spendingTrend = 'increasing';
-        healthScore -= 10;
-      }
-      else if (change < -0.1) {
-        spendingTrend = 'decreasing';
-        healthScore += 10;
-      }
-    }
-    healthScore = healthScore.clamp(0, 100);
-
-    // 5. Projected Savings (6 months)
+    // Projected Savings (6 months)
     final monthlySavings = totalIncome - totalSpent;
     final projectedSavings = monthlySavings * 6;
 
     // Generate insights
     final insights = <String>[];
-    
+
     // Financial Health Insight
     if (healthScore > 80) {
-      insights.add('Excellent financial health! You are in the top 5% of savers.');
+      insights
+          .add('Excellent financial health! You are in the top 5% of savers.');
     } else if (healthScore > 60) {
       insights.add('Good financial health. Your habits are sustainable.');
     } else {
-      insights.add('Your financial health needs attention. Consider reviewing your "wants" spending.');
+      insights.add(
+          'Your financial health needs attention. Consider reviewing your "wants" spending.');
     }
 
     if (subscriptions.isNotEmpty) {
-      final subTotal = subscriptions.fold(0.0, (sum, s) => sum + (s['amount'] as double));
-      insights.add('Detected ${subscriptions.length} recurring subscriptions costing you ${CurrencyService().formatAmount(subTotal)} monthly.');
+      final subTotal =
+          subscriptions.fold(0.0, (sum, s) => sum + (s['amount'] as double));
+      insights.add(
+          'Detected ${subscriptions.length} recurring subscriptions costing you ${CurrencyService().formatAmount(subTotal)} monthly.');
     }
 
     if (projectedSavings > 0) {
-      insights.add('At your current rate, you will save ${CurrencyService().formatAmount(projectedSavings)} in the next 6 months.');
+      insights.add(
+          'At your current rate, you will save ${CurrencyService().formatAmount(projectedSavings)} in the next 6 months.');
     }
 
     if (topCategories.isNotEmpty) {
       final topCategory = topCategories.first;
-      insights.add('Spending focus: ${topCategory['category']} (${topCategory['percentage']}% of total).');
+      insights.add(
+          'Spending focus: ${topCategory['category']} (${topCategory['percentage']}% of total).');
     }
-    
+
     // Efficiency insight
     if (efficiency['wants']! > 35) {
-      insights.add('Your non-essential spending (Wants) is high at ${efficiency['wants']!.toStringAsFixed(1)}%.');
+      insights.add(
+          'Your non-essential spending (Wants) is high at ${efficiency['wants']!.toStringAsFixed(1)}%.');
     }
 
     // Generate recommendations
     final recommendations = <String>[];
-    
+
     if (savingsRate < 20) {
-      recommendations.add('Optimize your 50/30/20 balance. Your current savings rate is ${savingsRate.toStringAsFixed(1)}%.');
+      recommendations.add(
+          'Optimize your 50/30/20 balance. Your current savings rate is ${savingsRate.toStringAsFixed(1)}%.');
     }
 
     if (subscriptions.length > 3) {
-      recommendations.add('Review your ${subscriptions.length} subscriptions. Are you using all of them regularly?');
+      recommendations.add(
+          'Review your ${subscriptions.length} subscriptions. Are you using all of them regularly?');
     }
 
     if (efficiency['needs']! > 60) {
-      recommendations.add('Your fixed costs (Needs) are high. Consider downsizing or negotiating bills.');
+      recommendations.add(
+          'Your fixed costs (Needs) are high. Consider downsizing or negotiating bills.');
     }
 
-    recommendations.add('Set up an automated transfer of ${CurrencyService().formatAmount(totalIncome * 0.2)} to savings.');
-    
+    recommendations.add(
+        'Set up an automated transfer of ${CurrencyService().formatAmount(totalIncome * 0.2)} to savings.');
+
     return {
       'healthScore': healthScore,
       'totalSpent': totalSpent,
@@ -310,6 +411,128 @@ class AIIntelligenceService {
       'projectedSavings': projectedSavings,
       'efficiency': efficiency,
     };
+  }
+
+  List<Map<String, dynamic>> _topCategories(
+      List<Transaction> expenses, double totalSpent) {
+    final categoryTotals = <String, double>{};
+    for (final transaction in expenses) {
+      categoryTotals[transaction.category] =
+          (categoryTotals[transaction.category] ?? 0) + transaction.amount;
+    }
+
+    final sortedCategories = categoryTotals.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return sortedCategories
+        .take(3)
+        .map((e) => {
+              'category': e.key,
+              'amount': e.value,
+              'percentage': totalSpent > 0
+                  ? (e.value / totalSpent * 100).toStringAsFixed(1)
+                  : '0.0',
+            })
+        .toList();
+  }
+
+  /// Crude subscription detection: merchants billed 2+ times at the same
+  /// amount, or 3+ times at any amount, assumed monthly for simplicity.
+  List<Map<String, dynamic>> _detectSubscriptions(List<Transaction> expenses) {
+    final Map<String, List<Transaction>> merchantHistory = {};
+    for (final t in expenses) {
+      final key = t.title.toLowerCase().trim();
+      merchantHistory.putIfAbsent(key, () => []).add(t);
+    }
+
+    final subscriptions = <Map<String, dynamic>>[];
+    merchantHistory.forEach((title, txs) {
+      if (txs.length >= 2) {
+        final amounts = txs.map((e) => e.amount).toSet();
+        if (amounts.length == 1 || txs.length >= 3) {
+          subscriptions.add({
+            'title': txs.first.title,
+            'amount': txs.first.amount,
+            'frequency': 'Monthly',
+            'category': txs.first.category,
+          });
+        }
+      }
+    });
+    return subscriptions;
+  }
+
+  /// 50/30/20 needs/wants/savings split, preferring the user-set essential
+  /// flag and falling back to a category allowlist when not set.
+  Map<String, double> _efficiencySplit(
+      List<Transaction> expenses, double totalIncome, double savingsRate) {
+    const essentialCategories = [
+      'Housing',
+      'Bills & Utilities',
+      'Healthcare',
+      'Transportation',
+      'Education'
+    ];
+    double needs = 0, wants = 0;
+    for (final t in expenses) {
+      if (t.isEssential || essentialCategories.contains(t.category)) {
+        needs += t.amount;
+      } else {
+        wants += t.amount;
+      }
+    }
+    return {
+      'needs': totalIncome > 0 ? (needs / totalIncome * 100) : 0.0,
+      'wants': totalIncome > 0 ? (wants / totalIncome * 100) : 0.0,
+      'savings': savingsRate > 0 ? savingsRate : 0.0,
+    };
+  }
+
+  _SpendingTrend _spendingTrend(List<Transaction> expenses) {
+    final now = DateTime.now();
+    final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+    final sixtyDaysAgo = now.subtract(const Duration(days: 60));
+
+    final recentExpenses =
+        expenses.where((t) => t.date.isAfter(thirtyDaysAgo)).toList();
+    final previousExpenses = expenses
+        .where((t) =>
+            t.date.isAfter(sixtyDaysAgo) && t.date.isBefore(thirtyDaysAgo))
+        .toList();
+
+    final recentTotal = recentExpenses.fold(0.0, (sum, t) => sum + t.amount);
+    final previousTotal =
+        previousExpenses.fold(0.0, (sum, t) => sum + t.amount);
+
+    String label = 'stable';
+    if (previousTotal > 0) {
+      final change = (recentTotal - previousTotal) / previousTotal;
+      if (change > 0.1) {
+        label = 'increasing';
+      } else if (change < -0.1) {
+        label = 'decreasing';
+      }
+    }
+    return _SpendingTrend(
+        label: label, recentTotal: recentTotal, previousTotal: previousTotal);
+  }
+
+  int _healthScore({
+    required double savingsRate,
+    required Map<String, double> efficiency,
+    required double totalIncome,
+    required double totalSpent,
+    required String spendingTrend,
+  }) {
+    int score = 50; // Base score
+    score +=
+        (savingsRate / 2).clamp(-20, 25).toInt(); // up to +25 for 50% savings
+    if (efficiency['needs']! < 50) score += 10;
+    if (efficiency['wants']! < 30) score += 10;
+    if (totalIncome > totalSpent) score += 5;
+    if (spendingTrend == 'increasing') score -= 10;
+    if (spendingTrend == 'decreasing') score += 10;
+    return score.clamp(0, 100);
   }
 
   // Generate smart budget recommendations
@@ -329,7 +552,8 @@ class AIIntelligenceService {
       name: 'Essential Needs',
       amount: needs,
       category: 'Housing',
-      description: '50% of income for housing, utilities, food, and basic needs',
+      description:
+          '50% of income for housing, utilities, food, and basic needs',
       priority: 'High',
     ));
 
@@ -337,7 +561,8 @@ class AIIntelligenceService {
       name: 'Lifestyle & Wants',
       amount: wants,
       category: 'Entertainment',
-      description: '30% of income for entertainment, shopping, and personal expenses',
+      description:
+          '30% of income for entertainment, shopping, and personal expenses',
       priority: 'Medium',
     ));
 
@@ -345,16 +570,18 @@ class AIIntelligenceService {
       name: 'Savings & Goals',
       amount: savings,
       category: 'Investment',
-      description: '20% of income for savings, investments, and financial goals',
+      description:
+          '20% of income for savings, investments, and financial goals',
       priority: 'High',
     ));
 
     // Category-specific recommendations based on spending patterns
     if (analysis['topCategories'] != null) {
-      for (final category in analysis['topCategories'] as List<Map<String, dynamic>>) {
+      for (final category
+          in analysis['topCategories'] as List<Map<String, dynamic>>) {
         final categoryName = category['category'] as String;
         final currentAmount = category['amount'] as double;
-        
+
         if (currentAmount > monthlyIncome * 0.3) {
           recommendations.add(BudgetRecommendation(
             name: 'Reduce $categoryName',
@@ -389,12 +616,12 @@ class AIIntelligenceService {
     for (final entry in categoryTransactions.entries) {
       final category = entry.key;
       final categoryTrans = entry.value;
-      
+
       // Calculate average monthly spending
       final totalAmount = categoryTrans.fold(0.0, (sum, t) => sum + t.amount);
       final months = _calculateMonthsSpan(categoryTrans);
       final monthlyAverage = months > 0 ? totalAmount / months : totalAmount;
-      
+
       predictions[category] = monthlyAverage;
     }
 
@@ -409,11 +636,11 @@ class AIIntelligenceService {
   // Helper method to calculate months span of transactions
   double _calculateMonthsSpan(List<Transaction> transactions) {
     if (transactions.isEmpty) return 0;
-    
+
     final dates = transactions.map((t) => t.date).toList();
     final earliest = dates.reduce((a, b) => a.isBefore(b) ? a : b);
     final latest = dates.reduce((a, b) => a.isAfter(b) ? a : b);
-    
+
     return latest.difference(earliest).inDays / 30.0;
   }
 }

@@ -54,12 +54,12 @@ class Goal extends Equatable {
   });
 
   // Getters
-  double get progress => targetAmount > 0 ? (currentAmount / targetAmount) : 0.0;
+  double get progress =>
+      targetAmount > 0 ? (currentAmount / targetAmount) : 0.0;
   double get remaining => targetAmount - currentAmount;
   bool get isCompleted => status == GoalStatus.completed;
   bool get isOverdue => targetDate.isBefore(DateTime.now()) && !isCompleted;
   int get daysRemaining => targetDate.difference(DateTime.now()).inDays;
-  double get dailyRequired => remaining / daysRemaining.clamp(1, 365);
 
   // Progress percentage for UI
   double get progressPercentage => (progress * 100).clamp(0.0, 100.0);
@@ -79,26 +79,7 @@ class Goal extends Equatable {
   }
 
   // Goal type display name
-  String get typeDisplayName {
-    switch (type) {
-      case GoalType.savings:
-        return 'Savings';
-      case GoalType.debt:
-        return 'Debt Repayment';
-      case GoalType.investment:
-        return 'Investment';
-      case GoalType.emergency:
-        return 'Emergency Fund';
-      case GoalType.vacation:
-        return 'Vacation';
-      case GoalType.home:
-        return 'Home Purchase';
-      case GoalType.education:
-        return 'Education';
-      case GoalType.other:
-        return 'Other';
-    }
-  }
+  String get typeDisplayName => type.typeDisplayName;
 
   // Copy with method
   Goal copyWith({

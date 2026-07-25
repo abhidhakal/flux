@@ -1,4 +1,3 @@
-
 enum GoalTemplateCategory {
   house,
   car,
@@ -119,7 +118,8 @@ class GoalTemplate {
       category: category ?? this.category,
       difficulty: difficulty ?? this.difficulty,
       suggestedAmount: suggestedAmount ?? this.suggestedAmount,
-      suggestedDurationMonths: suggestedDurationMonths ?? this.suggestedDurationMonths,
+      suggestedDurationMonths:
+          suggestedDurationMonths ?? this.suggestedDurationMonths,
       tags: tags ?? this.tags,
       icon: icon ?? this.icon,
       metadata: metadata ?? this.metadata,

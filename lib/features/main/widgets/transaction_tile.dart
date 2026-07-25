@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/services/currency_service.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class TransactionTile extends StatelessWidget {
   final Transaction item;
@@ -9,6 +10,7 @@ class TransactionTile extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
+  final bool showCard;
 
   const TransactionTile({
     super.key,
@@ -17,6 +19,7 @@ class TransactionTile extends StatelessWidget {
     required this.onLongPress,
     this.isSelectionMode = false,
     this.isSelected = false,
+    this.showCard = true,
   });
 
   static String _formatTime(DateTime date) =>
@@ -37,18 +40,22 @@ class TransactionTile extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppTheme.cardSurface(context),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.primary
-                : colorScheme.outline.withOpacity(0.10),
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
+        margin: showCard ? const EdgeInsets.only(bottom: 10) : EdgeInsets.zero,
+        padding: showCard
+            ? const EdgeInsets.symmetric(horizontal: 16, vertical: 14)
+            : const EdgeInsets.symmetric(vertical: 12),
+        decoration: !showCard
+            ? null
+            : BoxDecoration(
+                color: AppTheme.cardSurface(context),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.primary
+                      : colorScheme.outline.withOpacity(0.10),
+                  width: isSelected ? 1.5 : 1,
+                ),
+              ),
         child: Row(
           children: [
             // Leading icon / checkbox
@@ -63,12 +70,14 @@ class TransactionTile extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: isSelected ? AppColors.primary : Colors.transparent,
                     border: Border.all(
-                      color: isSelected ? AppColors.primary : colorScheme.outline,
+                      color:
+                          isSelected ? AppColors.primary : colorScheme.outline,
                       width: 1.5,
                     ),
                   ),
                   child: isSelected
-                      ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                      ? const Icon(LucideIcons.check,
+                          size: 14, color: Colors.white)
                       : null,
                 ),
               )
@@ -82,7 +91,7 @@ class TransactionTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  isIncome ? Icons.add_rounded : Icons.remove_rounded,
+                  isIncome ? LucideIcons.plus : LucideIcons.minus,
                   color: accentColor,
                   size: 22,
                 ),

@@ -7,6 +7,8 @@ import '../../../core/services/currency_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/field_label.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class AddBudgetScreen extends StatefulWidget {
   const AddBudgetScreen({super.key});
@@ -60,7 +62,8 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                 ? SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: saveIconColor),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: saveIconColor),
                   )
                 : Text(
                     'Save',
@@ -96,14 +99,14 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildSectionTitle('Budget Name'),
+                _buildSectionTitle('Budget Name', icon: LucideIcons.type),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
                     hintText: 'e.g., Monthly Food Budget',
-                    prefixIcon: const Icon(Icons.label_rounded),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -113,17 +116,16 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                   },
                 ),
                 const SizedBox(height: 20),
-
-                _buildSectionTitle('Amount'),
+                _buildSectionTitle('Amount', icon: LucideIcons.dollarSign),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _amountController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     hintText: 'Enter amount',
-                    prefixIcon: const Icon(Icons.attach_money_rounded),
                     prefixText: '${CurrencyService().symbol} ',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -137,14 +139,13 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                   },
                 ),
                 const SizedBox(height: 20),
-
-                _buildSectionTitle('Category'),
+                _buildSectionTitle('Category', icon: LucideIcons.tag),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: _selectedCategory,
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.category_rounded),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                   items: AppCategories.expenseCategories.map((category) {
                     return DropdownMenuItem(
@@ -152,7 +153,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                       child: Row(
                         children: [
                           Icon(
-                            Icons.circle,
+                            LucideIcons.circle,
                             size: 10,
                             color: Color(AppCategories.getColor(category)),
                           ),
@@ -162,30 +163,30 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                       ),
                     );
                   }).toList(),
-                  onChanged: (value) => setState(() => _selectedCategory = value!),
+                  onChanged: (value) =>
+                      setState(() => _selectedCategory = value!),
                 ),
                 const SizedBox(height: 20),
-
                 _buildSectionTitle('Period'),
                 const SizedBox(height: 8),
                 _buildPeriodSelector(),
                 const SizedBox(height: 20),
-
                 _buildRolloverToggle(),
                 const SizedBox(height: 32),
-
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleSave,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                   child: _isLoading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
                         )
                       : const Text(
                           'Create Budget',
@@ -204,7 +205,8 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, {IconData? icon}) {
+    if (icon != null) return FieldLabel(icon: icon, label: title);
     return Text(
       title,
       style: TextStyle(
@@ -324,13 +326,18 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   DateTime _getEndDate(DateTime startDate, BudgetPeriod period) {
     switch (period) {
       case BudgetPeriod.daily:
-        return DateTime(startDate.year, startDate.month, startDate.day, 23, 59, 59);
+        return DateTime(
+            startDate.year, startDate.month, startDate.day, 23, 59, 59);
       case BudgetPeriod.weekly:
-        return startDate.add(const Duration(days: 7)).subtract(const Duration(seconds: 1));
+        return startDate
+            .add(const Duration(days: 7))
+            .subtract(const Duration(seconds: 1));
       case BudgetPeriod.monthly:
-        return DateTime(startDate.year, startDate.month + 1, 1).subtract(const Duration(seconds: 1));
+        return DateTime(startDate.year, startDate.month + 1, 1)
+            .subtract(const Duration(seconds: 1));
       case BudgetPeriod.yearly:
-        return DateTime(startDate.year + 1, 1, 1).subtract(const Duration(seconds: 1));
+        return DateTime(startDate.year + 1, 1, 1)
+            .subtract(const Duration(seconds: 1));
     }
   }
 }

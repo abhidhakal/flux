@@ -9,7 +9,10 @@ import '../../auth/auth_bloc.dart';
 import '../../budget/budget_bloc.dart';
 import '../../budget/screens/add_budget_screen.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/stat_tile.dart';
+import '../../../shared/widgets/empty_state_view.dart';
 import 'budget_card.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class BudgetsScreen extends StatefulWidget {
   const BudgetsScreen({super.key});
@@ -48,7 +51,20 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         scrolledUnderElevation: 0,
         actions: [
           IconButton(
-            icon: Icon(Icons.add_rounded, color: colorScheme.onBackground),
+            icon: Icon(LucideIcons.refreshCw,
+                color: colorScheme.onBackground, size: 20),
+            tooltip: 'Recalculate budget totals from transactions',
+            onPressed: () {
+              final user = context.read<AuthBloc>().state;
+              if (user is AuthAuthenticated) {
+                context
+                    .read<BudgetBloc>()
+                    .add(RecalculateBudgetSpent(user.user.id));
+              }
+            },
+          ),
+          IconButton(
+            icon: Icon(LucideIcons.plus, color: colorScheme.onBackground),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -106,109 +122,52 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.account_balance_wallet,
-            size: 64,
-            color: AppColors.primary,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No Budgets Yet',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Create your first budget to start tracking your spending',
-            style: TextStyle(
-              fontSize: 16,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.7),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => MultiBlocProvider(
-                        providers: [
-                          BlocProvider.value(value: context.read<BudgetBloc>()),
-                          BlocProvider.value(value: context.read<AuthBloc>()),
-                        ],
-                        child: const AddBudgetScreen(),
-                      )),
-            ),
-            icon: const Icon(Icons.add),
-            label: const Text('Create Budget'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textInverse,
-            ),
-          ),
-        ],
+    return EmptyStateView(
+      icon: LucideIcons.wallet,
+      iconColor: AppColors.primary,
+      title: 'No Budgets Yet',
+      titleFontSize: 24,
+      subtitle: 'Create your first budget to start tracking your spending',
+      actionLabel: 'Create Budget',
+      actionIcon: LucideIcons.plus,
+      spacingBeforeAction: 24,
+      actionStyle: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.textInverse,
+      ),
+      onAction: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => MultiBlocProvider(
+                  providers: [
+                    BlocProvider.value(value: context.read<BudgetBloc>()),
+                    BlocProvider.value(value: context.read<AuthBloc>()),
+                  ],
+                  child: const AddBudgetScreen(),
+                )),
       ),
     );
   }
 
   Widget _buildErrorState(String message) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: AppColors.error,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Error Loading Budgets',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.7),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              final user = context.read<AuthBloc>().state;
-              if (user is AuthAuthenticated) {
-                context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
-              }
-            },
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
+    return EmptyStateView(
+      icon: LucideIcons.alertCircle,
+      iconColor: AppColors.error,
+      title: 'Error Loading Budgets',
+      subtitle: message,
+      actionLabel: 'Retry',
+      onAction: () {
+        final user = context.read<AuthBloc>().state;
+        if (user is AuthAuthenticated) {
+          context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
+        }
+      },
     );
   }
 
   Widget _buildBudgetsList(List<Budget> budgets) {
-    final activeBudgets = budgets.where((budget) => budget.isActive).toList();
+    final activeBudgets = budgets.where((budget) => budget.isActive).toList()
+      ..sort((a, b) => b.progressPercentage.compareTo(a.progressPercentage));
     final inactiveBudgets =
         budgets.where((budget) => !budget.isActive).toList();
     final stats = _BudgetStats.fromBudgets(activeBudgets);
@@ -279,7 +238,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               children: [
                 Text(
                   title,
-                  style: AppTheme.sectionTitleStyle(context).copyWith(fontSize: 20),
+                  style: AppTheme.sectionTitleStyle(context)
+                      .copyWith(fontSize: 20),
                 ),
                 if (subtitle.isNotEmpty) ...[
                   const SizedBox(height: 2),
@@ -329,20 +289,30 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildStatTile(
-                label: 'Pool',
+              child: StatTile(
+                label: 'Budgeted',
                 value: CurrencyService().formatAmount(stats.totalBudgetAmount),
-                icon: Icons.wallet_rounded,
-                color: AppColors.primary,
+                icon: LucideIcons.landmark,
+                accentColor: AppColors.primary,
+                direction: Axis.horizontal,
+                bordered: true,
+                radius: 16,
+                padding: const EdgeInsets.all(14),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildStatTile(
-                label: 'Spent',
-                value: CurrencyService().formatAmount(stats.totalSpentAmount),
-                icon: Icons.trending_down_rounded,
-                color: AppColors.error,
+              child: StatTile(
+                label: 'Over Budget',
+                value: '${stats.overBudgetCount}',
+                icon: LucideIcons.alertTriangle,
+                accentColor: stats.overBudgetCount > 0
+                    ? AppColors.error
+                    : AppColors.success,
+                direction: Axis.horizontal,
+                bordered: true,
+                radius: 16,
+                padding: const EdgeInsets.all(14),
               ),
             ),
           ],
@@ -422,8 +392,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             ),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
-              widthFactor:
-                  (stats.utilizationPercentage / 100).clamp(0.0, 1.0),
+              widthFactor: (stats.utilizationPercentage / 100).clamp(0.0, 1.0),
               child: Container(
                 decoration: BoxDecoration(
                   color: utilizationColor,
@@ -443,8 +412,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               ),
               _heroMeta(
                 label: 'Remaining',
-                value: CurrencyService()
-                    .formatAmount(stats.totalRemainingAmount),
+                value:
+                    CurrencyService().formatAmount(stats.totalRemainingAmount),
                 textColor: colorScheme.onSurface,
               ),
             ],
@@ -505,77 +474,6 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     );
   }
 
-  Widget _buildStatTile({
-    required String label,
-    required String value,
-    required IconData icon,
-    required Color color,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.mutedSurface(context) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: isDark ? 0.14 : 0.08),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.10 : 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // _showCreateBudgetDialog removed — use AddBudgetScreen page instead
-
-  // _showEditBudgetDialog removed — use EditBudgetScreen.showEditBudgetSheet instead
-
   Widget _buildInactiveSectionHeader(int count) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -599,7 +497,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           child: Row(
             children: [
               Icon(
-                Icons.archive_rounded,
+                LucideIcons.archive,
                 color: colorScheme.onSurface.withValues(alpha: 0.7),
               ),
               const SizedBox(width: 10),
@@ -630,8 +528,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               const SizedBox(width: 8),
               Icon(
                 _showInactiveBudgets
-                    ? Icons.keyboard_arrow_up_rounded
-                    : Icons.keyboard_arrow_down_rounded,
+                    ? LucideIcons.chevronUp
+                    : LucideIcons.chevronDown,
                 color: colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ],
@@ -645,32 +543,25 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      color: AppTheme.cardSurface(context),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.12), width: 1),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            const Icon(Icons.info_outline_rounded, color: AppColors.warning),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                inactiveCount > 0
-                    ? 'All budgets are inactive. Reactivate one to include it in utilization.'
-                    : 'Create your first active budget to see utilization stats.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.75),
-                ),
+      padding: const EdgeInsets.all(16),
+      decoration: AppTheme.surfaceDecoration(context, radius: 20),
+      child: Row(
+        children: [
+          const Icon(LucideIcons.info, color: AppColors.warning),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              inactiveCount > 0
+                  ? 'All budgets are inactive. Reactivate one to include it in utilization.'
+                  : 'Create your first active budget to see utilization stats.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurface.withValues(alpha: 0.75),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -772,11 +663,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   Future<void> _onRefresh() async {
     final user = context.read<AuthBloc>().state;
-    final budgetBloc = context.read<BudgetBloc>();
-
     if (user is AuthAuthenticated) {
-      // Recalculate budget spent amounts - this will automatically reload budgets when complete
-      budgetBloc.add(RecalculateBudgetSpent(user.user.id));
+      context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
     }
   }
 
@@ -906,12 +794,14 @@ class _BudgetStats {
   final double totalSpentAmount;
   final double totalRemainingAmount;
   final double utilizationPercentage;
+  final int overBudgetCount;
 
   const _BudgetStats({
     required this.totalBudgetAmount,
     required this.totalSpentAmount,
     required this.totalRemainingAmount,
     required this.utilizationPercentage,
+    required this.overBudgetCount,
   });
 
   factory _BudgetStats.fromBudgets(List<Budget> budgets) {
@@ -923,12 +813,14 @@ class _BudgetStats {
     final utilizationPercentage = totalBudgetAmount > 0
         ? (totalSpentAmount / totalBudgetAmount) * 100
         : 0.0;
+    final overBudgetCount = budgets.where((b) => b.isOverBudget).length;
 
     return _BudgetStats(
       totalBudgetAmount: totalBudgetAmount,
       totalSpentAmount: totalSpentAmount,
       totalRemainingAmount: totalRemainingAmount,
       utilizationPercentage: utilizationPercentage,
+      overBudgetCount: overBudgetCount,
     );
   }
 }

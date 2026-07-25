@@ -16,6 +16,9 @@ import '../../../shared/widgets/skeleton_components.dart';
 import '../../../core/widgets/app_banner_ad.dart';
 import 'transaction_tile.dart';
 import '../../../core/utils/date_range_filter.dart';
+import '../../../shared/widgets/app_bottom_sheet.dart';
+import '../../../shared/widgets/empty_state_view.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 // ─── Filter enums ────────────────────────────────────────────────────────────
 
@@ -52,7 +55,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       duration: const Duration(milliseconds: 350),
       vsync: this,
     );
-    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+    _fadeAnimation =
+        CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
   }
 
   @override
@@ -76,21 +80,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       activeRangeFor(_timelineFilter, customRange: _customRange);
 
   Future<void> _pickCustomRange() async {
-    final now = DateTime.now();
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: now,
-      initialDateRange: _customRange ??
-          DateTimeRange(
-            start: now.subtract(const Duration(days: 30)),
-            end: now,
-          ),
-      builder: (context, child) => Theme(
-        data: Theme.of(context),
-        child: child!,
-      ),
-    );
+    final picked = await pickCustomRange(context, _customRange);
     if (picked != null) {
       setState(() {
         _customRange = picked;
@@ -105,10 +95,11 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     final range = _getActiveRange();
     final result = <Transaction>[];
     for (final transaction in transactions) {
-      if (transaction.date.isBefore(range.start) || transaction.date.isAfter(range.end)) {
+      if (!isWithinRange(transaction.date, range)) {
         continue;
       }
-      if (_selectedBudgetId != null && transaction.budgetId != _selectedBudgetId) {
+      if (_selectedBudgetId != null &&
+          transaction.budgetId != _selectedBudgetId) {
         continue;
       }
       if (_typeFilter == _TypeFilter.expenses && !transaction.isExpense) {
@@ -142,7 +133,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               elevation: 0,
               scrolledUnderElevation: 0,
               leading: IconButton(
-                icon: const Icon(Icons.close_rounded),
+                icon: const Icon(LucideIcons.x),
                 onPressed: () => setState(() {
                   _isSelectionMode = false;
                   _selectedIds.clear();
@@ -158,12 +149,16 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               actions: [
                 TextButton.icon(
                   onPressed: _selectedIds.isEmpty ? null : _deleteSelectedItems,
-                  icon: Icon(Icons.delete_outline_rounded,
-                      color: _selectedIds.isEmpty ? colorScheme.onBackground.withOpacity(0.3) : AppColors.error),
+                  icon: Icon(LucideIcons.trash2,
+                      color: _selectedIds.isEmpty
+                          ? colorScheme.onBackground.withOpacity(0.3)
+                          : AppColors.error),
                   label: Text(
                     'Delete',
                     style: TextStyle(
-                      color: _selectedIds.isEmpty ? colorScheme.onBackground.withOpacity(0.3) : AppColors.error,
+                      color: _selectedIds.isEmpty
+                          ? colorScheme.onBackground.withOpacity(0.3)
+                          : AppColors.error,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -186,14 +181,14 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               actions: [
                 IconButton(
                   icon:
-                      Icon(Icons.repeat_rounded, color: colorScheme.onBackground),
+                      Icon(LucideIcons.repeat, color: colorScheme.onBackground),
                   onPressed: () => context.pushSmooth(
                     const RecurringTransactionsScreen(),
                   ),
                   tooltip: 'Recurring Transactions',
                 ),
                 IconButton(
-                  icon: Icon(Icons.add_rounded, color: colorScheme.onBackground),
+                  icon: Icon(LucideIcons.plus, color: colorScheme.onBackground),
                   onPressed: () => context.pushSmooth(
                     const AddTransactionScreen(),
                     transitionType: PageTransitionType.slideFromBottom,
@@ -209,7 +204,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               if (state is TransactionLoaded && state.message != null) {
                 AppSnackbar.showSuccess(context, message: state.message!);
               }
-              if (state is TransactionError) AppSnackbar.showError(context, message: state.message);
+              if (state is TransactionError)
+                AppSnackbar.showError(context, message: state.message);
             },
           ),
         ],
@@ -221,13 +217,17 @@ class _TransactionsScreenState extends State<TransactionsScreen>
             return _buildLoadingState();
           }
 
-          final transactions = txState is TransactionLoaded ? txState.transactions : <Transaction>[];
-          final budgets = budgetState is BudgetLoaded ? budgetState.budgets : <Budget>[];
+          final transactions = txState is TransactionLoaded
+              ? txState.transactions
+              : <Transaction>[];
+          final budgets =
+              budgetState is BudgetLoaded ? budgetState.budgets : <Budget>[];
 
           final filtered = _applyFilters(transactions);
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_fadeController.status != AnimationStatus.completed) _fadeController.forward();
+            if (_fadeController.status != AnimationStatus.completed)
+              _fadeController.forward();
           });
 
           return RefreshIndicator(
@@ -254,7 +254,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                         ),
                   const SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: AppBannerAd(),
                     ),
                   ),
@@ -270,33 +271,20 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   // ─── Summary bar ─────────────────────────────────────────────────────────
 
   Widget _buildSummaryBar(List<Transaction> items) {
-    double totalIncome = 0;
-    double totalExpense = 0;
-    for (final item in items) {
-      if (item.isIncome) {
-        totalIncome += item.amount;
-      } else if (item.isExpense) {
-        totalExpense += item.amount;
-      }
-    }
-    final net = totalIncome - totalExpense;
+    final totalIncome = items.totalIncome();
+    final totalExpense = items.totalExpenses();
+    final net = items.netBalance;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark ? colorScheme.surface : Colors.black,
         borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Column(
         children: [
@@ -331,7 +319,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.account_balance_wallet_outlined,
+                  LucideIcons.scrollText,
                   color: Colors.white,
                   size: 24,
                 ),
@@ -344,7 +332,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               _modernSummaryItem(
                 label: 'Income',
                 amount: totalIncome,
-                icon: Icons.arrow_downward_rounded,
+                icon: LucideIcons.arrowDownToLine,
                 color: AppColors.success,
               ),
               Container(
@@ -356,7 +344,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               _modernSummaryItem(
                 label: 'Expenses',
                 amount: totalExpense,
-                icon: Icons.arrow_upward_rounded,
+                icon: LucideIcons.arrowUpFromLine,
                 color: AppColors.error,
               ),
             ],
@@ -416,7 +404,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   // ─── Filter row (timeline pills + filter chip) ────────────────────────────
 
   Widget _buildFilterRow(List<Budget> budgets) {
-    final hasActiveSecondary = _typeFilter != _TypeFilter.all || _selectedBudgetId != null;
+    final hasActiveSecondary =
+        _typeFilter != _TypeFilter.all || _selectedBudgetId != null;
     final colorScheme = Theme.of(context).colorScheme;
 
     String customLabel = 'Custom';
@@ -430,14 +419,16 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       _timelinePill('Week', TimelineFilter.lastWeek),
       _timelinePill('Month', TimelineFilter.lastMonth),
       _timelinePill('3 Months', TimelineFilter.last3Months),
-      _timelinePill(customLabel, TimelineFilter.custom, icon: Icons.date_range_rounded, onCustomTap: _pickCustomRange),
+      _timelinePill(customLabel, TimelineFilter.custom,
+          icon: LucideIcons.calendarRange, onCustomTap: _pickCustomRange),
     ];
 
     return Padding(
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: AppTheme.surfaceDecoration(context, radius: 22, subtle: true),
+        decoration:
+            AppTheme.surfaceDecoration(context, radius: 22, subtle: true),
         child: SizedBox(
           height: 40,
           child: Row(
@@ -447,7 +438,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.only(left: 12),
                   children: timelinePills
-                      .map((p) => Padding(padding: const EdgeInsets.only(right: 8), child: p))
+                      .map((p) => Padding(
+                          padding: const EdgeInsets.only(right: 8), child: p))
                       .toList(),
                 ),
               ),
@@ -457,9 +449,12 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   onTap: () => _showFilterSheet(budgets),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                     decoration: BoxDecoration(
-                      color: hasActiveSecondary ? AppColors.primary : AppTheme.cardSurface(context),
+                      color: hasActiveSecondary
+                          ? AppColors.primary
+                          : AppTheme.cardSurface(context),
                       border: Border.all(
                         color: hasActiveSecondary
                             ? AppColors.primary
@@ -472,7 +467,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.tune_rounded,
+                          LucideIcons.sliders,
                           size: 15,
                           color: hasActiveSecondary
                               ? Colors.white
@@ -520,7 +515,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         decoration: BoxDecoration(
           color: selected ? AppColors.primary : AppTheme.cardSurface(context),
           border: Border.all(
-            color: selected ? AppColors.primary : colorScheme.outline.withOpacity(0.4),
+            color: selected
+                ? AppColors.primary
+                : colorScheme.outline.withOpacity(0.4),
             width: selected ? 1.5 : 1,
           ),
           borderRadius: BorderRadius.circular(20),
@@ -553,154 +550,138 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   }
 
   void _showFilterSheet(List<Budget> budgets) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Theme.of(context).colorScheme.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+    AppBottomSheet.show(
+      context,
+      radius: 20,
+      isScrollControlled: false,
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
             final colorScheme = Theme.of(ctx).colorScheme;
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Handle
-                  Center(
-                    child: Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: colorScheme.outline.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Filters',
+                        style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onBackground,
+                            )),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _typeFilter = _TypeFilter.all;
+                          _selectedBudgetId = null;
+                        });
+                        Navigator.pop(ctx);
+                      },
+                      child: Text('Reset',
+                          style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600)),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  // Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Filters',
-                          style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: colorScheme.onBackground,
-                              )),
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            _typeFilter = _TypeFilter.all;
-                            _selectedBudgetId = null;
-                          });
-                          Navigator.pop(ctx);
-                        },
-                        child: Text('Reset',
-                            style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  // Type section
-                  Text('Type',
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // Type section
+                Text('Type',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onBackground.withOpacity(0.55))),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _sheetPill(
+                      ctx: ctx,
+                      label: 'All',
+                      selected: _typeFilter == _TypeFilter.all,
+                      onTap: () {
+                        setState(() => _typeFilter = _TypeFilter.all);
+                        setSheetState(() {});
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _sheetPill(
+                      ctx: ctx,
+                      label: 'Expenses',
+                      icon: LucideIcons.minus,
+                      selected: _typeFilter == _TypeFilter.expenses,
+                      onTap: () {
+                        setState(() => _typeFilter = _TypeFilter.expenses);
+                        setSheetState(() {});
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _sheetPill(
+                      ctx: ctx,
+                      label: 'Income',
+                      icon: LucideIcons.plus,
+                      selected: _typeFilter == _TypeFilter.income,
+                      onTap: () {
+                        setState(() => _typeFilter = _TypeFilter.income);
+                        setSheetState(() {});
+                      },
+                    ),
+                  ],
+                ),
+                if (budgets.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  Text('Budget',
                       style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: colorScheme.onBackground.withOpacity(0.55))),
                   const SizedBox(height: 10),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       _sheetPill(
                         ctx: ctx,
-                        label: 'All',
-                        selected: _typeFilter == _TypeFilter.all,
+                        label: 'All Budgets',
+                        selected: _selectedBudgetId == null,
                         onTap: () {
-                          setState(() => _typeFilter = _TypeFilter.all);
+                          setState(() => _selectedBudgetId = null);
                           setSheetState(() {});
                         },
                       ),
-                      const SizedBox(width: 8),
-                      _sheetPill(
-                        ctx: ctx,
-                        label: 'Expenses',
-                        icon: Icons.remove_rounded,
-                        selected: _typeFilter == _TypeFilter.expenses,
-                        onTap: () {
-                          setState(() => _typeFilter = _TypeFilter.expenses);
-                          setSheetState(() {});
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _sheetPill(
-                        ctx: ctx,
-                        label: 'Income',
-                        icon: Icons.add_rounded,
-                        selected: _typeFilter == _TypeFilter.income,
-                        onTap: () {
-                          setState(() => _typeFilter = _TypeFilter.income);
-                          setSheetState(() {});
-                        },
-                      ),
+                      ...budgets.map((b) => _sheetPill(
+                            ctx: ctx,
+                            label: b.name,
+                            selected: _selectedBudgetId == b.id,
+                            onTap: () {
+                              setState(() => _selectedBudgetId =
+                                  _selectedBudgetId == b.id ? null : b.id);
+                              setSheetState(() {});
+                            },
+                          )),
                     ],
                   ),
-                  if (budgets.isNotEmpty) ...[
-                    const SizedBox(height: 24),
-                    Text('Budget',
-                        style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onBackground.withOpacity(0.55))),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _sheetPill(
-                          ctx: ctx,
-                          label: 'All Budgets',
-                          selected: _selectedBudgetId == null,
-                          onTap: () {
-                            setState(() => _selectedBudgetId = null);
-                            setSheetState(() {});
-                          },
-                        ),
-                        ...budgets.map((b) => _sheetPill(
-                              ctx: ctx,
-                              label: b.name,
-                              selected: _selectedBudgetId == b.id,
-                              onTap: () {
-                                setState(() => _selectedBudgetId =
-                                    _selectedBudgetId == b.id ? null : b.id);
-                                setSheetState(() {});
-                              },
-                            )),
-                      ],
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                      ),
-                      child: const Text('Apply',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 15)),
-                    ),
-                  ),
                 ],
-              ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Text('Apply',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 15)),
+                  ),
+                ),
+              ],
             );
           },
         );
@@ -724,7 +705,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         decoration: BoxDecoration(
           color: selected ? AppColors.primary : Colors.transparent,
           border: Border.all(
-            color: selected ? AppColors.primary : colorScheme.outline.withOpacity(0.4),
+            color: selected
+                ? AppColors.primary
+                : colorScheme.outline.withOpacity(0.4),
             width: selected ? 1.5 : 1,
           ),
           borderRadius: BorderRadius.circular(20),
@@ -784,7 +767,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 24, bottom: 10),
+          padding: const EdgeInsets.only(top: 20, bottom: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -800,30 +783,47 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               Text(
                 '${dayNet >= 0 ? '+' : ''}${CurrencyService().formatAmount(dayNet)}',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: dayNet >= 0 ? AppColors.success : AppColors.error,
+                  color: colorScheme.onBackground.withOpacity(0.4),
                 ),
               ),
             ],
           ),
         ),
-        ...items.map((item) => TransactionTile(
-              item: item,
-              isSelectionMode: _isSelectionMode,
-              isSelected: _selectedIds.contains(item.id),
-              onTap: () => _isSelectionMode
-                  ? _toggleSelection(item.id)
-                  : _showEditDialog(item),
-              onLongPress: () {
-                if (!_isSelectionMode) {
-                  setState(() {
-                    _isSelectionMode = true;
-                    _selectedIds.add(item.id);
-                  });
-                }
-              },
-            )),
+        Container(
+          decoration: AppTheme.surfaceDecoration(context, radius: 18, subtle: false),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Column(
+            children: [
+              for (var i = 0; i < items.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: colorScheme.outline.withOpacity(0.15),
+                  ),
+                TransactionTile(
+                  item: items[i],
+                  showCard: false,
+                  isSelectionMode: _isSelectionMode,
+                  isSelected: _selectedIds.contains(items[i].id),
+                  onTap: () => _isSelectionMode
+                      ? _toggleSelection(items[i].id)
+                      : _showEditDialog(items[i]),
+                  onLongPress: () {
+                    if (!_isSelectionMode) {
+                      setState(() {
+                        _isSelectionMode = true;
+                        _selectedIds.add(items[i].id);
+                      });
+                    }
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -842,54 +842,25 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   }
 
   Widget _buildEmptyState() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(Icons.receipt_long_rounded, size: 36, color: AppColors.primary),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'No transactions found',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onBackground,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Try adjusting your filters or add a new transaction.',
-              style: TextStyle(fontSize: 14, color: colorScheme.onBackground.withOpacity(0.6)),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => context.pushSmooth(
-                const AddTransactionScreen(),
-                transitionType: PageTransitionType.slideFromBottom,
-              ),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Add Transaction'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-          ],
-        ),
+    return EmptyStateView(
+      icon: LucideIcons.scrollText,
+      iconColor: AppColors.primary,
+      iconSize: 48,
+      title: 'No transactions found',
+      titleFontSize: 20,
+      subtitle: 'Try adjusting your filters or add a new transaction.',
+      actionLabel: 'Add Transaction',
+      actionIcon: LucideIcons.plus,
+      spacingBeforeAction: 24,
+      actionStyle: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      onAction: () => context.pushSmooth(
+        const AddTransactionScreen(),
+        transitionType: PageTransitionType.slideFromBottom,
       ),
     );
   }
@@ -912,12 +883,16 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete selected?'),
-        content: Text('Delete ${_selectedIds.length} item${_selectedIds.length == 1 ? '' : 's'}?'),
+        content: Text(
+            'Delete ${_selectedIds.length} item${_selectedIds.length == 1 ? '' : 's'}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+            child:
+                const Text('Delete', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -928,12 +903,15 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     if (user is! AuthAuthenticated) return;
 
     final txState = context.read<TransactionBloc>().state;
-    final all = (txState is TransactionLoaded) ? txState.transactions : <Transaction>[];
+    final all =
+        (txState is TransactionLoaded) ? txState.transactions : <Transaction>[];
 
     for (final id in _selectedIds) {
       final item = all.where((transaction) => transaction.id == id).firstOrNull;
       if (item != null) {
-        context.read<TransactionBloc>().add(DeleteTransaction(id, user.user.id));
+        context
+            .read<TransactionBloc>()
+            .add(DeleteTransaction(id, user.user.id));
       }
     }
 
@@ -956,8 +934,18 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   }
 
   String _monthName(int m) => const [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
       ][m - 1];
 
   void _showEditDialog(Transaction item) {

@@ -6,31 +6,36 @@ import '../../../core/services/background_task_service.dart';
 import '../../../core/services/enhanced_notification_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/app_bottom_sheet.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
 
   @override
-  State<NotificationSettingsScreen> createState() => _NotificationSettingsScreenState();
+  State<NotificationSettingsScreen> createState() =>
+      _NotificationSettingsScreenState();
 }
 
-class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
-  final EnhancedNotificationService _notificationService = EnhancedNotificationService();
+class _NotificationSettingsScreenState
+    extends State<NotificationSettingsScreen> {
+  final EnhancedNotificationService _notificationService =
+      EnhancedNotificationService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
+
   bool _isLoading = true;
   bool _notificationsEnabled = false;
-  
+
   // Notification type preferences
   bool _budgetAlerts = true;
   bool _goalMilestones = true;
   bool _spendingAlerts = true;
-  
+
   // Scheduled notifications
   bool _dailyReminders = false;
   bool _morningGreetings = false;
   bool _backgroundHealthChecks = true;
-  
+
   int _dailyReminderHour = 20;
   int _dailyReminderMinute = 0;
   String _dailyReminderType = 'expense_log';
@@ -47,31 +52,37 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       final user = context.read<AuthBloc>().state;
       if (user is AuthAuthenticated) {
         final enabled = await _notificationService.areNotificationsEnabled();
-        
+
         // Load user preferences from Firestore
-        final userDoc = await _firestore.collection('users').doc(user.user.id).get();
+        final userDoc =
+            await _firestore.collection('users').doc(user.user.id).get();
         final data = userDoc.data() ?? {};
-        final prefs = data['notificationPreferences'] as Map<String, dynamic>? ?? {};
-        final schedules = data['notificationSchedules'] as Map<String, dynamic>? ?? {};
-        
+        final prefs =
+            data['notificationPreferences'] as Map<String, dynamic>? ?? {};
+        final schedules =
+            data['notificationSchedules'] as Map<String, dynamic>? ?? {};
+
         if (!mounted) return;
         setState(() {
           _notificationsEnabled = enabled;
-          
+
           // Load notification type preferences
           _budgetAlerts = prefs['budgetAlerts'] ?? true;
           _goalMilestones = prefs['goalMilestones'] ?? true;
           _spendingAlerts = prefs['spendingAlerts'] ?? true;
-          
+
           // Load schedule preferences
           _dailyReminders = schedules['daily_reminder']?['enabled'] ?? false;
-          _morningGreetings = schedules['morning_greeting']?['enabled'] ?? false;
-          _backgroundHealthChecks = schedules['background_health_check']?['enabled'] ?? true;
-          
+          _morningGreetings =
+              schedules['morning_greeting']?['enabled'] ?? false;
+          _backgroundHealthChecks =
+              schedules['background_health_check']?['enabled'] ?? true;
+
           if (schedules['daily_reminder'] != null) {
             _dailyReminderHour = schedules['daily_reminder']['hour'] ?? 20;
             _dailyReminderMinute = schedules['daily_reminder']['minute'] ?? 0;
-            _dailyReminderType = schedules['daily_reminder']['type'] ?? 'expense_log';
+            _dailyReminderType =
+                schedules['daily_reminder']['type'] ?? 'expense_log';
           }
         });
       }
@@ -81,7 +92,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      AppSnackbar.showError(context, message: 'Failed to load settings');
+      AppSnackbar.showError(context, message: 'Failed to load settings: $e');
     }
   }
 
@@ -100,7 +111,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       }
     } catch (e) {
       if (mounted) {
-        AppSnackbar.showError(context, message: 'Failed to save preferences');
+        AppSnackbar.showError(context,
+            message: 'Failed to save preferences: $e');
       }
     }
   }
@@ -109,7 +121,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Scaffold(
       backgroundColor: colorScheme.background,
       appBar: AppBar(
@@ -157,12 +169,19 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: (_notificationsEnabled ? AppColors.success : AppColors.error).withOpacity(0.1),
+                  color: (_notificationsEnabled
+                          ? AppColors.primary
+                          : colorScheme.onSurfaceVariant)
+                      .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  _notificationsEnabled ? Icons.notifications_active : Icons.notifications_off,
-                  color: _notificationsEnabled ? AppColors.success : AppColors.error,
+                  _notificationsEnabled
+                      ? LucideIcons.bellRing
+                      : LucideIcons.bellOff,
+                  color: _notificationsEnabled
+                      ? AppColors.primary
+                      : colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(width: 16),
@@ -180,7 +199,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _notificationsEnabled 
+                      _notificationsEnabled
                           ? 'Notifications are enabled'
                           : 'Enable to receive alerts',
                       style: TextStyle(
@@ -234,7 +253,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           _buildAlertToggle(
             'Budget Alerts',
             'When you reach 80%, 90%, or exceed your budget',
-            Icons.account_balance_wallet_outlined,
+            LucideIcons.wallet,
             _budgetAlerts,
             (value) {
               setState(() => _budgetAlerts = value);
@@ -246,7 +265,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           _buildAlertToggle(
             'Goal Milestones',
             'When you reach 25%, 50%, 90%, or complete a goal',
-            Icons.flag_outlined,
+            LucideIcons.flag,
             _goalMilestones,
             (value) {
               setState(() => _goalMilestones = value);
@@ -258,7 +277,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           _buildAlertToggle(
             'Spending Alerts',
             'When unusual spending patterns are detected',
-            Icons.trending_up_outlined,
+            LucideIcons.trendingUp,
             _spendingAlerts,
             (value) {
               setState(() => _spendingAlerts = value);
@@ -281,7 +300,14 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   ) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.primary, size: 24),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 20),
+        ),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
@@ -343,12 +369,12 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // Daily Reminder
           _buildScheduleItem(
             'Daily Reminder',
             'Reminder at ${_formatTime(_dailyReminderHour, _dailyReminderMinute)}',
-            Icons.alarm_outlined,
+            LucideIcons.alarmClock,
             _dailyReminders,
             (value) async {
               setState(() => _dailyReminders = value);
@@ -359,13 +385,15 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               }
             },
             colorScheme,
-            onConfigure: _dailyReminders ? () => _showDailyReminderConfig(colorScheme) : null,
+            onConfigure: _dailyReminders
+                ? () => _showDailyReminderConfig(colorScheme)
+                : null,
           ),
           const Divider(height: 24),
           _buildScheduleItem(
             'Morning Greeting',
             'Start your day with a quick financial status at 8:00 AM',
-            Icons.wb_sunny_outlined,
+            LucideIcons.sun,
             _morningGreetings,
             (value) async {
               setState(() => _morningGreetings = value);
@@ -381,7 +409,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           _buildScheduleItem(
             'Background Checks',
             'Allow periodic health checks of your budgets and goals',
-            Icons.security_update_good_outlined,
+            LucideIcons.shieldCheck,
             _backgroundHealthChecks,
             (value) async {
               setState(() => _backgroundHealthChecks = value);
@@ -405,7 +433,14 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   }) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.primary, size: 24),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 20),
+        ),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
@@ -426,7 +461,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     GestureDetector(
                       onTap: onConfigure,
                       child: Icon(
-                        Icons.settings_outlined,
+                        LucideIcons.settings,
                         size: 18,
                         color: colorScheme.onSurface.withOpacity(0.5),
                       ),
@@ -454,12 +489,6 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     );
   }
 
-  // ignore: unused_element
-  String _getDayName(int day) {
-    const days = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    return days[day];
-  }
-
   String _formatTime(int hour, int minute) {
     final h = hour.toString().padLeft(2, '0');
     final m = minute.toString().padLeft(2, '0');
@@ -469,7 +498,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   Future<void> _pickDailyReminderTime(ColorScheme colorScheme) async {
     final picked = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay(hour: _dailyReminderHour, minute: _dailyReminderMinute),
+      initialTime:
+          TimeOfDay(hour: _dailyReminderHour, minute: _dailyReminderMinute),
       builder: (context, child) {
         final base = Theme.of(context);
         return Theme(
@@ -500,16 +530,11 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   }
 
   void _showDailyReminderConfig(ColorScheme colorScheme) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
+    AppBottomSheet.show(
+      context,
+      radius: 24,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setModalState) => Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -522,18 +547,27 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 ),
               ),
               const SizedBox(height: 24),
-              Text('Reminder Type', style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+              Text('Reminder Type',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface)),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: _dailyReminderType,
                 decoration: InputDecoration(
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'expense_log', child: Text('Log your expenses')),
-                  DropdownMenuItem(value: 'budget_check', child: Text('Check your budget')),
-                  DropdownMenuItem(value: 'goal_update', child: Text('Update goal progress')),
+                  DropdownMenuItem(
+                      value: 'expense_log', child: Text('Log your expenses')),
+                  DropdownMenuItem(
+                      value: 'budget_check', child: Text('Check your budget')),
+                  DropdownMenuItem(
+                      value: 'goal_update',
+                      child: Text('Update goal progress')),
                 ],
                 onChanged: (value) {
                   if (value != null) {
@@ -543,7 +577,10 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 },
               ),
               const SizedBox(height: 16),
-              Text('Time', style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+              Text('Time',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface)),
               const SizedBox(height: 8),
               InkWell(
                 onTap: () async {
@@ -553,14 +590,16 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    border: Border.all(color: colorScheme.outline.withOpacity(0.35)),
+                    border: Border.all(
+                        color: colorScheme.outline.withOpacity(0.35)),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.schedule_outlined, color: AppColors.primary),
+                      Icon(LucideIcons.clock, color: AppColors.primary),
                       const SizedBox(width: 12),
                       Text(
                         _formatTime(_dailyReminderHour, _dailyReminderMinute),
@@ -572,7 +611,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                       ),
                       const Spacer(),
                       Icon(
-                        Icons.keyboard_arrow_down_rounded,
+                        LucideIcons.chevronDown,
                         color: colorScheme.onSurface.withOpacity(0.65),
                       ),
                     ],
@@ -582,23 +621,23 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
+                child: FilledButton(
                   onPressed: () {
                     _scheduleDailyReminder();
-                    Navigator.pop(context);
+                    Navigator.pop(sheetContext);
                   },
-                  style: ElevatedButton.styleFrom(
+                  style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   child: const Text('Save'),
                 ),
               ),
             ],
           ),
-        ),
       ),
     );
   }
@@ -624,19 +663,22 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               await _scheduleMorningGreeting();
             }
             if (_backgroundHealthChecks) {
-              await BackgroundTaskService().registerDailyHealthCheck(user.user.id);
+              await BackgroundTaskService()
+                  .registerDailyHealthCheck(user.user.id);
             }
           }
           AppSnackbar.showSuccess(context, message: 'Notifications enabled');
         } else {
-          AppSnackbar.showError(context, message: 'Please enable notifications in settings');
+          AppSnackbar.showError(context,
+              message: 'Please enable notifications in settings');
         }
       }
     } catch (e) {
       if (!mounted) {
         return;
       }
-      AppSnackbar.showError(context, message: 'Failed to toggle notifications');
+      AppSnackbar.showError(context,
+          message: 'Failed to toggle notifications: $e');
     }
   }
 
@@ -685,7 +727,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     try {
       final user = context.read<AuthBloc>().state;
       if (user is AuthAuthenticated) {
-        await _notificationService.scheduleMorningGreeting(user.user.id, force: true);
+        await _notificationService.scheduleMorningGreeting(user.user.id,
+            force: true);
         if (!mounted) {
           return;
         }
@@ -695,7 +738,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       if (!mounted) {
         return;
       }
-      AppSnackbar.showError(context, message: 'Failed to schedule greeting: $e');
+      AppSnackbar.showError(context,
+          message: 'Failed to schedule greeting: $e');
     }
   }
 
@@ -732,8 +776,10 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         } else {
           await BackgroundTaskService().cancelTasks(user.user.id);
         }
-        
-        final msg = enabled ? 'Background checks enabled' : 'Background checks disabled';
+
+        final msg = enabled
+            ? 'Background checks enabled'
+            : 'Background checks disabled';
         if (!mounted) {
           return;
         }

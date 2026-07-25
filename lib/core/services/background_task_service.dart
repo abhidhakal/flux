@@ -14,7 +14,7 @@ void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     try {
       await Firebase.initializeApp();
-      
+
       final userId = inputData?['userId'] as String?;
       if (userId == null) return true;
 
@@ -24,19 +24,35 @@ void callbackDispatcher() {
       await recurringTransactionService.processDueTransactions(userId);
 
       // For daily reminders/smart notifications, we perform a health check
-      // This runs in the background even if the app is closed
+      // This runs in the background even if the app is closed.
+      // Skip during quiet hours - alerts would get suppressed anyway, no
+      // point burning battery/data on a Firestore read that leads nowhere.
+      final nowHour = DateTime.now().hour;
+      if (nowHour >= 22 || nowHour < 8) return true;
+
       final firestore = FirebaseFirestore.instance;
-      
-      final budgetsDoc = await firestore.collection('budgets').where('userId', isEqualTo: userId).get();
-      final transactionsDoc = await firestore.collection('transactions').where('userId', isEqualTo: userId).get();
-      final goalsDoc = await firestore.collection('goals').where('userId', isEqualTo: userId).get();
+
+      final budgetsDoc = await firestore
+          .collection('budgets')
+          .where('userId', isEqualTo: userId)
+          .get();
+      final transactionsDoc = await firestore
+          .collection('transactions')
+          .where('userId', isEqualTo: userId)
+          .get();
+      final goalsDoc = await firestore
+          .collection('goals')
+          .where('userId', isEqualTo: userId)
+          .get();
 
       final budgetsData = budgetsDoc.docs.map((d) => d.data()).toList();
-      final transactionsData = transactionsDoc.docs.map((d) => d.data()).toList();
+      final transactionsData =
+          transactionsDoc.docs.map((d) => d.data()).toList();
       final goalsData = goalsDoc.docs.map((d) => d.data()).toList();
 
       final budgets = budgetsData.map((d) => Budget.fromJson(d)).toList();
-      final transactions = transactionsData.map((d) => model.Transaction.fromJson(d)).toList();
+      final transactions =
+          transactionsData.map((d) => model.Transaction.fromJson(d)).toList();
       final goals = goalsData.map((d) => Goal.fromJson(d)).toList();
 
       // Perform a health check/sync via NotificationTriggerService
@@ -50,35 +66,35 @@ void callbackDispatcher() {
       final userDoc = await firestore.collection('users').doc(userId).get();
       final userData = userDoc.data();
       if (userData != null && userData.containsKey('notificationSchedules')) {
-        final schedules = userData['notificationSchedules'] as Map<String, dynamic>;
-        
+        final schedules =
+            userData['notificationSchedules'] as Map<String, dynamic>;
+
         // Skip background checks if user disabled them
-        final checksEnabled = schedules['background_health_check']?['enabled'] ?? true;
+        final checksEnabled =
+            schedules['background_health_check']?['enabled'] ?? true;
         if (!checksEnabled) return true;
 
         final now = DateTime.now();
-        
+
         if (schedules.containsKey('daily_reminder')) {
           final s = schedules['daily_reminder'];
           if (s['enabled'] == true) {
             final scheduledHour = (s['hour'] as num?)?.toInt() ?? 20;
             final scheduledMinute = (s['minute'] as num?)?.toInt() ?? 0;
-            final hasPassedScheduledTime =
-                now.hour > scheduledHour ||
+            final hasPassedScheduledTime = now.hour > scheduledHour ||
                 (now.hour == scheduledHour && now.minute >= scheduledMinute);
 
             if (hasPassedScheduledTime) {
-               await triggerService.triggerDailyReminder(userId, s['type']);
+              await triggerService.triggerDailyReminder(userId, s['type']);
             }
           }
         }
-        
+
         if (schedules.containsKey('morning_greeting')) {
           final s = schedules['morning_greeting'];
           final scheduledHour = (s['hour'] as num?)?.toInt() ?? 8;
           final scheduledMinute = (s['minute'] as num?)?.toInt() ?? 0;
-          final hasPassedScheduledTime =
-              now.hour > scheduledHour ||
+          final hasPassedScheduledTime = now.hour > scheduledHour ||
               (now.hour == scheduledHour && now.minute >= scheduledMinute);
 
           if (s['enabled'] == true && hasPassedScheduledTime) {
@@ -96,7 +112,8 @@ void callbackDispatcher() {
 }
 
 class BackgroundTaskService {
-  static final BackgroundTaskService _instance = BackgroundTaskService._internal();
+  static final BackgroundTaskService _instance =
+      BackgroundTaskService._internal();
   factory BackgroundTaskService() => _instance;
   BackgroundTaskService._internal();
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../shared/widgets/app_snackbar.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class AboutUsScreen extends StatefulWidget {
   const AboutUsScreen({super.key});
@@ -18,7 +20,7 @@ class _AboutUsScreenState extends State<AboutUsScreen>
   @override
   void initState() {
     super.initState();
-    
+
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -27,7 +29,7 @@ class _AboutUsScreenState extends State<AboutUsScreen>
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -35,7 +37,7 @@ class _AboutUsScreenState extends State<AboutUsScreen>
       parent: _fadeController,
       curve: Curves.easeInOut,
     ));
-    
+
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
@@ -43,7 +45,7 @@ class _AboutUsScreenState extends State<AboutUsScreen>
       parent: _slideController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fadeController.forward();
       _slideController.forward();
@@ -61,9 +63,7 @@ class _AboutUsScreenState extends State<AboutUsScreen>
     final uri = Uri.parse(url);
     if (!await launchUrl(uri)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not launch $url')),
-        );
+        AppSnackbar.showError(context, message: 'Could not launch $url');
       }
     }
   }
@@ -72,7 +72,7 @@ class _AboutUsScreenState extends State<AboutUsScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Scaffold(
       backgroundColor: colorScheme.background,
       appBar: AppBar(
@@ -102,21 +102,13 @@ class _AboutUsScreenState extends State<AboutUsScreen>
                 Center(
                   child: Column(
                     children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: Image.asset(
-                            'assets/images/flux_logo.png',
-                            width: 80,
-                            height: 80,
-                            fit: BoxFit.cover,
-                          ),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          'assets/images/flux_logo.png',
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -187,19 +179,19 @@ class _AboutUsScreenState extends State<AboutUsScreen>
 
                 // Links
                 _buildMinimalLink(
-                  icon: Icons.language_rounded,
+                  icon: LucideIcons.languages,
                   title: 'Website',
                   url: 'klivostudios.com',
                   onTap: () => _launchUrl('https://klivostudios.com'),
                 ),
                 _buildMinimalLink(
-                  icon: Icons.person_outline_rounded,
+                  icon: LucideIcons.user,
                   title: 'Portfolio',
                   url: 'abhinavdhakal.me',
                   onTap: () => _launchUrl('https://abhinavdhakal.me'),
                 ),
                 _buildMinimalLink(
-                  icon: Icons.mail_outline_rounded,
+                  icon: LucideIcons.mail,
                   title: 'Contact Us',
                   url: 'hi@klivostudios.com',
                   onTap: () => _launchUrl('mailto:hi@klivostudios.com'),
@@ -220,7 +212,7 @@ class _AboutUsScreenState extends State<AboutUsScreen>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '© 2024 Klivo Studios',
+                        '© 2026 Klivo Studios',
                         style: TextStyle(
                           fontSize: 14,
                           color: colorScheme.onSurfaceVariant.withOpacity(0.7),
@@ -245,7 +237,7 @@ class _AboutUsScreenState extends State<AboutUsScreen>
     required VoidCallback onTap,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),

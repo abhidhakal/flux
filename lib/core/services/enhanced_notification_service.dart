@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:uuid/uuid.dart';
+import '../constants/reminder_content.dart';
 import '../models/notification_model.dart';
 import 'notification_service.dart';
 import 'push_notification_service.dart';
@@ -13,9 +13,8 @@ class EnhancedNotificationService {
 
   final NotificationService _notificationService = NotificationService();
   final PushNotificationService _pushService = PushNotificationService();
-  final firestore.FirebaseFirestore _firestore = firestore.FirebaseFirestore.instance;
-  // ignore: unused_field
-  final Uuid _uuid = const Uuid();
+  final firestore.FirebaseFirestore _firestore =
+      firestore.FirebaseFirestore.instance;
 
   // Initialize the enhanced notification service
   Future<void> initialize() async {
@@ -43,7 +42,7 @@ class EnhancedNotificationService {
     try {
       // Create in Firestore
       await _notificationService.createNotification(notification);
-      
+
       // Send push notification if enabled
       if (await areNotificationsEnabled()) {
         await _pushService.showNotification(
@@ -64,19 +63,21 @@ class EnhancedNotificationService {
     required String userId,
     required int hour,
     required int minute,
-    required String reminderType, // 'budget_check', 'goal_update', 'expense_log'
+    required String
+        reminderType, // 'budget_check', 'goal_update', 'expense_log'
   }) async {
     try {
       final reminderId = _getReminderId(reminderType);
-      
+
       // Cancel existing reminder
       await _pushService.cancelNotification(reminderId);
-      
+
       // Schedule new reminder
+      final content = ReminderContent.forType(reminderType);
       await _pushService.scheduleDailyReminder(
         id: reminderId,
-        title: _getReminderTitle(reminderType),
-        body: _getReminderBody(reminderType),
+        title: content.title,
+        body: content.body,
         hour: hour,
         minute: minute,
         payload: 'daily_reminder:$userId:$reminderType',
@@ -109,34 +110,6 @@ class EnhancedNotificationService {
     }
   }
 
-  // Get reminder title
-  String _getReminderTitle(String reminderType) {
-    switch (reminderType) {
-      case 'budget_check':
-        return 'Budget Check Reminder';
-      case 'goal_update':
-        return 'Goal Progress Update';
-      case 'expense_log':
-        return 'Log Your Expenses';
-      default:
-        return 'Daily Reminder';
-    }
-  }
-
-  // Get reminder body
-  String _getReminderBody(String reminderType) {
-    switch (reminderType) {
-      case 'budget_check':
-        return 'Time to check your budget progress and spending habits!';
-      case 'goal_update':
-        return 'Update your goal progress and stay motivated!';
-      case 'expense_log':
-        return 'Don\'t forget to log your expenses for today.';
-      default:
-        return 'Your daily financial reminder is here!';
-    }
-  }
-
   // Save notification schedule to user preferences
   Future<void> _saveNotificationSchedule(
     String userId,
@@ -144,10 +117,7 @@ class EnhancedNotificationService {
     Map<String, dynamic> scheduleData,
   ) async {
     try {
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .update({
+      await _firestore.collection('users').doc(userId).update({
         'notificationSchedules.$scheduleType': scheduleData,
         'updatedAt': DateTime.now().toIso8601String(),
       });
@@ -157,20 +127,19 @@ class EnhancedNotificationService {
   }
 
   // Get user notification schedules
-  Future<Map<String, dynamic>> getUserNotificationSchedules(String userId) async {
+  Future<Map<String, dynamic>> getUserNotificationSchedules(
+      String userId) async {
     try {
-      final userDoc = await _firestore
-          .collection('users')
-          .doc(userId)
-          .get();
-      
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+
       if (userDoc.exists && userDoc.data() != null) {
         final data = userDoc.data()!;
         return Map<String, dynamic>.from(data['notificationSchedules'] ?? {});
       }
       return {};
     } catch (e) {
-      debugPrint('❌ ENHANCED NOTIFICATION SERVICE: Error getting schedules: $e');
+      debugPrint(
+          '❌ ENHANCED NOTIFICATION SERVICE: Error getting schedules: $e');
       return {};
     }
   }
@@ -232,6 +201,10 @@ class EnhancedNotificationService {
     return await _notificationService.markAllAsRead(userId);
   }
 
+  Future<void> pruneOldNotifications(String userId) async {
+    return await _notificationService.pruneOldNotifications(userId);
+  }
+
   Future<bool> canGenerateSmartNotifications(String userId) async {
     return await _notificationService.canGenerateSmartNotifications(userId);
   }
@@ -241,7 +214,8 @@ class EnhancedNotificationService {
   }
 
   Future<void> updateLastSmartNotificationGeneration(String userId) async {
-    return await _notificationService.updateLastSmartNotificationGeneration(userId);
+    return await _notificationService
+        .updateLastSmartNotificationGeneration(userId);
   }
 
   // Test notification methods
@@ -306,7 +280,8 @@ class EnhancedNotificationService {
 
     final schedules = await getUserNotificationSchedules(userId);
     if (schedules['daily_reminder']?['enabled'] == true) {
-      debugPrint('🔵 ENHANCED NOTIFICATION SERVICE: Custom daily reminder enabled, skipping smart reminder.');
+      debugPrint(
+          '🔵 ENHANCED NOTIFICATION SERVICE: Custom daily reminder enabled, skipping smart reminder.');
       return;
     }
 
@@ -324,13 +299,15 @@ class EnhancedNotificationService {
     await _pushService.scheduleNotification(
       id: _smartDailyReminderId,
       title: 'Add your finances',
-      body: 'You haven\'t added any transactions today yet. Take a moment to log one.',
+      body:
+          'You haven\'t added any transactions today yet. Take a moment to log one.',
       scheduledDate: scheduledDate,
       priority: NotificationPriority.high,
       payload: 'add_transaction',
     );
 
-    debugPrint('✅ ENHANCED NOTIFICATION SERVICE: Smart reminder scheduled for $scheduledDate');
+    debugPrint(
+        '✅ ENHANCED NOTIFICATION SERVICE: Smart reminder scheduled for $scheduledDate');
   }
 
   // Schedule the smart daily reminder (called on app init)
@@ -338,35 +315,40 @@ class EnhancedNotificationService {
     try {
       await _scheduleOrRefreshSmartDailyLogReminder(userId);
     } catch (e) {
-      debugPrint('❌ ENHANCED NOTIFICATION SERVICE: Error scheduling smart reminder: $e');
+      debugPrint(
+          '❌ ENHANCED NOTIFICATION SERVICE: Error scheduling smart reminder: $e');
     }
   }
 
   // Called when a transaction is added
   Future<void> updateDailyLogReminder(String userId) async {
     try {
-      debugPrint('🔵 ENHANCED NOTIFICATION SERVICE: Transaction added, updating daily reminder...');
+      debugPrint(
+          '🔵 ENHANCED NOTIFICATION SERVICE: Transaction added, updating daily reminder...');
 
       await _scheduleOrRefreshSmartDailyLogReminder(userId);
     } catch (e) {
-      debugPrint('❌ ENHANCED NOTIFICATION SERVICE: Error updating smart reminder: $e');
+      debugPrint(
+          '❌ ENHANCED NOTIFICATION SERVICE: Error updating smart reminder: $e');
     }
   }
 
   // Schedule daily morning greeting (7 AM)
-  Future<void> scheduleMorningGreeting(String userId, {bool force = false}) async {
+  Future<void> scheduleMorningGreeting(String userId,
+      {bool force = false}) async {
     try {
       if (!force) {
         final schedules = await getUserNotificationSchedules(userId);
         if (schedules['morning_greeting']?['enabled'] != true) {
-          debugPrint('🔵 ENHANCED NOTIFICATION SERVICE: Morning greeting disabled, skipping schedule.');
+          debugPrint(
+              '🔵 ENHANCED NOTIFICATION SERVICE: Morning greeting disabled, skipping schedule.');
           return;
         }
       }
 
       final now = DateTime.now();
       var scheduledDate = DateTime(now.year, now.month, now.day, 8, 0); // 8 AM
-      
+
       // If 8 AM has passed, schedule for tomorrow
       if (scheduledDate.isBefore(now)) {
         scheduledDate = scheduledDate.add(const Duration(days: 1));
@@ -390,10 +372,12 @@ class EnhancedNotificationService {
         'minute': 0,
         'lastScheduled': DateTime.now().toIso8601String(),
       });
-      
-      debugPrint('✅ ENHANCED NOTIFICATION SERVICE: Scheduled morning greeting for $scheduledDate');
+
+      debugPrint(
+          '✅ ENHANCED NOTIFICATION SERVICE: Scheduled morning greeting for $scheduledDate');
     } catch (e) {
-      debugPrint('❌ ENHANCED NOTIFICATION SERVICE: Error scheduling morning greeting: $e');
+      debugPrint(
+          '❌ ENHANCED NOTIFICATION SERVICE: Error scheduling morning greeting: $e');
     }
   }
 }

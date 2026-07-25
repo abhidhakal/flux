@@ -19,8 +19,9 @@ class GoalProgressChart extends StatelessWidget {
       );
     }
 
-    final activeGoals = goals.where((g) => g.status == GoalStatus.active).toList();
-    
+    final activeGoals =
+        goals.where((g) => g.status == GoalStatus.active).toList();
+
     if (activeGoals.isEmpty) {
       return const Center(
         child: Text(
@@ -37,7 +38,8 @@ class GoalProgressChart extends StatelessWidget {
         barTouchData: BarTouchData(
           enabled: true,
           touchTooltipData: BarTouchTooltipData(
-            tooltipBorder: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+            tooltipBorder: BorderSide(
+                color: AppColors.textSecondary.withValues(alpha: 0.3)),
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               final goal = activeGoals[groupIndex];
               return BarTooltipItem(
@@ -67,8 +69,8 @@ class GoalProgressChart extends StatelessWidget {
                   return Container(
                     width: 60,
                     child: Text(
-                      goal.name.length > 8 
-                          ? '${goal.name.substring(0, 8)}...' 
+                      goal.name.length > 8
+                          ? '${goal.name.substring(0, 8)}...'
                           : goal.name,
                       style: const TextStyle(
                         color: AppColors.textSecondary,
@@ -105,7 +107,8 @@ class GoalProgressChart extends StatelessWidget {
         ),
         borderData: FlBorderData(
           show: true,
-          border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.2)),
+          border:
+              Border.all(color: AppColors.textSecondary.withValues(alpha: 0.2)),
         ),
         barGroups: _getBarGroups(activeGoals),
         gridData: FlGridData(
@@ -126,7 +129,7 @@ class GoalProgressChart extends StatelessWidget {
     return activeGoals.asMap().entries.map((entry) {
       final index = entry.key;
       final goal = entry.value;
-      
+
       return BarChartGroupData(
         x: index,
         barRods: [

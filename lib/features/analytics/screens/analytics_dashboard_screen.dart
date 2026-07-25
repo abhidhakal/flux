@@ -7,21 +7,25 @@ import '../../auth/auth_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
 import '../analytics_bloc.dart';
 import '../widgets/category_breakdown_chart.dart';
-import '../widgets/insights_card.dart';
 import '../widgets/trend_analysis_chart.dart';
 import '../widgets/weekly_spending_chart.dart';
 import '../../../core/utils/date_range_filter.dart';
+import '../../../shared/widgets/stat_tile.dart';
+import '../../../shared/widgets/empty_state_view.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class AnalyticsDashboardScreen extends StatefulWidget {
   const AnalyticsDashboardScreen({super.key});
 
   @override
-  State<AnalyticsDashboardScreen> createState() => _AnalyticsDashboardScreenState();
+  State<AnalyticsDashboardScreen> createState() =>
+      _AnalyticsDashboardScreenState();
 }
 
 class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   TimelineFilter _timelineFilter = TimelineFilter.lastMonth;
   DateTimeRange? _customRange;
+  bool _showMonthlyTrend = false;
 
   @override
   void initState() {
@@ -32,21 +36,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       activeRangeFor(_timelineFilter, customRange: _customRange);
 
   Future<void> _pickCustomRange() async {
-    final now = DateTime.now();
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: now,
-      initialDateRange: _customRange ??
-          DateTimeRange(
-            start: now.subtract(const Duration(days: 30)),
-            end: now,
-          ),
-      builder: (context, child) => Theme(
-        data: Theme.of(context),
-        child: child!,
-      ),
-    );
+    final picked = await pickCustomRange(context, _customRange);
     if (picked != null) {
       setState(() {
         _customRange = picked;
@@ -57,16 +47,14 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
 
   List<Transaction> _filterTransactions(List<Transaction> transactions) {
     final range = _getActiveRange();
-    return transactions.where((t) {
-      return !t.date.isBefore(range.start) && !t.date.isAfter(range.end);
-    }).toList();
+    return transactions.where((t) => isWithinRange(t.date, range)).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Scaffold(
       backgroundColor: AppTheme.pageBackground(context),
       appBar: AppBar(
@@ -91,8 +79,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
             listener: (context, state) {
               if (state is TransactionLoaded) {
                 context.read<AnalyticsBloc>().add(
-                  AnalyzeSpendingPatterns(state.transactions),
-                );
+                      AnalyzeSpendingPatterns(state.transactions),
+                    );
               }
             },
           ),
@@ -104,22 +92,28 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
             }
 
             if (transactionState is TransactionLoaded) {
-              final transactions = _filterTransactions(transactionState.transactions);
+              final transactions =
+                  _filterTransactions(transactionState.transactions);
 
               return BlocBuilder<AnalyticsBloc, AnalyticsState>(
                 builder: (context, analyticsState) {
-                  final analysis = analyticsState is SpendingAnalysisLoaded ? analyticsState.analysis : null;
-                  
+                  final analysis = analyticsState is SpendingAnalysisLoaded
+                      ? analyticsState.analysis
+                      : null;
+
                   return RefreshIndicator(
                     onRefresh: () async {
-                       final user = context.read<AuthBloc>().state;
-                       if (user is AuthAuthenticated) {
-                         context.read<TransactionBloc>().add(LoadTransactions(user.user.id));
-                       }
+                      final user = context.read<AuthBloc>().state;
+                      if (user is AuthAuthenticated) {
+                        context
+                            .read<TransactionBloc>()
+                            .add(LoadTransactions(user.user.id));
+                      }
                     },
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 120),
+                      padding: const EdgeInsets.only(
+                          left: 20, right: 20, top: 8, bottom: 120),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -133,17 +127,12 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                           const SizedBox(height: 24),
                           _buildSubscriptionsSection(analysis),
                           const SizedBox(height: 24),
-                          _buildSectionHeader('Spending Trend', 'Your weekly expense activity'),
-                          const SizedBox(height: 16),
-                          WeeklySpendingChart(transactions: transactions),
+                          _buildTrendSection(transactions),
                           const SizedBox(height: 24),
                           _buildWealthProjectionSection(analysis),
                           const SizedBox(height: 24),
-                          _buildSectionHeader('Monthly Comparison', 'Income vs Expenses'),
-                          const SizedBox(height: 16),
-                          TrendAnalysisChart(transactions: transactions),
-                          const SizedBox(height: 24),
-                          _buildSectionHeader('Category Breakdown', 'Where your money goes'),
+                          _buildSectionHeader(
+                              'Category Breakdown', 'Where your money goes'),
                           const SizedBox(height: 16),
                           CategoryBreakdownChart(transactions: transactions),
                           const SizedBox(height: 24),
@@ -166,17 +155,17 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
 
   Widget _buildHealthScoreSection(Map<String, dynamic>? analysis) {
     final score = analysis?['healthScore'] ?? 0;
-    final color = score > 80 ? AppColors.success : (score > 50 ? Colors.orange : AppColors.error);
+    final color = score > 80
+        ? AppColors.success
+        : (score > 50 ? Colors.orange : AppColors.error);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    final cardBorderColor = isDark
-      ? colorScheme.outline.withOpacity(0.45)
-      : color.withOpacity(0.2);
-    final progressTrackColor = isDark
-      ? colorScheme.outline.withOpacity(0.25)
-      : color.withOpacity(0.1);
+    final cardBorderColor =
+        isDark ? colorScheme.outline.withOpacity(0.45) : color.withOpacity(0.2);
+    final progressTrackColor =
+        isDark ? colorScheme.outline.withOpacity(0.25) : color.withOpacity(0.1);
 
     return Container(
       width: double.infinity,
@@ -223,7 +212,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                   'Financial Health Score',
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -259,23 +248,28 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   }
 
   Widget _buildEfficiencySection(Map<String, dynamic>? analysis) {
-    final efficiency = analysis?['efficiency'] as Map<String, dynamic>? ?? {'needs': 0.0, 'wants': 0.0, 'savings': 0.0};
-    
+    final efficiency = analysis?['efficiency'] as Map<String, dynamic>? ??
+        {'needs': 0.0, 'wants': 0.0, 'savings': 0.0};
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Spending Efficiency', 'Adherence to the 50/30/20 rule'),
+        _buildSectionHeader(
+            'Spending Efficiency', 'Adherence to the 50/30/20 rule'),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(20),
           decoration: AppTheme.surfaceDecoration(context),
           child: Column(
             children: [
-              _buildEfficiencyRow('Needs (Fixed)', efficiency['needs'], 50, AppColors.primary),
+              _buildEfficiencyRow(
+                  'Needs (Fixed)', efficiency['needs'], 50, AppColors.primary),
               const SizedBox(height: 16),
-              _buildEfficiencyRow('Wants (Lifestyle)', efficiency['wants'], 30, Colors.orange),
+              _buildEfficiencyRow(
+                  'Wants (Lifestyle)', efficiency['wants'], 30, Colors.orange),
               const SizedBox(height: 16),
-              _buildEfficiencyRow('Savings (Wealth)', efficiency['savings'], 20, AppColors.success),
+              _buildEfficiencyRow('Savings (Wealth)', efficiency['savings'], 20,
+                  AppColors.success),
             ],
           ),
         ),
@@ -283,7 +277,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     );
   }
 
-  Widget _buildEfficiencyRow(String label, dynamic value, double target, Color color) {
+  Widget _buildEfficiencyRow(
+      String label, dynamic value, double target, Color color) {
     final double val = (value as num).toDouble();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,8 +286,12 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-            Text('${val.toStringAsFixed(1)}% / $target%', style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.bold)),
+            Text(label,
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            Text('${val.toStringAsFixed(1)}% / $target%',
+                style: TextStyle(
+                    fontSize: 12, color: color, fontWeight: FontWeight.bold)),
           ],
         ),
         const SizedBox(height: 8),
@@ -317,7 +316,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Detected Subscriptions', 'Recurring monthly payments identified'),
+        _buildSectionHeader(
+            'Detected Subscriptions', 'Recurring monthly payments identified'),
         const SizedBox(height: 16),
         SizedBox(
           height: 100,
@@ -335,16 +335,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: Theme.of(context).colorScheme.outline.withOpacity(
-                      isDark ? 0.14 : 0.08,
-                    ),
+                          isDark ? 0.14 : 0.08,
+                        ),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.10 : 0.04),
-                      blurRadius: 14,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,16 +346,23 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                       sub['title'],
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 13),
                     ),
                     const Spacer(),
                     Text(
                       CurrencyService().formatAmount(sub['amount'] as double),
-                      style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: AppColors.error, fontWeight: FontWeight.bold),
                     ),
                     Text(
                       sub['category'],
-                      style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+                      style: TextStyle(
+                          fontSize: 10,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.5)),
                     ),
                   ],
                 ),
@@ -382,22 +382,29 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       padding: const EdgeInsets.all(24),
       decoration: AppTheme.tintedSurfaceDecoration(
         context,
-        tint: Colors.indigo,
+        tint: AppColors.primary,
         radius: 32,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.rocket_launch_rounded, color: Theme.of(context).colorScheme.onSurface, size: 32),
+          Icon(LucideIcons.rocket,
+              color: Theme.of(context).colorScheme.onSurface, size: 32),
           const SizedBox(height: 16),
           Text(
             'Wealth Projection',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 18,
+                fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
             'Keep up your current habits, and you\'ll have an extra ${CurrencyService().formatAmount(projected)} in 6 months.',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.72), fontSize: 14),
+            style: TextStyle(
+                color:
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.72),
+                fontSize: 14),
           ),
           const SizedBox(height: 16),
           _buildProjectionComparison()
@@ -410,19 +417,89 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.cardSurface(context).withOpacity(0.78),
+        color: AppColors.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: const [
-          Icon(Icons.trending_up, color: Colors.white, size: 16),
+          Icon(LucideIcons.trendingUp, color: AppColors.primary, size: 16),
           SizedBox(width: 8),
           Text(
             'Trajectory: High Growth',
-            style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: AppColors.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600),
           ),
         ],
+      ),
+    );
+  }
+
+  // Weekly and monthly trend charts covered overlapping ground as two
+  // permanent sections - one toggleable card halves that footprint.
+  Widget _buildTrendSection(List<Transaction> transactions) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildSectionHeader(
+              'Spending Trend',
+              _showMonthlyTrend
+                  ? 'Income vs expenses by month'
+                  : 'Your weekly expense activity',
+            ),
+            _buildTrendToggle(),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _showMonthlyTrend
+            ? TrendAnalysisChart(transactions: transactions)
+            : WeeklySpendingChart(transactions: transactions),
+      ],
+    );
+  }
+
+  Widget _buildTrendToggle() {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppTheme.mutedSurface(context),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _trendToggleOption('Weekly', !_showMonthlyTrend),
+          _trendToggleOption('Monthly', _showMonthlyTrend),
+        ],
+      ),
+    );
+  }
+
+  Widget _trendToggleOption(String label, bool selected) {
+    return GestureDetector(
+      onTap: () => setState(() => _showMonthlyTrend = label == 'Monthly'),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: selected
+                ? Colors.white
+                : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+          ),
+        ),
       ),
     );
   }
@@ -435,18 +512,18 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       children: [
         Expanded(
           child: _buildStatCard(
-            'Income', 
-            totalIncome, 
-            Icons.south_west_rounded,
+            'Income',
+            totalIncome,
+            LucideIcons.arrowDownLeft,
             AppColors.success,
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: _buildStatCard(
-            'Expenses', 
-            expenses, 
-            Icons.north_east_rounded,
+            'Expenses',
+            expenses,
+            LucideIcons.arrowUpRight,
             AppColors.error,
           ),
         ),
@@ -454,50 +531,15 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(String label, double amount, IconData icon, Color color) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: AppTheme.surfaceDecoration(context, radius: 24).copyWith(
-        border: Border.all(
-          color: isDark ? color.withOpacity(0.12) : colorScheme.outline.withOpacity(0.10),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 16),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: colorScheme.onSurface.withOpacity(0.65),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            CurrencyService().formatAmount(amount).replaceAll('.00', ''),
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
-          ),
-        ],
-      ),
+  Widget _buildStatCard(
+      String label, double amount, IconData icon, Color color) {
+    return StatTile(
+      label: label,
+      value: CurrencyService().formatAmountCompact(amount),
+      icon: icon,
+      accentColor: color,
+      radius: 24,
+      bordered: true,
     );
   }
 
@@ -507,7 +549,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       children: [
         Text(
           title,
-          style: AppTheme.sectionTitleStyle(context).copyWith(fontSize: 20),
+          style: AppTheme.sectionTitleStyle(context)
+              .copyWith(fontSize: 20, fontWeight: FontWeight.w600),
         ),
         Text(
           subtitle,
@@ -518,26 +561,24 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   }
 
   Widget _buildSmartInsightsSection(AnalyticsState state) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildSectionHeader('Flux Intelligence', 'Smart analysis of your habits'),
-            Icon(Icons.auto_awesome, color: AppColors.primary, size: 24),
+            _buildSectionHeader(
+                'Flux Intelligence', 'Smart analysis of your habits'),
+            Icon(LucideIcons.sparkles, color: AppColors.primary, size: 24),
           ],
         ),
         const SizedBox(height: 16),
         if (state is SpendingAnalysisLoaded)
-          ...state.analysis['insights'].map<Widget>((insight) {
-            return InsightsCard(
-              title: 'Pattern Detected',
-              description: insight,
-              icon: Icons.analytics_rounded,
-              color: AppColors.primary,
-            );
-          }).toList()
+          _buildBulkInsightCard(
+            (state.analysis['insights'] as List).cast<String>(),
+            colorScheme,
+          )
         else
           _buildInsightSkeleton(),
       ],
@@ -545,29 +586,79 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   }
 
   Widget _buildRecommendationsSection(Map<String, dynamic>? analysis) {
-    final recommendations = analysis?['recommendations'] as List<dynamic>? ?? [];
+    final recommendations =
+        (analysis?['recommendations'] as List<dynamic>? ?? []).cast<String>();
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Flux Recommendations', 'Actionable steps to improve'),
+        _buildSectionHeader(
+            'Flux Recommendations', 'Actionable steps to improve'),
         const SizedBox(height: 16),
         if (recommendations.isNotEmpty)
-          ...recommendations.map((rec) => InsightsCard(
-            title: 'Recommendation',
-            description: rec.toString(),
-            icon: Icons.lightbulb_outline_rounded,
-            color: Colors.amber,
-            isTip: true,
-          )).toList()
+          _buildBulkInsightCard(recommendations, colorScheme,
+              icon: LucideIcons.lightbulb, iconColor: Colors.amber)
         else
           Container(
             padding: const EdgeInsets.all(24),
             width: double.infinity,
             decoration: AppTheme.surfaceDecoration(context),
-            child: const Text('Add more transactions to receive smart recommendations.'),
+            child: const Text(
+                'Add more transactions to receive smart recommendations.'),
           ),
       ],
+    );
+  }
+
+  // One card holding every item with a divider between rows, instead of a
+  // separately-bordered/margined card per item - same grouping used for
+  // the transactions list and the dashboard's Smart Insights card.
+  Widget _buildBulkInsightCard(
+    List<String> items,
+    ColorScheme colorScheme, {
+    IconData? icon,
+    Color? iconColor,
+  }) {
+    return Container(
+      decoration: AppTheme.tintedSurfaceDecoration(
+        context,
+        tint: AppColors.primary,
+        radius: 20,
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0)
+              Divider(
+                height: 1,
+                color: AppColors.primary.withOpacity(0.10),
+              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 16, color: iconColor ?? AppColors.primary),
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    child: Text(
+                      items[i],
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.4,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -607,7 +698,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
             ),
             const SizedBox(width: 4),
             Icon(
-              Icons.keyboard_arrow_down_rounded,
+              LucideIcons.chevronDown,
               size: 20,
               color: colorScheme.onSurface,
             ),
@@ -636,35 +727,31 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   }
 
   Widget _buildLoadingState() {
-     return const Center(child: CircularProgressIndicator());
+    return const Center(child: CircularProgressIndicator());
   }
 
   Widget _buildInsightSkeleton() {
     return Column(
-      children: List.generate(2, (index) => Container(
-        height: 80,
-        margin: const EdgeInsets.only(bottom: 12),
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: AppTheme.cardSurface(context),
-          borderRadius: BorderRadius.circular(20),
-        ),
-      )),
+      children: List.generate(
+          2,
+          (index) => Container(
+                height: 80,
+                margin: const EdgeInsets.only(bottom: 12),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppTheme.cardSurface(context),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              )),
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.analytics_outlined, size: 64, color: AppColors.textTertiary),
-          const SizedBox(height: 16),
-          const Text('No financial data found'),
-          const SizedBox(height: 8),
-          const Text('Start adding transactions to see analysis'),
-        ],
-      ),
+    return const EmptyStateView(
+      icon: LucideIcons.barChart3,
+      iconColor: AppColors.textTertiary,
+      title: 'No financial data found',
+      subtitle: 'Start adding transactions to see analysis',
     );
   }
 }

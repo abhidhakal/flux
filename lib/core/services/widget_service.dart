@@ -9,7 +9,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class WidgetService {
   static const String _androidWidgetName = 'ActionWidgetProvider';
   static const String _androidBalanceWidgetName = 'BalanceWidgetProvider';
-  static const String _androidQuickCaptureWidgetName = 'QuickCaptureWidgetProvider';
+  static const String _androidQuickCaptureWidgetName =
+      'QuickCaptureWidgetProvider';
   static const String _androidGoalWidgetName = 'GoalProgressWidgetProvider';
 
   static Future<void> updateBalanceWidget({
@@ -21,12 +22,16 @@ class WidgetService {
     try {
       final currencyService = CurrencyService();
       await currencyService.ensureInitialized();
-      
-      await HomeWidget.saveWidgetData<String>('balance', currencyService.formatAmount(balance));
-      await HomeWidget.saveWidgetData<String>('income', currencyService.formatAmount(income));
-      await HomeWidget.saveWidgetData<String>('expenses', currencyService.formatAmount(expenses));
-      await HomeWidget.saveWidgetData<int>('transactionCount', transactionCount);
-      
+
+      await HomeWidget.saveWidgetData<String>(
+          'balance', currencyService.formatAmount(balance));
+      await HomeWidget.saveWidgetData<String>(
+          'income', currencyService.formatAmount(income));
+      await HomeWidget.saveWidgetData<String>(
+          'expenses', currencyService.formatAmount(expenses));
+      await HomeWidget.saveWidgetData<int>(
+          'transactionCount', transactionCount);
+
       await HomeWidget.updateWidget(
         name: _androidBalanceWidgetName,
         androidName: _androidBalanceWidgetName,
@@ -55,9 +60,12 @@ class WidgetService {
   }) async {
     try {
       await HomeWidget.saveWidgetData<String>('goal_name', goalName);
-      await HomeWidget.saveWidgetData<String>('goal_current_amount', goalCurrentAmount);
-      await HomeWidget.saveWidgetData<String>('goal_target_amount', goalTargetAmount);
-      await HomeWidget.saveWidgetData<int>('goal_progress', progress.clamp(0, 100));
+      await HomeWidget.saveWidgetData<String>(
+          'goal_current_amount', goalCurrentAmount);
+      await HomeWidget.saveWidgetData<String>(
+          'goal_target_amount', goalTargetAmount);
+      await HomeWidget.saveWidgetData<int>(
+          'goal_progress', progress.clamp(0, 100));
       await HomeWidget.saveWidgetData<String>('goal_status', goalStatus);
 
       await HomeWidget.updateWidget(
@@ -75,8 +83,10 @@ class WidgetService {
       final goalsState = context.read<GoalsBloc>().state;
 
       if (transactionState is TransactionLoaded) {
-        final expenses = transactionState.transactions.where((t) => t.isExpense).toList();
-        final incomes = transactionState.transactions.where((t) => t.isIncome).toList();
+        final expenses =
+            transactionState.transactions.where((t) => t.isExpense).toList();
+        final incomes =
+            transactionState.transactions.where((t) => t.isIncome).toList();
         final totalExpenses = expenses.fold(0.0, (sum, t) => sum + t.amount);
         final totalIncome = incomes.fold(0.0, (sum, t) => sum + t.amount);
         final balance = totalIncome - totalExpenses;
@@ -101,12 +111,14 @@ class WidgetService {
     final currencyService = CurrencyService();
     await currencyService.ensureInitialized();
 
-    final activeGoals = goals.where((goal) => goal.status == GoalStatus.active).toList()
-      ..sort((a, b) {
-        final progressComparison = b.progressPercentage.compareTo(a.progressPercentage);
-        if (progressComparison != 0) return progressComparison;
-        return a.targetDate.compareTo(b.targetDate);
-      });
+    final activeGoals =
+        goals.where((goal) => goal.status == GoalStatus.active).toList()
+          ..sort((a, b) {
+            final progressComparison =
+                b.progressPercentage.compareTo(a.progressPercentage);
+            if (progressComparison != 0) return progressComparison;
+            return a.targetDate.compareTo(b.targetDate);
+          });
 
     if (activeGoals.isEmpty) {
       await updateGoalProgressWidget(
@@ -120,12 +132,14 @@ class WidgetService {
     }
 
     final selectedGoal = activeGoals.first;
-    final goalStatus =
-        selectedGoal.daysRemaining > 0 ? '${selectedGoal.daysRemaining} days left' : 'Due now';
+    final goalStatus = selectedGoal.daysRemaining > 0
+        ? '${selectedGoal.daysRemaining} days left'
+        : 'Due now';
 
     await updateGoalProgressWidget(
       goalName: selectedGoal.name,
-      goalCurrentAmount: currencyService.formatAmount(selectedGoal.currentAmount),
+      goalCurrentAmount:
+          currencyService.formatAmount(selectedGoal.currentAmount),
       goalTargetAmount: currencyService.formatAmount(selectedGoal.targetAmount),
       progress: selectedGoal.progressPercentage.round(),
       goalStatus: goalStatus,

@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/google_logo.dart';
 import '../../../core/constants/app_theme.dart';
+import '../widgets/auth_form_helpers.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class LoginScreen extends StatefulWidget {
-  /// When true, Google sign-in will be triggered as soon as the screen mounts.
-  final bool autoTriggerGoogle;
-
-  const LoginScreen({super.key, this.autoTriggerGoogle = false});
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -47,10 +46,6 @@ class _LoginScreenState extends State<LoginScreen>
     ));
 
     _animController.forward();
-
-    if (widget.autoTriggerGoogle) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _handleGoogleSignIn());
-    }
   }
 
   @override
@@ -73,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen>
         listener: (context, state) {
           if (state is AuthLoading) {
             setState(() => _isLoading = true);
-            _showLoadingDialog();
+            showAuthLoadingDialog(context, 'Signing in…');
           } else {
             if (_isLoading) {
               setState(() => _isLoading = false);
@@ -83,8 +78,10 @@ class _LoginScreenState extends State<LoginScreen>
               Navigator.of(context).popUntil((route) => route.isFirst);
             }
           }
-          if (state is AuthError) AppSnackbar.showError(context, message: state.message);
-          if (state is AuthSuccess) AppSnackbar.showSuccess(context, message: state.message);
+          if (state is AuthError)
+            AppSnackbar.showError(context, message: state.message);
+          if (state is AuthSuccess)
+            AppSnackbar.showSuccess(context, message: state.message);
         },
         child: SafeArea(
           child: FadeTransition(
@@ -110,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen>
                             child: const Padding(
                               padding: EdgeInsets.all(10),
                               child: Icon(
-                                Icons.arrow_back_ios_new_rounded,
+                                LucideIcons.arrowLeft,
                                 size: 18,
                               ),
                             ),
@@ -143,53 +140,43 @@ class _LoginScreenState extends State<LoginScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _label('Email', theme),
+                          authLabel(context, 'Email'),
                           const SizedBox(height: 6),
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
-                            decoration: _inputDeco(context,
+                            decoration: authInputDecoration(context,
                                 hint: 'name@example.com',
-                                icon: Icons.email_outlined),
-                            validator: (v) {
-                              if (v == null || v.isEmpty) return 'Please enter your email';
-                              if (!v.contains('@')) return 'Please enter a valid email';
-                              return null;
-                            },
+                                icon: LucideIcons.mail),
+                            validator: AuthValidators.email,
                           ),
                           const SizedBox(height: 20),
-
-                          _label('Password', theme),
+                          authLabel(context, 'Password'),
                           const SizedBox(height: 6),
                           TextFormField(
                             controller: _passwordController,
                             obscureText: !_isPasswordVisible,
                             textInputAction: TextInputAction.done,
                             onFieldSubmitted: (_) => _handleLogin(),
-                            decoration: _inputDeco(
+                            decoration: authInputDecoration(
                               context,
                               hint: '••••••••',
-                              icon: Icons.lock_outline_rounded,
+                              icon: LucideIcons.lock,
                               suffix: IconButton(
                                 icon: Icon(
                                   _isPasswordVisible
-                                      ? Icons.visibility_off_outlined
-                                      : Icons.visibility_outlined,
+                                      ? LucideIcons.eyeOff
+                                      : LucideIcons.eye,
                                   size: 20,
                                   color: cs.onSurfaceVariant,
                                 ),
-                                onPressed: () => setState(
-                                    () => _isPasswordVisible = !_isPasswordVisible),
+                                onPressed: () => setState(() =>
+                                    _isPasswordVisible = !_isPasswordVisible),
                               ),
                             ),
-                            validator: (v) {
-                              if (v == null || v.isEmpty) return 'Please enter your password';
-                              if (v.length < 6) return 'Password must be at least 6 characters';
-                              return null;
-                            },
+                            validator: AuthValidators.password,
                           ),
-
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
@@ -209,9 +196,7 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                             ),
                           ),
-
                           const SizedBox(height: 8),
-
                           ElevatedButton(
                             onPressed: _isLoading ? null : _handleLogin,
                             style: ElevatedButton.styleFrom(
@@ -219,8 +204,7 @@ class _LoginScreenState extends State<LoginScreen>
                               foregroundColor: Colors.white,
                               disabledBackgroundColor:
                                   AppColors.primary.withOpacity(0.5),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 16),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16)),
                               elevation: 0,
@@ -231,9 +215,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   fontSize: 17, fontWeight: FontWeight.bold),
                             ),
                           ),
-
                           const SizedBox(height: 24),
-
                           Row(
                             children: [
                               const Expanded(child: Divider()),
@@ -247,21 +229,17 @@ class _LoginScreenState extends State<LoginScreen>
                               const Expanded(child: Divider()),
                             ],
                           ),
-
                           const SizedBox(height: 24),
-
                           OutlinedButton.icon(
                             onPressed: _isLoading ? null : _handleGoogleSignIn,
                             style: OutlinedButton.styleFrom(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16)),
                               side: BorderSide(
                                   color: cs.outline.withOpacity(0.4)),
                             ),
-                            icon: const FaIcon(FontAwesomeIcons.google,
-                                color: AppColors.googleRed, size: 18),
+                            icon: const GoogleLogo(size: 18),
                             label: Text(
                               'Continue with Google',
                               style: theme.textTheme.labelLarge?.copyWith(
@@ -275,80 +253,6 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _label(String text, ThemeData theme) => Text(
-        text,
-        style: theme.textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: theme.colorScheme.onSurface,
-        ),
-      );
-
-  InputDecoration _inputDeco(BuildContext context,
-      {required String hint, required IconData icon, Widget? suffix}) {
-    final cs = Theme.of(context).colorScheme;
-    return InputDecoration(
-      hintText: hint,
-      prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
-      suffixIcon: suffix,
-      filled: true,
-      fillColor: cs.surfaceVariant.withOpacity(0.35),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-      enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: cs.outline.withOpacity(0.15))),
-      focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
-      errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: cs.error)),
-      focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: cs.error, width: 1.5)),
-    );
-  }
-
-  void _showLoadingDialog() {
-    final theme = Theme.of(context);
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => Center(
-        child: Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10))
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(
-                height: 40,
-                width: 40,
-                child: CircularProgressIndicator(
-                    color: AppColors.primary, strokeWidth: 3),
-              ),
-              const SizedBox(height: 16),
-              Text('Signing in…',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      decoration: TextDecoration.none)),
-            ],
           ),
         ),
       ),
@@ -391,8 +295,8 @@ class _LoginScreenState extends State<LoginScreen>
             TextField(
               controller: ctrl,
               keyboardType: TextInputType.emailAddress,
-              decoration: _inputDeco(context,
-                  hint: 'name@example.com', icon: Icons.email_outlined),
+              decoration: authInputDecoration(context,
+                  hint: 'name@example.com', icon: LucideIcons.mail),
             ),
           ],
         ),
@@ -409,7 +313,7 @@ class _LoginScreenState extends State<LoginScreen>
           ElevatedButton(
             onPressed: () {
               final email = ctrl.text.trim();
-              if (email.isNotEmpty && email.contains('@')) {
+              if (email.isNotEmpty && AuthValidators.isValidEmail(email)) {
                 authBloc.add(PasswordResetRequested(email: email));
                 Navigator.pop(dCtx);
               } else {
@@ -420,8 +324,7 @@ class _LoginScreenState extends State<LoginScreen>
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
               elevation: 0,

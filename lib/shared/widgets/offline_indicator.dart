@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/services/network_service.dart';
 import '../../core/constants/app_theme.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class OfflineIndicator extends StatelessWidget {
   const OfflineIndicator({super.key});
@@ -11,11 +12,11 @@ class OfflineIndicator extends StatelessWidget {
       stream: NetworkService().connectionStream,
       builder: (context, snapshot) {
         final isOnline = snapshot.data ?? true;
-        
+
         if (isOnline) {
           return const SizedBox.shrink(); // Hide when online
         }
-        
+
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -24,7 +25,7 @@ class OfflineIndicator extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.wifi_off,
+                LucideIcons.wifiOff,
                 color: Colors.white,
                 size: 16,
               ),

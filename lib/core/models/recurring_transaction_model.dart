@@ -196,3 +196,12 @@ class RecurringTransaction extends Equatable {
         metadata,
       ];
 }
+
+extension RecurringTransactionFrequencyLabel on RecurringTransactionFrequency {
+  String get label => switch (this) {
+        RecurringTransactionFrequency.daily => 'Daily',
+        RecurringTransactionFrequency.weekly => 'Weekly',
+        RecurringTransactionFrequency.monthly => 'Monthly',
+        RecurringTransactionFrequency.yearly => 'Yearly',
+      };
+}

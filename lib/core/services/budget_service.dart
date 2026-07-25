@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/budget_model.dart';
 import '../models/transaction_model.dart';
+import 'user_bootstrap.dart';
 
 class BudgetService {
   final firestore.FirebaseFirestore _firestore =
@@ -102,40 +103,15 @@ class BudgetService {
       return budgets;
     } catch (e) {
       debugPrint('❌ BUDGET SERVICE: Error getting budgets: $e');
-      // Return empty list instead of throwing to prevent app crashes
-      return [];
-    }
-  }
-
-  // Get active budgets for user
-  Future<List<Budget>> getActiveBudgets(String userId) async {
-    try {
-      debugPrint('🔵 BUDGET SERVICE: Getting active budgets for user: $userId');
-
-      // Ensure user document exists
-      await _ensureUserExists(userId);
-
-      final querySnapshot = await _firestore
-          .collection('budgets')
-          .where('userId', isEqualTo: userId)
-          .where('isActive', isEqualTo: true)
-          .get();
-
-      final budgets =
-          querySnapshot.docs.map((doc) => Budget.fromJson(doc.data())).toList();
-
-      debugPrint('✅ BUDGET SERVICE: Found ${budgets.length} active budgets');
-      return budgets;
-    } catch (e) {
-      debugPrint('❌ BUDGET SERVICE: Error getting active budgets: $e');
-      return [];
+      throw Exception('Failed to load budgets: $e');
     }
   }
 
   // Process budget rollovers
   Future<void> processBudgetRollovers(String userId) async {
     try {
-      debugPrint('🔵 BUDGET SERVICE: Processing budget rollovers for user: $userId');
+      debugPrint(
+          '🔵 BUDGET SERVICE: Processing budget rollovers for user: $userId');
 
       final budgets = await getUserBudgets(userId);
 
@@ -148,13 +124,15 @@ class BudgetService {
       debugPrint('✅ BUDGET SERVICE: Budget rollovers processed');
     } catch (e) {
       debugPrint('❌ BUDGET SERVICE: Error processing budget rollovers: $e');
+      throw Exception('Failed to process budget rollovers: $e');
     }
   }
 
   // Recalculate all budget spent amounts from transactions
   Future<void> recalculateBudgetSpent(String userId) async {
     try {
-      debugPrint('🔵 BUDGET SERVICE: Recalculating budget spent for user: $userId');
+      debugPrint(
+          '🔵 BUDGET SERVICE: Recalculating budget spent for user: $userId');
 
       // Ensure user document exists
       await _ensureUserExists(userId);
@@ -223,25 +201,8 @@ class BudgetService {
     }
   }
 
-  // Private method to ensure user document exists
-  Future<void> _ensureUserExists(String userId) async {
-    try {
-      final userDoc = await _firestore.collection('users').doc(userId).get();
-
-      if (!userDoc.exists) {
-        debugPrint('⚠️ BUDGET SERVICE: User not found, creating user document');
-        // Create basic user document if it doesn't exist
-        await _firestore.collection('users').doc(userId).set({
-          'id': userId,
-          'createdAt': DateTime.now().toIso8601String(),
-          'lastLoginAt': DateTime.now().toIso8601String(),
-        });
-      }
-    } catch (e) {
-      debugPrint('❌ BUDGET SERVICE: Error ensuring user exists: $e');
-      // Don't throw here to prevent cascading failures
-    }
-  }
+  Future<void> _ensureUserExists(String userId) =>
+      ensureUserExists(_firestore, userId, logTag: 'BUDGET SERVICE');
 
   // Private method to process budget rollover
   Future<void> _processBudgetRollover(Budget budget) async {
@@ -288,6 +249,8 @@ class BudgetService {
           '✅ BUDGET SERVICE: Rollover processed - \$$rolloverAmount carried over');
     } catch (e) {
       debugPrint('❌ BUDGET SERVICE: Error processing budget rollover: $e');
+      throw Exception(
+          'Failed to process rollover for budget "${budget.name}": $e');
     }
   }
 

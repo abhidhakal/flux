@@ -12,14 +12,16 @@ class SkeletonComponents {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Shimmer.fromColors(
-      baseColor: baseColor ?? (isDark 
-          ? colorScheme.surfaceVariant.withOpacity(0.3)
-          : AppColors.lightTextTertiary.withOpacity(0.3)),
-      highlightColor: highlightColor ?? (isDark 
-          ? colorScheme.surface.withOpacity(0.5)
-          : AppColors.lightTextTertiary.withOpacity(0.1)),
+      baseColor: baseColor ??
+          (isDark
+              ? colorScheme.surfaceVariant.withOpacity(0.3)
+              : AppColors.lightTextTertiary.withOpacity(0.3)),
+      highlightColor: highlightColor ??
+          (isDark
+              ? colorScheme.surface.withOpacity(0.5)
+              : AppColors.lightTextTertiary.withOpacity(0.1)),
       period: const Duration(milliseconds: 1500),
       child: child,
     );
@@ -36,7 +38,7 @@ class SkeletonComponents {
       builder: (ctx) {
         final actualContext = context ?? ctx;
         final colorScheme = Theme.of(actualContext).colorScheme;
-        
+
         return Container(
           width: width,
           height: height,
@@ -55,7 +57,7 @@ class SkeletonComponents {
     required BuildContext context,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
       width: size,
       height: size,
@@ -74,7 +76,7 @@ class SkeletonComponents {
     required BuildContext context,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
       width: width,
       height: height,
@@ -95,7 +97,7 @@ class SkeletonComponents {
     required BuildContext context,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
       width: width,
       height: height,
@@ -137,7 +139,8 @@ class SkeletonComponents {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  textLine(width: double.infinity, height: 16, context: context),
+                  textLine(
+                      width: double.infinity, height: 16, context: context),
                   const SizedBox(height: 8),
                   textLine(width: 120, height: 14, context: context),
                 ],
@@ -295,7 +298,8 @@ class SkeletonComponents {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  textLine(width: double.infinity, height: 16, context: context),
+                  textLine(
+                      width: double.infinity, height: 16, context: context),
                   const SizedBox(height: 6),
                   textLine(width: 150, height: 12, context: context),
                 ],
@@ -428,7 +432,8 @@ class SkeletonComponents {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      textLine(width: double.infinity, height: 16, context: context),
+                      textLine(
+                          width: double.infinity, height: 16, context: context),
                       const SizedBox(height: 4),
                       textLine(width: 200, height: 14, context: context),
                       const SizedBox(height: 4),

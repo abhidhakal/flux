@@ -8,7 +8,8 @@ class Budget extends Equatable {
   final String name;
   final double amount;
   final BudgetPeriod period;
-  final String category; // Direct category name - matches transaction.category exactly
+  final String
+      category; // Direct category name - matches transaction.category exactly
   final DateTime startDate;
   final DateTime endDate;
   final double spent;
@@ -36,17 +37,14 @@ class Budget extends Equatable {
   // Core budget calculations
   double get totalAvailable => amount + rolloverAmount;
   double get remaining => totalAvailable - spent;
-  double get progressPercentage => totalAvailable > 0 ? (spent / totalAvailable) * 100 : 0;
+  double get progressPercentage =>
+      totalAvailable > 0 ? (spent / totalAvailable) * 100 : 0;
   bool get isOverBudget => spent > totalAvailable;
   bool get hasRollover => rolloverAmount > 0;
-  double get baseAmount => amount;
 
   // Budget status
   bool get isExpired => DateTime.now().isAfter(endDate);
   bool get isCurrent => !isExpired && isActive;
-  
-  // For transaction matching - exact category comparison
-  String get categoryForTransaction => category;
 
   Budget copyWith({
     String? id,
@@ -109,15 +107,15 @@ class Budget extends Equatable {
         orElse: () => BudgetPeriod.monthly,
       ),
       category: json['category'] as String? ?? '',
-      startDate: json['startDate'] != null 
+      startDate: json['startDate'] != null
           ? DateTime.parse(json['startDate'] as String)
           : DateTime.now(),
-      endDate: json['endDate'] != null 
+      endDate: json['endDate'] != null
           ? DateTime.parse(json['endDate'] as String)
           : DateTime.now(),
       spent: (json['spent'] as num?)?.toDouble() ?? 0.0,
       isActive: json['isActive'] as bool? ?? true,
-      createdAt: json['createdAt'] != null 
+      createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : DateTime.now(),
       enableRollover: json['enableRollover'] as bool? ?? false,

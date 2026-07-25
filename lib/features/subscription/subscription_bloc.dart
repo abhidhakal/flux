@@ -55,7 +55,6 @@ class SubscriptionPremium extends SubscriptionState {
   List<Object> get props => [isNewPurchase];
 }
 
-
 class SubscriptionFree extends SubscriptionState {
   final List<ProductDetails> products;
 
@@ -87,7 +86,8 @@ class SubscriptionBloc extends Bloc<SubscriptionEvent, SubscriptionState> {
     on<SubscriptionRestoreRequested>(_onRestoreRequested);
     on<SubscriptionUpdated>(_onSubscriptionUpdated);
 
-    _purchaseSubscription = _subscriptionService.purchaseStream.listen((isPremium) {
+    _purchaseSubscription =
+        _subscriptionService.purchaseStream.listen((isPremium) {
       add(SubscriptionUpdated(isPremium));
     });
   }

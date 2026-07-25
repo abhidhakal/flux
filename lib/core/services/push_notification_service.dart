@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart' as fln;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart'
+    as fln;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
@@ -8,11 +9,13 @@ import '../models/notification_model.dart';
 import '../constants/app_theme.dart';
 
 class PushNotificationService {
-  static final PushNotificationService _instance = PushNotificationService._internal();
+  static final PushNotificationService _instance =
+      PushNotificationService._internal();
   factory PushNotificationService() => _instance;
   PushNotificationService._internal();
 
-  final fln.FlutterLocalNotificationsPlugin _notifications = fln.FlutterLocalNotificationsPlugin();
+  final fln.FlutterLocalNotificationsPlugin _notifications =
+      fln.FlutterLocalNotificationsPlugin();
   bool _isInitialized = false;
 
   // Initialize the notification service
@@ -31,8 +34,9 @@ class PushNotificationService {
     }
 
     // Android initialization settings
-    const androidSettings = fln.AndroidInitializationSettings('@mipmap/launcher_icon');
-    
+    const androidSettings =
+        fln.AndroidInitializationSettings('@mipmap/launcher_icon');
+
     // iOS initialization settings
     const iosSettings = fln.DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -60,24 +64,24 @@ class PushNotificationService {
     final status = await Permission.notification.request();
 
     final iosGranted = await _notifications
-        .resolvePlatformSpecificImplementation<
-          fln.IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(alert: true, badge: true, sound: true) ??
-      true;
+            .resolvePlatformSpecificImplementation<
+                fln.IOSFlutterLocalNotificationsPlugin>()
+            ?.requestPermissions(alert: true, badge: true, sound: true) ??
+        true;
     final macGranted = await _notifications
-        .resolvePlatformSpecificImplementation<
-          fln.MacOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(alert: true, badge: true, sound: true) ??
-      true;
+            .resolvePlatformSpecificImplementation<
+                fln.MacOSFlutterLocalNotificationsPlugin>()
+            ?.requestPermissions(alert: true, badge: true, sound: true) ??
+        true;
 
     await _notifications
-      .resolvePlatformSpecificImplementation<
-        fln.AndroidFlutterLocalNotificationsPlugin>()
-      ?.requestNotificationsPermission();
+        .resolvePlatformSpecificImplementation<
+            fln.AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
     await _notifications
-      .resolvePlatformSpecificImplementation<
-        fln.AndroidFlutterLocalNotificationsPlugin>()
-      ?.requestExactAlarmsPermission();
+        .resolvePlatformSpecificImplementation<
+            fln.AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestExactAlarmsPermission();
 
     return status.isGranted && iosGranted && macGranted;
   }
@@ -173,7 +177,8 @@ class PushNotificationService {
       );
       debugPrint('DEBUG: Successfully scheduled notification $id');
     } catch (e) {
-      debugPrint('DEBUG: Failed exact zonedSchedule, retrying with inexact mode: $e');
+      debugPrint(
+          'DEBUG: Failed exact zonedSchedule, retrying with inexact mode: $e');
       await _notifications.zonedSchedule(
         id,
         title,
@@ -184,7 +189,8 @@ class PushNotificationService {
         androidScheduleMode: fln.AndroidScheduleMode.inexactAllowWhileIdle,
         matchDateTimeComponents: matchDateTimeComponents,
       );
-      debugPrint('DEBUG: Successfully scheduled notification $id with inexact mode');
+      debugPrint(
+          'DEBUG: Successfully scheduled notification $id with inexact mode');
     }
   }
 
@@ -204,7 +210,7 @@ class PushNotificationService {
 
     debugPrint('DEBUG: daily scheduling - Now: $now');
     debugPrint('DEBUG: daily scheduling - Target (Naive): $scheduledDate');
-    
+
     // If time has passed today, schedule for tomorrow
     if (scheduledDate.isBefore(now)) {
       debugPrint('DEBUG: Target is before Now, adding 1 day');
@@ -213,7 +219,8 @@ class PushNotificationService {
 
     // Check exact alarm permission on Android
     final androidInfo = await _notifications
-      .resolvePlatformSpecificImplementation<fln.AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+            fln.AndroidFlutterLocalNotificationsPlugin>()
         ?.requestExactAlarmsPermission();
     debugPrint('DEBUG: Exact alarm permission request result: $androidInfo');
 
@@ -289,10 +296,10 @@ class PushNotificationService {
     required double percentageUsed,
     required double remaining,
   }) async {
-    final title = percentageUsed >= 100 
+    final title = percentageUsed >= 100
         ? 'Budget Exceeded: $budgetName'
         : 'Budget Alert: $budgetName';
-    
+
     final body = percentageUsed >= 100
         ? 'You\'ve exceeded your $budgetName budget. Review your spending habits.'
         : 'You\'ve used ${percentageUsed.toStringAsFixed(1)}% of your $budgetName budget. Consider reducing spending.';
@@ -301,7 +308,9 @@ class PushNotificationService {
       id: _generateNotificationId(),
       title: title,
       body: body,
-      priority: percentageUsed >= 100 ? NotificationPriority.urgent : NotificationPriority.high,
+      priority: percentageUsed >= 100
+          ? NotificationPriority.urgent
+          : NotificationPriority.high,
       payload: 'budget_alert:$budgetName',
     );
   }
@@ -313,7 +322,8 @@ class PushNotificationService {
     required String milestone,
   }) async {
     final title = 'Goal Milestone: $goalName';
-    final body = 'Congratulations! You\'ve reached $milestone of your $goalName goal. Keep up the great work!';
+    final body =
+        'Congratulations! You\'ve reached $milestone of your $goalName goal. Keep up the great work!';
 
     await showNotification(
       id: _generateNotificationId(),

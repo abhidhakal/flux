@@ -12,6 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../navigation_cubit.dart';
 import '../../../core/widgets/app_banner_ad.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -68,7 +69,10 @@ class _MainScreenState extends State<MainScreen> {
               children: [
                 const OfflineIndicator(),
                 Expanded(
-                  child: _screens[navState.currentIndex],
+                  child: IndexedStack(
+                    index: navState.currentIndex,
+                    children: _screens,
+                  ),
                 ),
               ],
             ),
@@ -103,22 +107,16 @@ class _MainScreenState extends State<MainScreen> {
                         borderRadius: BorderRadius.circular(30),
                         child: BottomNavigationBar(
                           currentIndex: navState.currentIndex,
-                          onTap: (index) {
-                            if (index == 3) {
-                              // Allow access to insights for everyone in ad-supported mode
-                              context.read<NavigationCubit>().setTab(index);
-                              return;
-                            }
-                            context.read<NavigationCubit>().setTab(index);
-                          },
+                          onTap: (index) =>
+                              context.read<NavigationCubit>().setTab(index),
                           type: BottomNavigationBarType.fixed,
                           backgroundColor: Colors.transparent,
                           selectedItemColor:
                               navTheme.selectedItemColor ?? colorScheme.primary,
                           unselectedItemColor: navTheme.unselectedItemColor ??
                               colorScheme.onSurfaceVariant,
-                          showSelectedLabels: true,
-                          showUnselectedLabels: true,
+                          showSelectedLabels: false,
+                          showUnselectedLabels: false,
                           selectedLabelStyle: navTheme.selectedLabelStyle ??
                               const TextStyle(
                                 fontWeight: FontWeight.w600,
@@ -130,36 +128,22 @@ class _MainScreenState extends State<MainScreen> {
                                 fontSize: 12,
                               ),
                           elevation: 0,
-                          items: const [
-                            BottomNavigationBarItem(
-                              icon: Icon(Icons.home_rounded),
-                              activeIcon: Icon(Icons.home_rounded, size: 24),
-                              label: 'Home',
-                            ),
-                            BottomNavigationBarItem(
-                              icon: Icon(Icons.wallet_rounded),
-                              activeIcon: Icon(Icons.wallet_rounded, size: 24),
-                              label: 'Budgets',
-                            ),
-                            BottomNavigationBarItem(
-                              icon: Icon(Icons.receipt_long_rounded),
-                              activeIcon: Icon(
-                                Icons.receipt_long_rounded,
-                                size: 24,
-                              ),
-                              label: 'Transactions',
-                            ),
-                            BottomNavigationBarItem(
-                              icon: Icon(Icons.bar_chart_rounded),
-                              activeIcon:
-                                  Icon(Icons.bar_chart_rounded, size: 24),
-                              label: 'Insights',
-                            ),
-                            BottomNavigationBarItem(
-                              icon: Icon(Icons.person_rounded),
-                              activeIcon: Icon(Icons.person_rounded, size: 24),
-                              label: 'Profile',
-                            ),
+                          items: [
+                            _navItem(LucideIcons.home, 'Home',
+                                selectedColor: navTheme.selectedItemColor ??
+                                    colorScheme.primary),
+                            _navItem(LucideIcons.wallet, 'Budgets',
+                                selectedColor: navTheme.selectedItemColor ??
+                                    colorScheme.primary),
+                            _navItem(LucideIcons.scrollText, 'Transactions',
+                                selectedColor: navTheme.selectedItemColor ??
+                                    colorScheme.primary),
+                            _navItem(LucideIcons.lineChart, 'Insights',
+                                selectedColor: navTheme.selectedItemColor ??
+                                    colorScheme.primary),
+                            _navItem(LucideIcons.user, 'Profile',
+                                selectedColor: navTheme.selectedItemColor ??
+                                    colorScheme.primary),
                           ],
                         ),
                       ),
@@ -172,6 +156,18 @@ class _MainScreenState extends State<MainScreen> {
           ),
         );
       },
+    );
+  }
+
+  /// Thin Lucide strokes read weakly at nav-bar size against a bare
+  /// color-only selected state, so the active icon gets a real size bump
+  /// on top of the color change to signal selection clearly.
+  BottomNavigationBarItem _navItem(IconData icon, String label,
+      {required Color selectedColor}) {
+    return BottomNavigationBarItem(
+      icon: Icon(icon, size: 26),
+      activeIcon: Icon(icon, size: 29, color: selectedColor),
+      label: label,
     );
   }
 }

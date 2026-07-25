@@ -899,13 +899,18 @@ class AppMotion {
   const AppMotion._();
 
   // Durations
-  static const Duration fast = Duration(milliseconds: 150); // micro-interactions: toggles, button presses
-  static const Duration medium = Duration(milliseconds: 250); // card/section transitions
-  static const Duration slow = Duration(milliseconds: 400); // screen-level entrances
+  static const Duration fast = Duration(
+      milliseconds: 150); // micro-interactions: toggles, button presses
+  static const Duration medium =
+      Duration(milliseconds: 250); // card/section transitions
+  static const Duration slow =
+      Duration(milliseconds: 400); // screen-level entrances
 
   // Curves
-  static const Curve standard = Curves.easeOutCubic; // default for most transitions
-  static const Curve emphasized = Curves.easeOutBack; // draws attention (success states, confirmations)
+  static const Curve standard =
+      Curves.easeOutCubic; // default for most transitions
+  static const Curve emphasized =
+      Curves.easeOutBack; // draws attention (success states, confirmations)
 }
 
 /// Haptic feedback vocabulary. Call at the point of user action, not on

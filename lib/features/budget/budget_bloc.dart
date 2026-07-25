@@ -129,7 +129,7 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
     Emitter<BudgetState> emit,
   ) async {
     emit(BudgetLoading());
-    
+
     try {
       final budgets = await _budgetService.getUserBudgets(event.userId);
       emit(BudgetLoaded(budgets));
@@ -143,17 +143,18 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
     Emitter<BudgetState> emit,
   ) async {
     emit(BudgetLoading());
-    
+
     try {
       await _budgetService.createBudget(event.budget);
-      
+
       // Reload budgets
       final budgets = await _budgetService.getUserBudgets(event.budget.userId);
       emit(BudgetLoaded(budgets));
       emit(BudgetSuccess('Budget created successfully!'));
-      
+
       // Trigger notification check
-      _notificationTriggerService.monitorBudgetChanges(event.budget.userId, budgets);
+      _notificationTriggerService.monitorBudgetChanges(
+          event.budget.userId, budgets);
     } catch (e) {
       emit(BudgetError('Failed to create budget: $e'));
     }
@@ -164,17 +165,18 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
     Emitter<BudgetState> emit,
   ) async {
     emit(BudgetLoading());
-    
+
     try {
       await _budgetService.updateBudget(event.budget);
-      
+
       // Reload budgets
       final budgets = await _budgetService.getUserBudgets(event.budget.userId);
       emit(BudgetLoaded(budgets));
       emit(BudgetSuccess('Budget updated successfully!'));
-      
+
       // Trigger notification check
-      _notificationTriggerService.monitorBudgetChanges(event.budget.userId, budgets);
+      _notificationTriggerService.monitorBudgetChanges(
+          event.budget.userId, budgets);
     } catch (e) {
       emit(BudgetError('Failed to update budget: $e'));
     }
@@ -185,11 +187,11 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
     Emitter<BudgetState> emit,
   ) async {
     emit(BudgetLoading());
-    
+
     try {
       await _budgetService.deleteBudget(event.budgetId);
       emit(BudgetSuccess('Budget deleted successfully!'));
-      
+
       // Reload budgets after deletion - we need to get userId from current state
       final currentState = state;
       if (currentState is BudgetLoaded && currentState.budgets.isNotEmpty) {
@@ -207,11 +209,11 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
     Emitter<BudgetState> emit,
   ) async {
     emit(BudgetLoading());
-    
+
     try {
       await _budgetService.processBudgetRollovers(event.userId);
       emit(BudgetSuccess('Budget rollovers processed successfully!'));
-      
+
       // Reload budgets
       final budgets = await _budgetService.getUserBudgets(event.userId);
       emit(BudgetLoaded(budgets));
@@ -225,11 +227,11 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
     Emitter<BudgetState> emit,
   ) async {
     emit(BudgetLoading());
-    
+
     try {
       await _budgetService.recalculateBudgetSpent(event.userId);
       emit(BudgetSuccess('Budget spent amounts recalculated successfully!'));
-      
+
       // Reload budgets
       final budgets = await _budgetService.getUserBudgets(event.userId);
       emit(BudgetLoaded(budgets));

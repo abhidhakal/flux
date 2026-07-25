@@ -4,6 +4,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import '../../../../core/constants/app_theme.dart';
 import '../../subscription_bloc.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -26,7 +27,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.close, color: colorScheme.onSurface),
+          icon: Icon(LucideIcons.x, color: colorScheme.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -35,7 +36,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
           if (state is SubscriptionPremium) {
             Navigator.of(context).pop();
             if (state.isNewPurchase) {
-              AppSnackbar.showSuccess(context, message: 'Welcome to Flux Premium!');
+              AppSnackbar.showSuccess(context,
+                  message: 'Welcome to Flux Premium!');
             }
           } else if (state is SubscriptionError) {
             AppSnackbar.showError(context, message: state.message);
@@ -51,7 +53,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
             products = state.products;
           }
 
-          if (products.isNotEmpty && !products.any((p) => p.id == _selectedPlanId)) {
+          if (products.isNotEmpty &&
+              !products.any((p) => p.id == _selectedPlanId)) {
             if (products.any((p) => p.id == 'premium_yearly')) {
               _selectedPlanId = 'premium_yearly';
             } else {
@@ -65,7 +68,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               child: Column(
                 children: [
                   const Spacer(flex: 1),
-                  
+
                   // Title
                   Text(
                     'Go Premium',
@@ -75,9 +78,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       color: colorScheme.onBackground,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 6),
-                  
+
                   Text(
                     'Unlock all features',
                     style: TextStyle(
@@ -85,26 +88,26 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       color: colorScheme.onBackground.withOpacity(0.6),
                     ),
                   ),
-                  
+
                   const Spacer(flex: 1),
-                  
+
                   // Features - compact
-                  _buildBenefitRow(Icons.flag_rounded, 'Unlimited custom goals'),
+                  _buildBenefitRow(LucideIcons.flag, 'Unlimited custom goals'),
                   const SizedBox(height: 10),
-                  _buildBenefitRow(Icons.download_rounded, 'Export your data'),
+                  _buildBenefitRow(LucideIcons.download, 'Export your data'),
                   const SizedBox(height: 10),
-                  _buildBenefitRow(Icons.insights_rounded, 'Advanced insights'),
-                  
+                  _buildBenefitRow(LucideIcons.lineChart, 'Advanced insights'),
+
                   const Spacer(flex: 1),
-                  
+
                   // Subscription options
                   if (products.isEmpty)
                     _buildErrorState()
                   else
                     ...products.map((product) => _buildPlanCard(product)),
-                  
+
                   const Spacer(flex: 1),
-                  
+
                   // CTA Button
                   if (products.isNotEmpty)
                     SizedBox(
@@ -116,8 +119,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             orElse: () => products.first,
                           );
                           context.read<SubscriptionBloc>().add(
-                            SubscriptionPurchaseRequested(product),
-                          );
+                                SubscriptionPurchaseRequested(product),
+                              );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
@@ -137,16 +140,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         ),
                       ),
                     ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // Restore + Cancel
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       TextButton(
                         onPressed: () {
-                          context.read<SubscriptionBloc>().add(SubscriptionRestoreRequested());
+                          context
+                              .read<SubscriptionBloc>()
+                              .add(SubscriptionRestoreRequested());
                         },
                         child: Text(
                           'Restore',
@@ -174,7 +179,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 8),
                 ],
               ),
@@ -214,7 +219,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
           ),
         ),
         const Spacer(),
-        Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20),
+        Icon(LucideIcons.checkCircle2, color: AppColors.success, size: 20),
       ],
     );
   }
@@ -223,17 +228,21 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final isSelected = _selectedPlanId == product.id;
     final isYearly = product.id == 'premium_yearly';
-    
+
     return GestureDetector(
       onTap: () => setState(() => _selectedPlanId = product.id),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.08) : colorScheme.surface,
+          color: isSelected
+              ? AppColors.primary.withOpacity(0.08)
+              : colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.primary : colorScheme.outline.withOpacity(0.3),
+            color: isSelected
+                ? AppColors.primary
+                : colorScheme.outline.withOpacity(0.3),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -264,7 +273,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   : null,
             ),
             const SizedBox(width: 12),
-            
+
             // Title
             Expanded(
               child: Column(
@@ -283,7 +292,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       if (isYearly) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: AppColors.success,
                             borderRadius: BorderRadius.circular(4),
@@ -303,7 +313,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 ],
               ),
             ),
-            
+
             // Price
             Text(
               product.price,
@@ -329,7 +339,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, color: colorScheme.error, size: 20),
+          Icon(LucideIcons.alertCircle, color: colorScheme.error, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(

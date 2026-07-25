@@ -5,7 +5,8 @@ import '../models/goal_model.dart';
 import '../models/goal_template_model.dart';
 
 class GoalTemplateService {
-  final firestore.FirebaseFirestore _firestore = firestore.FirebaseFirestore.instance;
+  final firestore.FirebaseFirestore _firestore =
+      firestore.FirebaseFirestore.instance;
   final Uuid _uuid = const Uuid();
 
   Future<List<GoalTemplate>> getGoalTemplates() async {
@@ -31,7 +32,8 @@ class GoalTemplateService {
   }
 
   // Get templates by category
-  Future<List<GoalTemplate>> getTemplatesByCategory(GoalTemplateCategory category) async {
+  Future<List<GoalTemplate>> getTemplatesByCategory(
+      GoalTemplateCategory category) async {
     try {
       final querySnapshot = await _firestore
           .collection('goal_templates')
@@ -43,8 +45,11 @@ class GoalTemplateService {
           .map((doc) => GoalTemplate.fromJson(doc.data()))
           .toList();
     } catch (e) {
-      debugPrint('GOAL TEMPLATE SERVICE: Error getting templates by category: $e');
-      return _getDefaultTemplates().where((t) => t.category == category).toList();
+      debugPrint(
+          'GOAL TEMPLATE SERVICE: Error getting templates by category: $e');
+      return _getDefaultTemplates()
+          .where((t) => t.category == category)
+          .toList();
     }
   }
 
@@ -64,13 +69,15 @@ class GoalTemplateService {
 
       // Sort by completion rate locally to avoid index requirement
       templates.sort((a, b) => b.completionRate.compareTo(a.completionRate));
-      
+
       return templates;
     } catch (e) {
       debugPrint('GOAL TEMPLATE SERVICE: Error getting popular templates: $e');
       // Fallback to default templates
-      final defaultTemplates = _getDefaultTemplates().where((t) => t.isPopular).toList();
-      defaultTemplates.sort((a, b) => b.completionRate.compareTo(a.completionRate));
+      final defaultTemplates =
+          _getDefaultTemplates().where((t) => t.isPopular).toList();
+      defaultTemplates
+          .sort((a, b) => b.completionRate.compareTo(a.completionRate));
       return defaultTemplates;
     }
   }
@@ -81,8 +88,9 @@ class GoalTemplateService {
       final allTemplates = await getAllTemplates();
       return allTemplates.where((template) {
         return template.name.toLowerCase().contains(query.toLowerCase()) ||
-               template.description.toLowerCase().contains(query.toLowerCase()) ||
-               template.tags.any((tag) => tag.toLowerCase().contains(query.toLowerCase()));
+            template.description.toLowerCase().contains(query.toLowerCase()) ||
+            template.tags
+                .any((tag) => tag.toLowerCase().contains(query.toLowerCase()));
       }).toList();
     } catch (e) {
       debugPrint('GOAL TEMPLATE SERVICE: Error searching templates: $e');
@@ -102,7 +110,9 @@ class GoalTemplateService {
       'name': customName ?? template.name,
       'description': template.description,
       'targetAmount': customAmount ?? template.suggestedAmount,
-      'targetDate': DateTime.now().add(Duration(days: (customDurationMonths ?? template.suggestedDurationMonths) * 30)),
+      'targetDate': DateTime.now().add(Duration(
+          days:
+              (customDurationMonths ?? template.suggestedDurationMonths) * 30)),
       'category': template.category.name,
       'icon': template.icon,
       'tags': template.tags,
@@ -158,14 +168,14 @@ class GoalTemplateService {
   Future<void> initializeDefaultTemplates() async {
     try {
       final templates = _getDefaultTemplates();
-      
+
       for (final template in templates) {
         await _firestore
             .collection('goal_templates')
             .doc(template.id)
             .set(template.toJson());
       }
-      
+
       debugPrint('GOAL TEMPLATE SERVICE: Default templates initialized');
     } catch (e) {
       debugPrint('GOAL TEMPLATE SERVICE: Error initializing templates: $e');
@@ -175,13 +185,14 @@ class GoalTemplateService {
   // Get default templates
   List<GoalTemplate> _getDefaultTemplates() {
     final now = DateTime.now();
-    
+
     return [
       // House Templates
       GoalTemplate(
         id: 'house_down_payment',
         name: 'House Down Payment',
-        description: 'Save for a 20% down payment on your dream home. This template helps you plan for one of life\'s biggest investments.',
+        description:
+            'Save for a 20% down payment on your dream home. This template helps you plan for one of life\'s biggest investments.',
         category: GoalTemplateCategory.house,
         difficulty: GoalTemplateDifficulty.hard,
         suggestedAmount: 50000.0,
@@ -202,11 +213,12 @@ class GoalTemplateService {
         createdAt: now,
         updatedAt: now,
       ),
-      
+
       GoalTemplate(
         id: 'home_renovation',
         name: 'Home Renovation',
-        description: 'Transform your space with a kitchen remodel, bathroom upgrade, or whole-home renovation.',
+        description:
+            'Transform your space with a kitchen remodel, bathroom upgrade, or whole-home renovation.',
         category: GoalTemplateCategory.house,
         difficulty: GoalTemplateDifficulty.medium,
         suggestedAmount: 25000.0,
@@ -231,7 +243,8 @@ class GoalTemplateService {
       GoalTemplate(
         id: 'new_car',
         name: 'New Car Purchase',
-        description: 'Buy your dream car with cash or a substantial down payment to reduce financing costs.',
+        description:
+            'Buy your dream car with cash or a substantial down payment to reduce financing costs.',
         category: GoalTemplateCategory.car,
         difficulty: GoalTemplateDifficulty.medium,
         suggestedAmount: 35000.0,
@@ -255,7 +268,8 @@ class GoalTemplateService {
       GoalTemplate(
         id: 'car_maintenance_fund',
         name: 'Car Maintenance Fund',
-        description: 'Build a fund for regular maintenance, repairs, and unexpected car expenses.',
+        description:
+            'Build a fund for regular maintenance, repairs, and unexpected car expenses.',
         category: GoalTemplateCategory.car,
         difficulty: GoalTemplateDifficulty.easy,
         suggestedAmount: 5000.0,
@@ -263,7 +277,13 @@ class GoalTemplateService {
         tags: ['maintenance', 'repairs', 'emergency', 'vehicle care'],
         icon: '🔧',
         metadata: {
-          'maintenanceTypes': ['oil changes', 'tires', 'brakes', 'battery', 'emergency repairs'],
+          'maintenanceTypes': [
+            'oil changes',
+            'tires',
+            'brakes',
+            'battery',
+            'emergency repairs'
+          ],
           'tips': [
             'Follow manufacturer\'s maintenance schedule',
             'Keep receipts for warranty claims',
@@ -280,7 +300,8 @@ class GoalTemplateService {
       GoalTemplate(
         id: 'dream_vacation',
         name: 'Dream Vacation',
-        description: 'Plan and save for that once-in-a-lifetime trip you\'ve always wanted to take.',
+        description:
+            'Plan and save for that once-in-a-lifetime trip you\'ve always wanted to take.',
         category: GoalTemplateCategory.vacation,
         difficulty: GoalTemplateDifficulty.medium,
         suggestedAmount: 8000.0,
@@ -288,7 +309,13 @@ class GoalTemplateService {
         tags: ['travel', 'vacation', 'trip', 'adventure', 'relaxation'],
         icon: '✈️',
         metadata: {
-          'destinationTypes': ['international', 'domestic', 'cruise', 'adventure', 'luxury'],
+          'destinationTypes': [
+            'international',
+            'domestic',
+            'cruise',
+            'adventure',
+            'luxury'
+          ],
           'tips': [
             'Book flights 2-3 months in advance for best prices',
             'Consider travel insurance for expensive trips',
@@ -304,7 +331,8 @@ class GoalTemplateService {
       GoalTemplate(
         id: 'annual_vacation',
         name: 'Annual Vacation Fund',
-        description: 'Set aside money each year for regular vacations and getaways.',
+        description:
+            'Set aside money each year for regular vacations and getaways.',
         category: GoalTemplateCategory.vacation,
         difficulty: GoalTemplateDifficulty.easy,
         suggestedAmount: 3000.0,
@@ -312,7 +340,12 @@ class GoalTemplateService {
         tags: ['annual', 'regular', 'getaway', 'family trip'],
         icon: '🏖️',
         metadata: {
-          'vacationTypes': ['weekend getaways', 'family trips', 'romantic getaways', 'solo travel'],
+          'vacationTypes': [
+            'weekend getaways',
+            'family trips',
+            'romantic getaways',
+            'solo travel'
+          ],
           'tips': [
             'Plan ahead to take advantage of early booking discounts',
             'Consider off-season travel for better deals',
@@ -329,7 +362,8 @@ class GoalTemplateService {
       GoalTemplate(
         id: 'college_fund',
         name: 'College Education Fund',
-        description: 'Save for higher education expenses including tuition, books, and living costs.',
+        description:
+            'Save for higher education expenses including tuition, books, and living costs.',
         category: GoalTemplateCategory.education,
         difficulty: GoalTemplateDifficulty.hard,
         suggestedAmount: 100000.0,
@@ -337,7 +371,12 @@ class GoalTemplateService {
         tags: ['education', 'college', 'tuition', 'student loans', 'future'],
         icon: '🎓',
         metadata: {
-          'educationTypes': ['undergraduate', 'graduate', 'professional', 'trade school'],
+          'educationTypes': [
+            'undergraduate',
+            'graduate',
+            'professional',
+            'trade school'
+          ],
           'tips': [
             'Research 529 plans and education savings accounts',
             'Consider community college for first two years',
@@ -353,7 +392,8 @@ class GoalTemplateService {
       GoalTemplate(
         id: 'professional_development',
         name: 'Professional Development',
-        description: 'Invest in your career with courses, certifications, conferences, and skill development.',
+        description:
+            'Invest in your career with courses, certifications, conferences, and skill development.',
         category: GoalTemplateCategory.education,
         difficulty: GoalTemplateDifficulty.easy,
         suggestedAmount: 2000.0,
@@ -361,7 +401,13 @@ class GoalTemplateService {
         tags: ['career', 'skills', 'certification', 'training', 'growth'],
         icon: '📚',
         metadata: {
-          'developmentTypes': ['online courses', 'certifications', 'conferences', 'workshops', 'books'],
+          'developmentTypes': [
+            'online courses',
+            'certifications',
+            'conferences',
+            'workshops',
+            'books'
+          ],
           'tips': [
             'Check if your employer offers tuition reimbursement',
             'Look for free online courses and resources',
@@ -378,7 +424,8 @@ class GoalTemplateService {
       GoalTemplate(
         id: 'emergency_fund',
         name: 'Emergency Fund',
-        description: 'Build a safety net to cover 3-6 months of expenses in case of job loss or unexpected expenses.',
+        description:
+            'Build a safety net to cover 3-6 months of expenses in case of job loss or unexpected expenses.',
         category: GoalTemplateCategory.emergency,
         difficulty: GoalTemplateDifficulty.medium,
         suggestedAmount: 15000.0,
@@ -386,7 +433,13 @@ class GoalTemplateService {
         tags: ['emergency', 'safety net', 'financial security', 'unexpected'],
         icon: '🛡️',
         metadata: {
-          'emergencyTypes': ['job loss', 'medical emergency', 'car repair', 'home repair', 'family emergency'],
+          'emergencyTypes': [
+            'job loss',
+            'medical emergency',
+            'car repair',
+            'home repair',
+            'family emergency'
+          ],
           'tips': [
             'Keep emergency fund in high-yield savings account',
             'Don\'t invest emergency fund in volatile assets',
@@ -403,7 +456,8 @@ class GoalTemplateService {
       GoalTemplate(
         id: 'retirement_catch_up',
         name: 'Retirement Catch-Up',
-        description: 'Accelerate your retirement savings if you\'re behind on your retirement goals.',
+        description:
+            'Accelerate your retirement savings if you\'re behind on your retirement goals.',
         category: GoalTemplateCategory.retirement,
         difficulty: GoalTemplateDifficulty.hard,
         suggestedAmount: 50000.0,
@@ -411,7 +465,13 @@ class GoalTemplateService {
         tags: ['retirement', '401k', 'ira', 'future', 'financial independence'],
         icon: '🏝️',
         metadata: {
-          'retirementTypes': ['401k', 'IRA', 'roth ira', 'pension', 'social security'],
+          'retirementTypes': [
+            '401k',
+            'IRA',
+            'roth ira',
+            'pension',
+            'social security'
+          ],
           'tips': [
             'Maximize employer 401k matching',
             'Consider catch-up contributions if over 50',
@@ -428,7 +488,8 @@ class GoalTemplateService {
       GoalTemplate(
         id: 'wedding_fund',
         name: 'Wedding Fund',
-        description: 'Save for your dream wedding, including venue, catering, photography, and all the special details.',
+        description:
+            'Save for your dream wedding, including venue, catering, photography, and all the special details.',
         category: GoalTemplateCategory.wedding,
         difficulty: GoalTemplateDifficulty.medium,
         suggestedAmount: 25000.0,
@@ -436,7 +497,13 @@ class GoalTemplateService {
         tags: ['wedding', 'marriage', 'celebration', 'special day'],
         icon: '💍',
         metadata: {
-          'weddingTypes': ['traditional', 'destination', 'intimate', 'luxury', 'budget-friendly'],
+          'weddingTypes': [
+            'traditional',
+            'destination',
+            'intimate',
+            'luxury',
+            'budget-friendly'
+          ],
           'tips': [
             'Create a detailed wedding budget spreadsheet',
             'Consider weekday or off-season weddings for savings',
@@ -453,15 +520,28 @@ class GoalTemplateService {
       GoalTemplate(
         id: 'startup_fund',
         name: 'Business Startup Fund',
-        description: 'Launch your own business with sufficient capital for initial expenses and operating costs.',
+        description:
+            'Launch your own business with sufficient capital for initial expenses and operating costs.',
         category: GoalTemplateCategory.business,
         difficulty: GoalTemplateDifficulty.expert,
         suggestedAmount: 50000.0,
         suggestedDurationMonths: 36,
-        tags: ['business', 'startup', 'entrepreneur', 'investment', 'independence'],
+        tags: [
+          'business',
+          'startup',
+          'entrepreneur',
+          'investment',
+          'independence'
+        ],
         icon: '🚀',
         metadata: {
-          'businessTypes': ['online', 'retail', 'service', 'manufacturing', 'consulting'],
+          'businessTypes': [
+            'online',
+            'retail',
+            'service',
+            'manufacturing',
+            'consulting'
+          ],
           'tips': [
             'Create a detailed business plan',
             'Research market and competition',
@@ -478,7 +558,8 @@ class GoalTemplateService {
       GoalTemplate(
         id: 'health_emergency_fund',
         name: 'Health Emergency Fund',
-        description: 'Prepare for unexpected medical expenses, procedures, or health-related emergencies.',
+        description:
+            'Prepare for unexpected medical expenses, procedures, or health-related emergencies.',
         category: GoalTemplateCategory.health,
         difficulty: GoalTemplateDifficulty.medium,
         suggestedAmount: 10000.0,
@@ -486,7 +567,13 @@ class GoalTemplateService {
         tags: ['health', 'medical', 'emergency', 'wellness', 'insurance'],
         icon: '🏥',
         metadata: {
-          'healthTypes': ['medical emergency', 'dental work', 'surgery', 'therapy', 'medications'],
+          'healthTypes': [
+            'medical emergency',
+            'dental work',
+            'surgery',
+            'therapy',
+            'medications'
+          ],
           'tips': [
             'Review your health insurance coverage',
             'Consider health savings accounts (HSA)',
@@ -530,12 +617,10 @@ class GoalTemplateService {
 
       return {
         'totalUsage': usageSnapshot.docs.length,
-        'recentUsage': usageSnapshot.docs
-            .where((doc) {
-              final usedAt = DateTime.parse(doc.data()['usedAt']);
-              return DateTime.now().difference(usedAt).inDays <= 30;
-            })
-            .length,
+        'recentUsage': usageSnapshot.docs.where((doc) {
+          final usedAt = DateTime.parse(doc.data()['usedAt']);
+          return DateTime.now().difference(usedAt).inDays <= 30;
+        }).length,
       };
     } catch (e) {
       debugPrint('GOAL TEMPLATE SERVICE: Error getting stats: $e');

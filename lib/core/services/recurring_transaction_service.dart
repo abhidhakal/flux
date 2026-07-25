@@ -57,9 +57,11 @@ class RecurringTransactionService {
           .collection('recurring_transactions')
           .doc(recurring.id)
           .set(
-            recurring.copyWith(
-              updatedAt: DateTime.now(),
-            ).toJson(),
+            recurring
+                .copyWith(
+                  updatedAt: DateTime.now(),
+                )
+                .toJson(),
           );
     } catch (e) {
       debugPrint('Failed to update recurring transaction: $e');
@@ -193,13 +195,12 @@ class RecurringTransactionService {
     RecurringTransactionFrequency frequency,
   ) {
     return switch (frequency) {
-      RecurringTransactionFrequency.daily => current.add(const Duration(days: 1)),
+      RecurringTransactionFrequency.daily =>
+        current.add(const Duration(days: 1)),
       RecurringTransactionFrequency.weekly =>
         current.add(const Duration(days: 7)),
-      RecurringTransactionFrequency.monthly =>
-        _addMonthsClamped(current, 1),
-      RecurringTransactionFrequency.yearly =>
-        DateTime(
+      RecurringTransactionFrequency.monthly => _addMonthsClamped(current, 1),
+      RecurringTransactionFrequency.yearly => DateTime(
           current.year + 1,
           current.month,
           _clampDay(current.year + 1, current.month, current.day),

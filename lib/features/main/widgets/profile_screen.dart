@@ -18,10 +18,13 @@ import '../screens/terms_of_service_screen.dart';
 import '../../../core/services/widget_service.dart';
 import '../../theme/theme_bloc.dart';
 import '../../notifications/screens/notification_settings_screen.dart';
+import '../../../shared/widgets/app_bottom_sheet.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/stat_tile.dart';
 import '../../../core/services/user_progress_service.dart';
 import 'edit_profile_dialog.dart';
 import 'export_data_dialog.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -39,24 +42,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   final ImagePicker _picker = ImagePicker();
   final ProfilePictureService _profilePictureService = ProfilePictureService();
   final UserProgressService _userProgressService = UserProgressService();
-
-  final List<Map<String, String>> _countries = [
-    {'name': 'United States', 'currency': 'USD', 'symbol': '\$'},
-    {'name': 'United Kingdom', 'currency': 'GBP', 'symbol': '£'},
-    {'name': 'European Union', 'currency': 'EUR', 'symbol': '€'},
-    {'name': 'Japan', 'currency': 'JPY', 'symbol': '¥'},
-    {'name': 'Canada', 'currency': 'CAD', 'symbol': 'C\$'},
-    {'name': 'Australia', 'currency': 'AUD', 'symbol': 'A\$'},
-    {'name': 'India', 'currency': 'INR', 'symbol': '₹'},
-    {'name': 'China', 'currency': 'CNY', 'symbol': '¥'},
-    {'name': 'Brazil', 'currency': 'BRL', 'symbol': 'R\$'},
-    {'name': 'South Korea', 'currency': 'KRW', 'symbol': '₩'},
-    {'name': 'Nepal', 'currency': 'NPR', 'symbol': 'Rs.'},
-    {'name': 'Mexico', 'currency': 'MXN', 'symbol': '\$'},
-    {'name': 'Singapore', 'currency': 'SGD', 'symbol': 'S\$'},
-    {'name': 'Switzerland', 'currency': 'CHF', 'symbol': 'CHF'},
-    {'name': 'New Zealand', 'currency': 'NZD', 'symbol': 'NZ\$'},
-  ];
 
   @override
   void initState() {
@@ -151,13 +136,13 @@ class _ProfileScreenState extends State<ProfileScreen>
               _buildSectionHeader('General', colorScheme),
               _buildSettingsGroup([
                 _SettingsItem(
-                  icon: Icons.person_outline_rounded,
+                  icon: LucideIcons.user,
                   title: 'Edit Profile',
                   subtitle: user.displayName ?? user.email,
                   onTap: () => showEditProfileDialog(context, user),
                 ),
                 _SettingsItem(
-                  icon: Icons.currency_exchange_rounded,
+                  icon: LucideIcons.coins,
                   title: 'Currency',
                   subtitle: _selectedCountry,
                   onTap: () => _showCurrencyPicker(),
@@ -174,13 +159,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                   }
                   return _buildSettingsGroup([
                     _SettingsItem(
-                      icon: Icons.palette_outlined,
+                      icon: LucideIcons.palette,
                       title: 'Appearance',
                       subtitle: mode,
                       onTap: () => _showAppearancePopup(),
                     ),
                     _SettingsItem(
-                      icon: Icons.notifications_outlined,
+                      icon: LucideIcons.bell,
                       title: 'Notifications',
                       subtitle: 'Manage alerts',
                       onTap: () {
@@ -200,13 +185,13 @@ class _ProfileScreenState extends State<ProfileScreen>
               _buildSectionHeader('Data & Privacy', colorScheme),
               _buildSettingsGroup([
                 _SettingsItem(
-                  icon: Icons.download_outlined,
+                  icon: LucideIcons.download,
                   title: 'Export Data',
                   subtitle: 'CSV or PDF',
                   onTap: () => showExportFormatDialog(context),
                 ),
                 _SettingsItem(
-                  icon: Icons.privacy_tip_outlined,
+                  icon: LucideIcons.shieldCheck,
                   title: 'Privacy Policy',
                   onTap: () {
                     Navigator.push(
@@ -218,7 +203,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   },
                 ),
                 _SettingsItem(
-                  icon: Icons.description_outlined,
+                  icon: LucideIcons.fileText,
                   title: 'Terms of Service',
                   onTap: () {
                     Navigator.push(
@@ -234,7 +219,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               _buildSectionHeader('Support', colorScheme),
               _buildSettingsGroup([
                 _SettingsItem(
-                  icon: Icons.info_outline_rounded,
+                  icon: LucideIcons.info,
                   title: 'About Flux',
                   onTap: () => _navigateToAboutUs(),
                 ),
@@ -264,7 +249,29 @@ class _ProfileScreenState extends State<ProfileScreen>
         bottom: 20,
       ),
       padding: const EdgeInsets.all(24),
-      decoration: AppTheme.surfaceDecoration(context, radius: 28),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.primary.withOpacity(0.12),
+            AppTheme.cardSurface(context),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: colorScheme.outline.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.34 : 0.10),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+                alpha: theme.brightness == Brightness.dark ? 0.18 : 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -296,10 +303,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                             width: 2,
                           ),
                         ),
-                        child: _profilePictureService.buildProfileAvatar(
-                          displayName: user.displayName,
-                          colorScheme: colorScheme,
-                          radius: 42,
+                        child: ListenableBuilder(
+                          listenable: _profilePictureService,
+                          builder: (context, _) =>
+                              _profilePictureService.buildProfileAvatar(
+                            displayName: user.displayName,
+                            colorScheme: colorScheme,
+                            radius: 42,
+                          ),
                         ),
                       ),
                     ),
@@ -317,7 +328,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ),
                         ),
                         child: Icon(
-                          Icons.camera_alt_rounded,
+                          LucideIcons.camera,
                           color: colorScheme.onPrimary,
                           size: 13,
                         ),
@@ -351,7 +362,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       runSpacing: 10,
                       children: [
                         _buildHeaderPill(
-                          icon: Icons.local_fire_department_rounded,
+                          icon: LucideIcons.flame,
                           label: UserProgressService.formatStreakLabel(
                             progressSnapshot.currentStreak,
                           ),
@@ -432,51 +443,32 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Row(
       children: [
         Expanded(
-          child:
-              _buildStatCard('$transactionCount', 'Transactions', colorScheme),
+          child: _buildStatCard('$transactionCount', 'Transactions'),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildStatCard('$goalsCount', 'Active goals', colorScheme),
+          child: _buildStatCard('$goalsCount', 'Active goals'),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(
             '${progressSnapshot.activeDays}',
             'Active days',
-            colorScheme,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStatCard(String value, String label, ColorScheme colorScheme) {
-    return Container(
+  Widget _buildStatCard(String value, String label) {
+    return StatTile(
+      label: label,
+      value: value,
+      radius: 20,
+      bordered: true,
+      valueFirst: true,
+      valueFontSize: 21,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-      decoration: AppTheme.surfaceDecoration(context, radius: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.w700,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -547,7 +539,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             )
           : null,
       trailing: Icon(
-        Icons.chevron_right_rounded,
+        LucideIcons.chevronRight,
         color: colorScheme.onSurfaceVariant.withOpacity(0.5),
       ),
       onTap: item.onTap,
@@ -557,16 +549,15 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildSignOutButton(ColorScheme colorScheme) {
     return OutlinedButton.icon(
       onPressed: () => _showSignOutDialog(),
-      icon: Icon(Icons.logout_rounded, color: colorScheme.onError),
+      icon: Icon(LucideIcons.logOut, color: colorScheme.error, size: 18),
       label: Text(
         'Sign Out',
-        style:
-            TextStyle(color: colorScheme.onError, fontWeight: FontWeight.w600),
+        style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.w600),
       ),
       style: OutlinedButton.styleFrom(
-        backgroundColor: colorScheme.error,
-        side: BorderSide(color: colorScheme.error),
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        backgroundColor: colorScheme.error.withOpacity(0.06),
+        side: BorderSide(color: colorScheme.error.withOpacity(0.25)),
+        padding: const EdgeInsets.symmetric(vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
     );
@@ -576,27 +567,15 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   void _showCurrencyPicker() {
     final colorScheme = Theme.of(context).colorScheme;
-    showModalBottomSheet(
-      context: context,
+    AppBottomSheet.show(
+      context,
+      radius: 24,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      padding: EdgeInsets.zero,
+      builder: (context) => SizedBox(
         height: MediaQuery.of(context).size.height * 0.6,
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
         child: Column(
           children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colorScheme.onSurface.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
             Padding(
               padding: const EdgeInsets.all(20),
               child: Text(
@@ -609,35 +588,39 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
             ),
             Expanded(
-              child: ListView.builder(
-                itemCount: _countries.length,
-                itemBuilder: (context, index) {
-                  final country = _countries[index];
-                  final isSelected = country['name'] == _selectedCountry;
-                  return ListTile(
-                    leading: _buildFlag(country['name']!),
-                    title: Text(country['name']!),
-                    subtitle: Text(country['currency']!),
-                    trailing: isSelected
-                        ? Icon(Icons.check_circle, color: colorScheme.primary)
-                        : null,
-                    onTap: () async {
-                      setState(() {
-                        _selectedCountry = country['name']!;
-                      });
-                      await CurrencyService().setCurrency(country['currency']!);
-                      if (context.mounted) {
-                        WidgetService.refreshWidgets(context);
-                      }
-                      Navigator.pop(context);
-                      AppSnackbar.showSuccess(
-                        context,
-                        message: 'Currency updated to ${country['currency']}',
-                      );
-                    },
-                  );
-                },
-              ),
+              child: Builder(builder: (context) {
+                final countries = CurrencyService().getAvailableCurrencies();
+                return ListView.builder(
+                  itemCount: countries.length,
+                  itemBuilder: (context, index) {
+                    final country = countries[index];
+                    final isSelected = country['country'] == _selectedCountry;
+                    return ListTile(
+                      leading: _buildFlag(country['country']!),
+                      title: Text(country['country']!),
+                      subtitle: Text(country['code']!),
+                      trailing: isSelected
+                          ? Icon(LucideIcons.checkCircle2,
+                              color: colorScheme.primary)
+                          : null,
+                      onTap: () async {
+                        setState(() {
+                          _selectedCountry = country['country']!;
+                        });
+                        await CurrencyService().setCurrency(country['code']!);
+                        if (context.mounted) {
+                          WidgetService.refreshWidgets(context);
+                        }
+                        Navigator.pop(context);
+                        AppSnackbar.showSuccess(
+                          context,
+                          message: 'Currency updated to ${country['code']}',
+                        );
+                      },
+                    );
+                  },
+                );
+              }),
             ),
           ],
         ),
@@ -667,72 +650,56 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (emoji != null) {
       return Text(emoji, style: const TextStyle(fontSize: 24));
     }
-    return const Icon(Icons.flag_rounded, size: 24);
+    return const Icon(LucideIcons.flag, size: 24);
   }
 
   void _showAppearancePopup() {
     final colorScheme = Theme.of(context).colorScheme;
     final themeBloc = context.read<ThemeBloc>();
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
+    AppBottomSheet.show(
+      context,
+      radius: 24,
+      isScrollControlled: false,
       builder: (dialogContext) => BlocProvider.value(
         value: themeBloc,
         child: BlocBuilder<ThemeBloc, ThemeState>(
           builder: (context, state) {
             final current =
                 state is ThemeLoaded ? state.themeMode : ThemeMode.system;
-            return Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colorScheme.onSurface.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Appearance',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Appearance',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildThemeOption(
-                      'Light',
-                      Icons.light_mode_rounded,
-                      current == ThemeMode.light,
-                      () => _changeTheme(dialogContext, ThemeMode.light),
-                      colorScheme),
-                  const SizedBox(height: 12),
-                  _buildThemeOption(
-                      'Dark',
-                      Icons.dark_mode_rounded,
-                      current == ThemeMode.dark,
-                      () => _changeTheme(dialogContext, ThemeMode.dark),
-                      colorScheme),
-                  const SizedBox(height: 12),
-                  _buildThemeOption(
-                      'System',
-                      Icons.phone_android_rounded,
-                      current == ThemeMode.system,
-                      () => _changeTheme(dialogContext, ThemeMode.system),
-                      colorScheme),
-                  const SizedBox(height: 20),
-                ],
-              ),
+                ),
+                const SizedBox(height: 24),
+                _buildThemeOption(
+                    'Light',
+                    LucideIcons.sun,
+                    current == ThemeMode.light,
+                    () => _changeTheme(dialogContext, ThemeMode.light),
+                    colorScheme),
+                const SizedBox(height: 12),
+                _buildThemeOption(
+                    'Dark',
+                    LucideIcons.moon,
+                    current == ThemeMode.dark,
+                    () => _changeTheme(dialogContext, ThemeMode.dark),
+                    colorScheme),
+                const SizedBox(height: 12),
+                _buildThemeOption(
+                    'System',
+                    LucideIcons.smartphone,
+                    current == ThemeMode.system,
+                    () => _changeTheme(dialogContext, ThemeMode.system),
+                    colorScheme),
+                const SizedBox(height: 20),
+              ],
             );
           },
         ),
@@ -763,7 +730,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               color: colorScheme.onSurface,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)),
       trailing: isSelected
-          ? Icon(Icons.check_circle, color: colorScheme.primary)
+          ? Icon(LucideIcons.checkCircle2, color: colorScheme.primary)
           : null,
       onTap: onTap,
     );
@@ -782,154 +749,122 @@ class _ProfileScreenState extends State<ProfileScreen>
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
+    AppBottomSheet.show(
+      context,
+      radius: 28,
       isScrollControlled: true,
-      builder: (dialogContext) => Container(
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        padding: EdgeInsets.fromLTRB(
-            24, 12, 24, 40 + MediaQuery.of(context).viewInsets.bottom),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: cs.onSurfaceVariant.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
+      padding: EdgeInsets.fromLTRB(
+          24, 12, 24, 40 + MediaQuery.of(context).viewInsets.bottom),
+      builder: (dialogContext) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Icon
+          Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              color: cs.error.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(22),
             ),
-            const SizedBox(height: 28),
-            // Icon
-            Container(
-              width: 68,
-              height: 68,
-              decoration: BoxDecoration(
-                color: cs.error.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Icon(Icons.logout_rounded, color: cs.error, size: 32),
+            child: Icon(LucideIcons.logOut, color: cs.error, size: 32),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Sign Out',
+            style: theme.textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "You'll be returned to the welcome screen.\nYour data will remain safe.",
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+              height: 1.5,
             ),
-            const SizedBox(height: 20),
-            Text(
-              'Sign Out',
-              style: theme.textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "You'll be returned to the welcome screen.\nYour data will remain safe.",
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onSurfaceVariant,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 32),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(dialogContext),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                      side: BorderSide(color: cs.outline.withOpacity(0.4)),
-                    ),
-                    child: Text('Cancel',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, color: cs.onSurface)),
+          ),
+          const SizedBox(height: 32),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    side: BorderSide(color: cs.outline.withOpacity(0.4)),
                   ),
+                  child: Text('Cancel',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600, color: cs.onSurface)),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () {
-                      Navigator.pop(dialogContext);
-                      authBloc.add(SignOutRequested());
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: cs.error,
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
-                    child: const Text('Sign Out',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    authBloc.add(SignOutRequested());
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: cs.error,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                   ),
+                  child: const Text('Sign Out',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   void _showImagePickerOptions() {
     final colorScheme = Theme.of(context).colorScheme;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2)),
+    AppBottomSheet.show(
+      context,
+      radius: 20,
+      isScrollControlled: false,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Change Profile Picture',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface)),
+          const SizedBox(height: 20),
+          ListTile(
+              leading: Icon(LucideIcons.camera, color: colorScheme.primary),
+              title: const Text('Take Photo'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              }),
+          ListTile(
+              leading: Icon(LucideIcons.image, color: colorScheme.primary),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              }),
+          if (_profilePictureService.hasProfileImage)
+            ListTile(
+              leading: Icon(LucideIcons.trash2, color: colorScheme.error),
+              title: Text('Remove Photo',
+                  style: TextStyle(color: colorScheme.error)),
+              onTap: () async {
+                Navigator.pop(context);
+                await _removeProfileImage();
+              },
             ),
-            const SizedBox(height: 20),
-            Text('Change Profile Picture',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface)),
-            const SizedBox(height: 20),
-            ListTile(
-                leading:
-                    Icon(Icons.camera_alt_rounded, color: colorScheme.primary),
-                title: const Text('Take Photo'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
-                }),
-            ListTile(
-                leading: Icon(Icons.photo_library_rounded,
-                    color: colorScheme.primary),
-                title: const Text('Choose from Gallery'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
-                }),
-            if (_profilePictureService.hasProfileImage)
-              ListTile(
-                leading: Icon(Icons.delete_rounded, color: colorScheme.error),
-                title: Text('Remove Photo',
-                    style: TextStyle(color: colorScheme.error)),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _removeProfileImage();
-                },
-              ),
-            const SizedBox(height: 20),
-          ],
-        ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }

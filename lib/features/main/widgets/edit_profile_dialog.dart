@@ -5,6 +5,8 @@ import '../../../core/models/user_model.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../auth/auth_bloc.dart';
+import '../../../shared/widgets/app_bottom_sheet.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 void showEditProfileDialog(BuildContext context, User user) {
   final authService = AuthService();
@@ -22,10 +24,11 @@ void showEditProfileDialog(BuildContext context, User user) {
   final emailKey = GlobalKey<FormFieldState>();
   final pwKey = GlobalKey<FormState>();
 
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
+  AppBottomSheet.show(
+    context,
+    radius: 28,
     isScrollControlled: true,
+    padding: EdgeInsets.zero,
     builder: (sheetCtx) {
       bool savingName = false;
       bool savingEmail = false;
@@ -39,83 +42,141 @@ void showEditProfileDialog(BuildContext context, User user) {
           return Padding(
             padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom),
-            child: Container(
-              decoration: BoxDecoration(
-                color: cs.surface,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(28)),
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Handle
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: cs.onSurfaceVariant.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(2),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Edit Profile',
+                      style: theme.textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 32),
+
+                  // ── Display Name ────────────────────────────
+                  Text('Display Name',
+                      style: theme.textTheme.labelLarge
+                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          key: nameKey,
+                          controller: nameController,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: _inputDeco(cs, hint: 'Your name'),
+                          validator: (v) => v == null || v.trim().isEmpty
+                              ? 'Enter a name'
+                              : null,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text('Edit Profile',
-                        style: theme.textTheme.headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 32),
+                      const SizedBox(width: 10),
+                      _saveButton(
+                        loading: savingName,
+                        onTap: () async {
+                          if (nameKey.currentState?.validate() != true) {
+                            return;
+                          }
+                          setState(() => savingName = true);
+                          try {
+                            await authService.updateProfile(
+                              userId: user.id,
+                              displayName: nameController.text.trim(),
+                            );
+                            if (context.mounted) {
+                              context
+                                  .read<AuthBloc>()
+                                  .add(AuthCheckRequested());
+                              Navigator.pop(sheetCtx);
+                              AppSnackbar.showSuccess(
+                                context,
+                                message: 'Name updated',
+                              );
+                            }
+                          } catch (e) {
+                            setState(() => savingName = false);
+                            if (context.mounted) {
+                              AppSnackbar.showError(
+                                context,
+                                message:
+                                    e.toString().replaceAll('Exception: ', ''),
+                              );
+                            }
+                          }
+                        },
+                        cs: cs,
+                      ),
+                    ],
+                  ),
 
-                    // ── Display Name ────────────────────────────
-                    Text('Display Name',
+                  if (isEmailUser) ...[
+                    const SizedBox(height: 28),
+                    Divider(color: cs.outline.withOpacity(0.15)),
+                    const SizedBox(height: 20),
+
+                    // ── Email ──────────────────────────────────
+                    Text('Change Email',
                         style: theme.textTheme.labelLarge
                             ?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text(
+                      'A verification link will be sent to the new address.',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: cs.onSurfaceVariant),
+                    ),
                     const SizedBox(height: 8),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: TextFormField(
-                            key: nameKey,
-                            controller: nameController,
-                            textCapitalization: TextCapitalization.words,
-                            decoration: _inputDeco(cs, hint: 'Your name'),
-                            validator: (v) => v == null || v.trim().isEmpty
-                                ? 'Enter a name'
-                                : null,
+                            key: emailKey,
+                            controller: emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration:
+                                _inputDeco(cs, hint: 'New email address'),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Enter an email';
+                              }
+                              if (!v.contains('@')) {
+                                return 'Enter a valid email';
+                              }
+                              return null;
+                            },
                           ),
                         ),
                         const SizedBox(width: 10),
                         _saveButton(
-                          loading: savingName,
+                          loading: savingEmail,
                           onTap: () async {
-                            if (nameKey.currentState?.validate() != true) {
+                            if (emailKey.currentState?.validate() != true) {
                               return;
                             }
-                            setState(() => savingName = true);
+                            setState(() => savingEmail = true);
                             try {
-                              await authService.updateProfile(
+                              await authService.updateEmail(
                                 userId: user.id,
-                                displayName: nameController.text.trim(),
+                                newEmail: emailController.text.trim(),
                               );
                               if (context.mounted) {
-                                context
-                                    .read<AuthBloc>()
-                                    .add(AuthCheckRequested());
                                 Navigator.pop(sheetCtx);
                                 AppSnackbar.showSuccess(
                                   context,
-                                  message: 'Name updated',
+                                  message:
+                                      'Verification email sent — check your inbox',
                                 );
                               }
                             } catch (e) {
-                              setState(() => savingName = false);
+                              setState(() => savingEmail = false);
                               if (context.mounted) {
                                 AppSnackbar.showError(
                                   context,
-                                  message: 'Failed to update name',
+                                  message: e
+                                      .toString()
+                                      .replaceAll('Exception: ', ''),
                                 );
                               }
                             }
@@ -125,265 +186,187 @@ void showEditProfileDialog(BuildContext context, User user) {
                       ],
                     ),
 
-                    if (isEmailUser) ...[
-                      const SizedBox(height: 28),
-                      Divider(color: cs.outline.withOpacity(0.15)),
-                      const SizedBox(height: 20),
+                    const SizedBox(height: 28),
+                    Divider(color: cs.outline.withOpacity(0.15)),
+                    const SizedBox(height: 20),
 
-                      // ── Email ──────────────────────────────────
-                      Text('Change Email',
-                          style: theme.textTheme.labelLarge
-                              ?.copyWith(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 4),
-                      Text(
-                        'A verification link will be sent to the new address.',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: cs.onSurfaceVariant),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              key: emailKey,
-                              controller: emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration:
-                                  _inputDeco(cs, hint: 'New email address'),
-                              validator: (v) {
-                                if (v == null || v.trim().isEmpty) {
-                                  return 'Enter an email';
-                                }
-                                if (!v.contains('@')) {
-                                  return 'Enter a valid email';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          _saveButton(
-                            loading: savingEmail,
-                            onTap: () async {
-                              if (emailKey.currentState?.validate() != true) {
-                                return;
-                              }
-                              setState(() => savingEmail = true);
-                              try {
-                                await authService.updateEmail(
-                                  userId: user.id,
-                                  newEmail: emailController.text.trim(),
-                                );
-                                if (context.mounted) {
-                                  Navigator.pop(sheetCtx);
-                                  AppSnackbar.showSuccess(
-                                    context,
-                                    message:
-                                        'Verification email sent — check your inbox',
-                                  );
-                                }
-                              } catch (e) {
-                                setState(() => savingEmail = false);
-                                if (context.mounted) {
-                                  AppSnackbar.showError(
-                                    context,
-                                    message: 'Failed to change email',
-                                  );
-                                }
-                              }
-                            },
-                            cs: cs,
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 28),
-                      Divider(color: cs.outline.withOpacity(0.15)),
-                      const SizedBox(height: 20),
-
-                      // ── Password ───────────────────────────────
-                      Text('Change Password',
-                          style: theme.textTheme.labelLarge
-                              ?.copyWith(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: savingPw
-                              ? null
-                              : () async {
-                                  setState(() => savingPw = true);
-                                  try {
-                                    await authService.resetPassword(user.email);
-                                    if (context.mounted) {
-                                      Navigator.pop(sheetCtx);
-                                      AppSnackbar.showSuccess(
-                                        context,
-                                        message:
-                                            'Password reset link sent to ${user.email}',
-                                      );
-                                    }
-                                  } catch (e) {
-                                    setState(() => savingPw = false);
-                                    if (context.mounted) {
-                                      AppSnackbar.showError(
-                                        context,
-                                        message: 'Failed to send reset email',
-                                      );
-                                    }
+                    // ── Password ───────────────────────────────
+                    Text('Change Password',
+                        style: theme.textTheme.labelLarge
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: savingPw
+                            ? null
+                            : () async {
+                                setState(() => savingPw = true);
+                                try {
+                                  await authService.resetPassword(user.email);
+                                  if (context.mounted) {
+                                    Navigator.pop(sheetCtx);
+                                    AppSnackbar.showSuccess(
+                                      context,
+                                      message:
+                                          'Password reset link sent to ${user.email}',
+                                    );
                                   }
-                                },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            side: BorderSide(
-                                color: AppColors.primary.withOpacity(0.5)),
-                            padding: const EdgeInsets.symmetric(vertical: 13),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14)),
-                          ),
-                          icon: savingPw
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2))
-                              : const Icon(Icons.mail_outline_rounded,
-                                  size: 18),
-                          label: const Text('Send password reset email',
-                              style: TextStyle(fontWeight: FontWeight.w600)),
+                                } catch (e) {
+                                  setState(() => savingPw = false);
+                                  if (context.mounted) {
+                                    AppSnackbar.showError(
+                                      context,
+                                      message: 'Failed to send reset email',
+                                    );
+                                  }
+                                }
+                              },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: BorderSide(
+                              color: AppColors.primary.withOpacity(0.5)),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
                         ),
+                        icon: savingPw
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(LucideIcons.mail, size: 18),
+                        label: const Text('Send password reset email',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
                       ),
-                      const SizedBox(height: 16),
-                      Row(
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                            child: Divider(color: cs.outline.withOpacity(0.2))),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text('or change manually',
+                              style: theme.textTheme.bodySmall
+                                  ?.copyWith(color: cs.onSurfaceVariant)),
+                        ),
+                        Expanded(
+                            child: Divider(color: cs.outline.withOpacity(0.2))),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Form(
+                      key: pwKey,
+                      child: Column(
                         children: [
-                          Expanded(
-                              child:
-                                  Divider(color: cs.outline.withOpacity(0.2))),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Text('or change manually',
-                                style: theme.textTheme.bodySmall
-                                    ?.copyWith(color: cs.onSurfaceVariant)),
+                          TextFormField(
+                            controller: currentPwController,
+                            obscureText: !showCurrentPw,
+                            decoration: _inputDeco(cs,
+                                hint: 'Current password',
+                                suffix: _eyeToggle(
+                                    showCurrentPw,
+                                    cs,
+                                    () => setState(
+                                        () => showCurrentPw = !showCurrentPw))),
+                            validator: (v) => v == null || v.isEmpty
+                                ? 'Enter current password'
+                                : null,
                           ),
-                          Expanded(
-                              child:
-                                  Divider(color: cs.outline.withOpacity(0.2))),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: newPwController,
+                            obscureText: !showNewPw,
+                            decoration: _inputDeco(cs,
+                                hint: 'New password',
+                                suffix: _eyeToggle(
+                                    showNewPw,
+                                    cs,
+                                    () => setState(
+                                        () => showNewPw = !showNewPw))),
+                            validator: (v) {
+                              if (v == null || v.isEmpty) {
+                                return 'Enter new password';
+                              }
+                              if (v.length < 6) {
+                                return 'At least 6 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: confirmPwController,
+                            obscureText: !showConfirmPw,
+                            decoration: _inputDeco(cs,
+                                hint: 'Confirm new password',
+                                suffix: _eyeToggle(
+                                    showConfirmPw,
+                                    cs,
+                                    () => setState(
+                                        () => showConfirmPw = !showConfirmPw))),
+                            validator: (v) => v != newPwController.text
+                                ? 'Passwords do not match'
+                                : null,
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton(
+                              onPressed: savingPw
+                                  ? null
+                                  : () async {
+                                      if (!pwKey.currentState!.validate()) {
+                                        return;
+                                      }
+                                      setState(() => savingPw = true);
+                                      try {
+                                        await authService.updatePassword(
+                                          currentPassword:
+                                              currentPwController.text,
+                                          newPassword: newPwController.text,
+                                        );
+                                        if (context.mounted) {
+                                          Navigator.pop(sheetCtx);
+                                          AppSnackbar.showSuccess(context,
+                                              message: 'Password updated');
+                                        }
+                                      } catch (e) {
+                                        setState(() => savingPw = false);
+                                        if (context.mounted) {
+                                          final msg = e
+                                              .toString()
+                                              .replaceAll('Exception: ', '');
+                                          AppSnackbar.showError(context,
+                                              message: msg);
+                                        }
+                                      }
+                                    },
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                              ),
+                              child: savingPw
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2, color: Colors.white))
+                                  : const Text('Update Password',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600)),
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      Form(
-                        key: pwKey,
-                        child: Column(
-                          children: [
-                            TextFormField(
-                              controller: currentPwController,
-                              obscureText: !showCurrentPw,
-                              decoration: _inputDeco(cs,
-                                  hint: 'Current password',
-                                  suffix: _eyeToggle(
-                                      showCurrentPw,
-                                      cs,
-                                      () => setState(() =>
-                                          showCurrentPw = !showCurrentPw))),
-                              validator: (v) => v == null || v.isEmpty
-                                  ? 'Enter current password'
-                                  : null,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: newPwController,
-                              obscureText: !showNewPw,
-                              decoration: _inputDeco(cs,
-                                  hint: 'New password',
-                                  suffix: _eyeToggle(
-                                      showNewPw,
-                                      cs,
-                                      () => setState(
-                                          () => showNewPw = !showNewPw))),
-                              validator: (v) {
-                                if (v == null || v.isEmpty) {
-                                  return 'Enter new password';
-                                }
-                                if (v.length < 6) {
-                                  return 'At least 6 characters';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: confirmPwController,
-                              obscureText: !showConfirmPw,
-                              decoration: _inputDeco(cs,
-                                  hint: 'Confirm new password',
-                                  suffix: _eyeToggle(
-                                      showConfirmPw,
-                                      cs,
-                                      () => setState(() =>
-                                          showConfirmPw = !showConfirmPw))),
-                              validator: (v) => v != newPwController.text
-                                  ? 'Passwords do not match'
-                                  : null,
-                            ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              child: FilledButton(
-                                onPressed: savingPw
-                                    ? null
-                                    : () async {
-                                        if (!pwKey.currentState!.validate()) {
-                                          return;
-                                        }
-                                        setState(() => savingPw = true);
-                                        try {
-                                          await authService.updatePassword(
-                                            currentPassword:
-                                                currentPwController.text,
-                                            newPassword: newPwController.text,
-                                          );
-                                          if (context.mounted) {
-                                            Navigator.pop(sheetCtx);
-                                            AppSnackbar.showSuccess(context,
-                                                message: 'Password updated');
-                                          }
-                                        } catch (e) {
-                                          setState(() => savingPw = false);
-                                          if (context.mounted) {
-                                            final msg = e
-                                                .toString()
-                                                .replaceAll('Exception: ', '');
-                                            AppSnackbar.showError(context,
-                                                message: msg);
-                                          }
-                                        }
-                                      },
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14)),
-                                ),
-                                child: savingPw
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white))
-                                    : const Text('Update Password',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.w600)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
           );
@@ -450,10 +433,8 @@ Widget _saveButton(
 
 Widget _eyeToggle(bool visible, ColorScheme cs, VoidCallback onTap) {
   return IconButton(
-    icon: Icon(
-        visible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-        size: 20,
-        color: cs.onSurfaceVariant),
+    icon: Icon(visible ? LucideIcons.eyeOff : LucideIcons.eye,
+        size: 20, color: cs.onSurfaceVariant),
     onPressed: onTap,
   );
 }

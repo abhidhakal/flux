@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/constants/categories.dart';
+import '../../../core/utils/date_format_utils.dart';
 import '../../../core/models/recurring_transaction_model.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/models/budget_model.dart';
@@ -11,6 +12,8 @@ import '../../transaction/transaction_bloc.dart';
 import '../../auth/auth_bloc.dart';
 import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/field_label.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final TransactionType? initialType;
@@ -180,19 +183,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                       const SizedBox(height: 8),
                       _buildTransactionTypeSelector(),
                       const SizedBox(height: 20),
-                      _buildSectionTitle('Title'),
+                      _buildSectionTitle('Title', icon: LucideIcons.type),
                       const SizedBox(height: 8),
                       _buildTitleField(),
                       const SizedBox(height: 20),
-                      _buildSectionTitle('Description'),
+                      _buildSectionTitle('Description',
+                          icon: LucideIcons.fileText),
                       const SizedBox(height: 8),
                       _buildDescriptionField(),
                       const SizedBox(height: 20),
-                      _buildSectionTitle('Amount'),
+                      _buildSectionTitle('Amount',
+                          icon: LucideIcons.dollarSign),
                       const SizedBox(height: 8),
                       _buildAmountField(),
                       const SizedBox(height: 20),
-                      _buildSectionTitle('Category'),
+                      _buildSectionTitle('Category', icon: LucideIcons.tag),
                       const SizedBox(height: 8),
                       _buildCategorySelector(),
                       const SizedBox(height: 20),
@@ -229,7 +234,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           child: _buildTypeButton(
             TransactionType.expense,
             'Expense',
-            Icons.remove_circle_outline,
+            LucideIcons.minusCircle,
             AppColors.error,
           ),
         ),
@@ -238,7 +243,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           child: _buildTypeButton(
             TransactionType.income,
             'Income',
-            Icons.add_circle_outline,
+            LucideIcons.plusCircle,
             AppColors.success,
           ),
         ),
@@ -270,7 +275,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       child: AnimatedContainer(
         duration: AppMotion.fast,
         curve: AppMotion.standard,
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
         decoration: BoxDecoration(
           color: isSelected
               ? color.withValues(alpha: 0.1)
@@ -283,15 +288,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           ),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Column(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
               color:
                   isSelected ? color : Theme.of(context).colorScheme.onSurface,
-              size: 24,
+              size: 26,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
@@ -312,7 +318,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       controller: _titleController,
       decoration: InputDecoration(
         hintText: 'Enter transaction title',
-        prefixIcon: const Icon(Icons.title_rounded),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       ),
       validator: (value) {
@@ -329,7 +334,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       controller: _descriptionController,
       decoration: InputDecoration(
         hintText: 'Enter description (optional)',
-        prefixIcon: const Icon(Icons.description_rounded),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       ),
       maxLines: 2,
@@ -342,8 +346,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       keyboardType: TextInputType.number,
       decoration: InputDecoration(
         hintText: 'Enter amount',
-        prefixIcon: const Icon(Icons.attach_money_rounded),
-        prefixText: '${CurrencyService().symbol} ',
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(left: 14, right: 4),
+          child: Align(
+            widthFactor: 1,
+            child: Text(
+              CurrencyService().symbol,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+        ),
+        prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       ),
       validator: (value) {
@@ -367,7 +384,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     return DropdownButtonFormField<String>(
       initialValue: _selectedCategory,
       decoration: InputDecoration(
-        prefixIcon: const Icon(Icons.category_rounded),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       ),
       items: categories.map((category) {
@@ -376,7 +392,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           child: Row(
             children: [
               Icon(
-                Icons.circle,
+                LucideIcons.circle,
                 size: 10,
                 color: Color(AppCategories.getColor(category)),
               ),
@@ -425,12 +441,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
         child: Row(
           children: [
             Icon(
-              Icons.calendar_today_rounded,
+              LucideIcons.calendar,
               color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(width: 8),
             Text(
-              '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+              formatShortDate(_selectedDate),
               style: TextStyle(
                 fontSize: 16,
                 color: Theme.of(context).colorScheme.onBackground,
@@ -468,7 +484,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, {IconData? icon}) {
+    if (icon != null) return FieldLabel(icon: icon, label: title);
     return Text(
       title,
       style: TextStyle(
@@ -493,7 +510,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
             ),
             child: Row(
               children: [
-                const Icon(Icons.warning, color: AppColors.error),
+                const Icon(LucideIcons.alertTriangle, color: AppColors.error),
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
@@ -527,7 +544,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               suffixIcon: _selectedBudget != null
                   ? IconButton(
-                      icon: const Icon(Icons.clear, size: 18),
+                      icon: const Icon(LucideIcons.x, size: 18),
                       onPressed: () => setState(() => _selectedBudget = null),
                     )
                   : null,
@@ -609,8 +626,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
               children: [
                 Icon(
                   _selectedBudget!.isOverBudget
-                      ? Icons.warning
-                      : Icons.info_outline,
+                      ? LucideIcons.alertTriangle
+                      : LucideIcons.info,
                   color: _selectedBudget!.isOverBudget
                       ? AppColors.error
                       : AppColors.primary,
@@ -664,7 +681,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
         activeThumbColor: AppColors.primary,
         onChanged: (value) => setState(() => _isEssential = value),
         secondary: Icon(
-          _isEssential ? Icons.fact_check_rounded : Icons.shopping_bag_outlined,
+          _isEssential ? LucideIcons.clipboardCheck : LucideIcons.shoppingBag,
           color: _isEssential ? AppColors.success : AppColors.primary,
         ),
       ),
@@ -712,7 +729,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 items: RecurringTransactionFrequency.values.map((frequency) {
                   return DropdownMenuItem(
                     value: frequency,
-                    child: Text(_frequencyLabel(frequency)),
+                    child: Text(frequency.label),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -725,15 +742,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
         ],
       ),
     );
-  }
-
-  String _frequencyLabel(RecurringTransactionFrequency frequency) {
-    return switch (frequency) {
-      RecurringTransactionFrequency.daily => 'Daily',
-      RecurringTransactionFrequency.weekly => 'Weekly',
-      RecurringTransactionFrequency.monthly => 'Monthly',
-      RecurringTransactionFrequency.yearly => 'Yearly',
-    };
   }
 
   void _handleSave() {

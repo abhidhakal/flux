@@ -8,6 +8,8 @@ import '../../main/navigation_cubit.dart';
 import '../notifications_bloc.dart';
 import '../widgets/notification_card.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/empty_state_view.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -64,7 +66,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   children: [
                     if (hasUnread)
                       IconButton(
-                        icon: Icon(Icons.done_all,
+                        icon: Icon(LucideIcons.checkCheck,
                             color: Theme.of(context).colorScheme.onBackground),
                         tooltip: 'Mark All as Read',
                         onPressed: () {
@@ -77,7 +79,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         },
                       ),
                     IconButton(
-                      icon: Icon(Icons.more_vert,
+                      icon: Icon(LucideIcons.moreVertical,
                           color: Theme.of(context).colorScheme.onBackground),
                       onPressed: () => _showNotificationOptions(context),
                     ),
@@ -147,96 +149,32 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primaryContainer
-                    .withOpacity(0.3),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.notifications_none_rounded,
-                size: 64,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'All Caught Up!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onBackground,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'You\'ll receive notifications when:\n• Your budget reaches 80%, 90%, or is exceeded\n• You hit goal milestones (25%, 50%, 90%)\n• Unusual spending is detected',
-              style: TextStyle(
-                fontSize: 14,
-                color:
-                    Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+    return EmptyStateView(
+      icon: LucideIcons.bell,
+      iconColor: Theme.of(context).colorScheme.primary,
+      title: 'All Caught Up!',
+      titleFontSize: 24,
+      subtitle:
+          'You\'ll receive notifications when:\n• Your budget reaches 80%, 90%, or is exceeded\n• You hit goal milestones (25%, 50%, 90%)\n• Unusual spending is detected',
     );
   }
 
   Widget _buildErrorState(String message) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: AppColors.error,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Error Loading Notifications',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onBackground,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: TextStyle(
-              fontSize: 14,
-              color:
-                  Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              final user = context.read<AuthBloc>().state;
-              if (user is AuthAuthenticated) {
-                context
-                    .read<NotificationsBloc>()
-                    .add(LoadNotifications(user.user.id));
-              }
-            },
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
+    return EmptyStateView(
+      icon: LucideIcons.alertCircle,
+      iconColor: AppColors.error,
+      title: 'Error Loading Notifications',
+      titleFontSize: 20,
+      subtitle: message,
+      actionLabel: 'Retry',
+      onAction: () {
+        final user = context.read<AuthBloc>().state;
+        if (user is AuthAuthenticated) {
+          context
+              .read<NotificationsBloc>()
+              .add(LoadNotifications(user.user.id));
+        }
+      },
     );
   }
 
@@ -245,34 +183,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final unreadNotifications = notifications.where((n) => n.isUnread).toList();
     final readNotifications = notifications.where((n) => n.isRead).toList();
 
-    return ListView(
+    // Flatten into one list of row descriptors so the whole thing can be
+    // rendered lazily by ListView.builder instead of building every card
+    // up front (this is what made the page slow with a large history).
+    final rows = <Object>[
+      if (unreadNotifications.isNotEmpty) ('New', unreadNotifications.length),
+      ...unreadNotifications,
+      if (readNotifications.isNotEmpty) ('Earlier', readNotifications.length),
+      ...readNotifications,
+    ];
+
+    return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
-        if (unreadNotifications.isNotEmpty) ...[
-          _buildSectionHeader('New', unreadNotifications.length),
-          ...unreadNotifications.map((notification) => Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                child: NotificationCard(
-                  notification: notification,
-                  onTap: () => _handleNotificationTap(notification),
-                  onDismiss: () => _handleDismissNotification(notification),
-                ),
-              )),
-        ],
-        if (readNotifications.isNotEmpty) ...[
-          _buildSectionHeader('Earlier', readNotifications.length),
-          ...readNotifications.map((notification) => Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                child: NotificationCard(
-                  notification: notification,
-                  onTap: () => _handleNotificationTap(notification),
-                  onDismiss: () => _handleDismissNotification(notification),
-                ),
-              )),
-        ],
-      ],
+      itemCount: rows.length,
+      itemBuilder: (context, index) {
+        final row = rows[index];
+        if (row is (String, int)) {
+          return _buildSectionHeader(row.$1, row.$2);
+        }
+        final notification = row as app_notification.Notification;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: NotificationCard(
+            notification: notification,
+            onTap: () => _handleNotificationTap(notification),
+            onDismiss: () => _handleDismissNotification(notification),
+          ),
+        );
+      },
     );
   }
 
@@ -385,8 +323,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   color: Colors.red.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child:
-                    const Icon(Icons.delete_sweep_outlined, color: Colors.red),
+                child: const Icon(LucideIcons.trash2, color: Colors.red),
               ),
               title: const Text(
                 'Clear All Notifications',

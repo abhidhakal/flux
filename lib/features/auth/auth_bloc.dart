@@ -203,8 +203,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authService.resetPassword(event.email);
       emit(AuthSuccess('Email sent! Please open and change password.'));
     } catch (e) {
-      String errorMessage = e.toString().contains(':') 
-          ? e.toString().split(':').last.trim() 
+      String errorMessage = e.toString().contains(':')
+          ? e.toString().split(':').last.trim()
           : e.toString();
       emit(AuthError('Failed to send reset email: $errorMessage'));
     }

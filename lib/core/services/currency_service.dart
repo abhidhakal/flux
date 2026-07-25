@@ -23,6 +23,10 @@ class CurrencyService {
     'BRL': {'symbol': 'R\$', 'country': 'Brazil', 'code': 'BRL'},
     'KRW': {'symbol': '₩', 'country': 'South Korea', 'code': 'KRW'},
     'NPR': {'symbol': 'Rs.', 'country': 'Nepal', 'code': 'NPR'},
+    'MXN': {'symbol': '\$', 'country': 'Mexico', 'code': 'MXN'},
+    'SGD': {'symbol': 'S\$', 'country': 'Singapore', 'code': 'SGD'},
+    'CHF': {'symbol': 'CHF', 'country': 'Switzerland', 'code': 'CHF'},
+    'NZD': {'symbol': 'NZ\$', 'country': 'New Zealand', 'code': 'NZD'},
   };
 
   // Initialize the service and load saved currency
@@ -57,7 +61,7 @@ class CurrencyService {
       _currency = currencyCode;
       _symbol = _currencyConfig[currencyCode]!['symbol']!;
       _country = _currencyConfig[currencyCode]!['country']!;
-      
+
       // Save to SharedPreferences
       if (_prefs != null) {
         await _prefs!.setString('selected_currency', currencyCode);
@@ -76,15 +80,15 @@ class CurrencyService {
     final isNegative = amount < 0;
     final normalizedAmount = isNegative ? amount.abs() : amount;
     String formattedAmount = normalizedAmount.toStringAsFixed(decimalPlaces);
-    
+
     // Add thousand separators
     List<String> parts = formattedAmount.split('.');
     String integerPart = parts[0];
     String decimalPart = parts.length > 1 ? parts[1] : '';
-    
+
     // Add commas for thousands
     String formattedInteger = _addThousandSeparators(integerPart);
-    
+
     final signPrefix = isNegative ? '-' : '';
 
     if (decimalPart.isNotEmpty) {
@@ -92,6 +96,13 @@ class CurrencyService {
     } else {
       return '$signPrefix$_symbol$formattedInteger';
     }
+  }
+
+  // Format amount, dropping a trailing ".00" for a more compact display
+  // (chart labels/axes). Anchored to the end so it never strips a mid-string
+  // ".00" from a larger formatted number.
+  String formatAmountCompact(double amount) {
+    return formatAmount(amount).replaceAll(RegExp(r'\.00$'), '');
   }
 
   // Format amount without symbol (for input fields)
@@ -106,21 +117,19 @@ class CurrencyService {
   // Parse amount from string
   double parseAmount(String amountString) {
     // Remove currency symbol and commas
-    String cleanAmount = amountString
-        .replaceAll(_symbol, '')
-        .replaceAll(',', '')
-        .trim();
-    
+    String cleanAmount =
+        amountString.replaceAll(_symbol, '').replaceAll(',', '').trim();
+
     return double.tryParse(cleanAmount) ?? 0.0;
   }
 
   // Add thousand separators
   String _addThousandSeparators(String number) {
     if (number.length <= 3) return number;
-    
+
     String result = '';
     int count = 0;
-    
+
     for (int i = number.length - 1; i >= 0; i--) {
       if (count == 3) {
         result = ',$result';
@@ -129,7 +138,7 @@ class CurrencyService {
       result = '${number[i]}$result';
       count++;
     }
-    
+
     return result;
   }
 

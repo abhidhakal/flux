@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_theme.dart';
+import '../../../core/constants/goal_type_icons.dart';
 import '../../../core/models/goal_model.dart';
 import '../../auth/auth_bloc.dart';
 import '../goals_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../core/services/currency_service.dart';
+import '../../../shared/widgets/field_label.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class CreateGoalScreen extends StatefulWidget {
   final Map<String, dynamic>? prefillData;
@@ -161,13 +164,12 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildSectionTitle('Goal Name'),
+                    _buildSectionTitle('Goal Name', icon: LucideIcons.flag),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _nameController,
                       decoration: _inputDecoration(
                         hintText: 'e.g., Emergency Fund',
-                        icon: Icons.flag_rounded,
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
@@ -180,7 +182,8 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
                     const SizedBox(height: 20),
 
                     // Target Amount
-                    _buildSectionTitle('Target Amount'),
+                    _buildSectionTitle('Target Amount',
+                        icon: LucideIcons.wallet),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _targetAmountController,
@@ -188,7 +191,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
                           const TextInputType.numberWithOptions(decimal: true),
                       decoration: _inputDecoration(
                         hintText: 'Enter target amount',
-                        icon: Icons.account_balance_wallet_outlined,
                         prefixText: '${CurrencyService().symbol} ',
                       ),
                       validator: (value) {
@@ -221,14 +223,14 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
                     const SizedBox(height: 20),
 
                     // Description
-                    _buildSectionTitle('Description'),
+                    _buildSectionTitle('Description',
+                        icon: LucideIcons.fileText),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _descriptionController,
                       maxLines: 2,
                       decoration: _inputDecoration(
                         hintText: 'Add details (optional)',
-                        icon: Icons.description_rounded,
                       ),
                     ),
 
@@ -260,7 +262,8 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, {IconData? icon}) {
+    if (icon != null) return FieldLabel(icon: icon, label: title);
     return Text(
       title,
       style: TextStyle(
@@ -273,14 +276,12 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
 
   InputDecoration _inputDecoration({
     required String hintText,
-    required IconData icon,
     String? prefixText,
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return InputDecoration(
       hintText: hintText,
-      prefixIcon: Icon(icon, color: colorScheme.onBackground),
       prefixText: prefixText,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       enabledBorder: OutlineInputBorder(
@@ -333,7 +334,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
                 color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.calendar_today_rounded,
+              child: const Icon(LucideIcons.calendar,
                   size: 18, color: AppColors.primary),
             ),
             const SizedBox(width: 12),
@@ -365,7 +366,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
               ),
             ),
             Icon(
-              Icons.chevron_right_rounded,
+              LucideIcons.chevronRight,
               color: colorScheme.onBackground.withValues(alpha: 0.4),
             ),
           ],
@@ -456,7 +457,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
               ),
             ),
             child: isSelected
-                ? const Icon(Icons.check_rounded, color: Colors.white, size: 22)
+                ? const Icon(LucideIcons.check, color: Colors.white, size: 22)
                 : null,
           ),
         );
@@ -627,26 +628,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
     }
   }
 
-  IconData _getGoalTypeIcon(GoalType type) {
-    switch (type) {
-      case GoalType.savings:
-        return Icons.savings_rounded;
-      case GoalType.debt:
-        return Icons.credit_card_off_rounded;
-      case GoalType.investment:
-        return Icons.trending_up_rounded;
-      case GoalType.emergency:
-        return Icons.health_and_safety_rounded;
-      case GoalType.vacation:
-        return Icons.flight_rounded;
-      case GoalType.home:
-        return Icons.home_rounded;
-      case GoalType.education:
-        return Icons.school_rounded;
-      case GoalType.other:
-        return Icons.flag_rounded;
-    }
-  }
+  IconData _getGoalTypeIcon(GoalType type) => type.icon;
 
   String _formatDate(DateTime date) {
     final months = [

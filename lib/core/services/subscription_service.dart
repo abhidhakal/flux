@@ -12,18 +12,18 @@ class SubscriptionService {
 
   final InAppPurchase _inAppPurchase = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
-  
+
   // Product IDs
   static const String _kMonthlySubscriptionId = 'premium_monthly';
   static const String _kYearlySubscriptionId = 'premium_yearly';
   static const String _kLifetimeSubscriptionId = 'premium_lifetime';
-  
+
   static const Set<String> _kProductIds = {
     _kMonthlySubscriptionId,
     _kYearlySubscriptionId,
     _kLifetimeSubscriptionId,
   };
-  
+
   static const String _kPremiumExpiryKey = 'premium_expiry';
 
   bool _isAvailable = false;
@@ -92,13 +92,13 @@ class SubscriptionService {
 
     final ProductDetailsResponse response =
         await _inAppPurchase.queryProductDetails(_kProductIds);
-    
+
     if (response.notFoundIDs.isNotEmpty) {
       // Handle the error.
     }
-    
+
     _products = response.productDetails;
-    
+
     // Fallback for testing/simulator if store returns nothing
     if (_products.isEmpty) {
       _products = _getMockProducts();
@@ -135,12 +135,13 @@ class SubscriptionService {
   }
 
   Future<void> buyProduct(ProductDetails productDetails) async {
-    final PurchaseParam purchaseParam = PurchaseParam(productDetails: productDetails);
-    
+    final PurchaseParam purchaseParam =
+        PurchaseParam(productDetails: productDetails);
+
     if (_kProductIds.contains(productDetails.id)) {
       if (_isAvailable) {
         try {
-          // Attempt a real store purchase. This will throw errors in debug 
+          // Attempt a real store purchase. This will throw errors in debug
           // if products are not configured in Play/App Store consoles.
           await _inAppPurchase.buyNonConsumable(purchaseParam: purchaseParam);
         } catch (e) {
@@ -148,7 +149,8 @@ class SubscriptionService {
           rethrow; // Propagate the error so the UI can show the failure
         }
       } else {
-        throw Exception('The store is currently unavailable. Please try again later.');
+        throw Exception(
+            'The store is currently unavailable. Please try again later.');
       }
     }
   }
@@ -170,7 +172,7 @@ class SubscriptionService {
             purchaseDetails.status == PurchaseStatus.restored) {
           _deliverProduct(purchaseDetails);
         }
-        
+
         if (purchaseDetails.pendingCompletePurchase) {
           _inAppPurchase.completePurchase(purchaseDetails);
         }
@@ -200,19 +202,21 @@ class SubscriptionService {
         expiryDate = DateTime.now().add(const Duration(days: 365));
         break;
       case _kLifetimeSubscriptionId:
-        expiryDate = DateTime.now().add(const Duration(days: 365 * 100)); // 100 years
+        expiryDate =
+            DateTime.now().add(const Duration(days: 365 * 100)); // 100 years
         break;
       default:
         expiryDate = DateTime.now().add(const Duration(days: 30));
     }
-    
-    await prefs.setString(_getExpiryKey(user.uid), expiryDate.toIso8601String());
-    
+
+    await prefs.setString(
+        _getExpiryKey(user.uid), expiryDate.toIso8601String());
+
     // Clear legacy key
     if (prefs.containsKey('is_premium')) {
       await prefs.remove('is_premium');
     }
-    
+
     _isPremium = true;
   }
 
@@ -224,7 +228,7 @@ class SubscriptionService {
   static String _getExpiryKey(String uid) => '${_kPremiumExpiryKey}_$uid';
 
   Future<void> _checkPremiumStatus() async {
-    // If subscriptions are disabled globally (Ad-supported mode), 
+    // If subscriptions are disabled globally (Ad-supported mode),
     // we grant premium status to unlock all features.
     // Ads will be handled separately by AdService.
     if (!FeatureFlagService.isSubscriptionEnabled) {
@@ -233,7 +237,7 @@ class SubscriptionService {
     }
 
     _isPremium = false; // Reset first
-    
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _isPremium = false;
@@ -248,15 +252,15 @@ class SubscriptionService {
 
     final prefs = await SharedPreferences.getInstance();
     final userExpiryKey = _getExpiryKey(user.uid);
-    
+
     // Check for legacy device-wide key first and clear it
     if (prefs.containsKey('is_premium')) {
-       await prefs.remove('is_premium');
+      await prefs.remove('is_premium');
     }
     if (prefs.containsKey(_kPremiumExpiryKey)) {
-       // This was the old global expiry key, we should probably remove it to be safe
-       // but we don't want to accidentally remove a legit purchase that hasn't migrated.
-       // However, since this is "mocking" mostly and real IAP should be restored, it's safer to use user-specific keys.
+      // This was the old global expiry key, we should probably remove it to be safe
+      // but we don't want to accidentally remove a legit purchase that hasn't migrated.
+      // However, since this is "mocking" mostly and real IAP should be restored, it's safer to use user-specific keys.
     }
 
     final expiryString = prefs.getString(userExpiryKey);
@@ -278,7 +282,7 @@ class SubscriptionService {
     }
     return false;
   }
-  
+
   void dispose() {
     _subscription?.cancel();
     _subscription = null;

@@ -47,7 +47,8 @@ class _StartupScreenState extends State<StartupScreen> {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, authState) {
-        final readyToProceed = _minimumTimeElapsed && _isAuthResolved(authState);
+        final readyToProceed =
+            _minimumTimeElapsed && _isAuthResolved(authState);
 
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 450),
@@ -140,7 +141,8 @@ class _SplashPresentationState extends State<_SplashPresentation>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor:
+          isDark ? AppColors.darkBackground : AppColors.lightBackground,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -184,7 +186,10 @@ class _SplashPresentationState extends State<_SplashPresentation>
                       children: [
                         Text(
                           'Flux',
-                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                          style: Theme.of(context)
+                              .textTheme
+                              .displaySmall
+                              ?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: -1.2,
                               ),
@@ -192,10 +197,12 @@ class _SplashPresentationState extends State<_SplashPresentation>
                         const SizedBox(height: 8),
                         Text(
                           'Clarity for every dollar.',
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: colorScheme.onSurface.withValues(alpha: 0.68),
-                                fontWeight: FontWeight.w500,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    color: colorScheme.onSurface
+                                        .withValues(alpha: 0.68),
+                                    fontWeight: FontWeight.w500,
+                                  ),
                         ),
                       ],
                     ),
@@ -208,8 +215,10 @@ class _SplashPresentationState extends State<_SplashPresentation>
                     return Row(
                       mainAxisSize: MainAxisSize.min,
                       children: List.generate(3, (index) {
-                        final distance = (_loaderController.value - (index * 0.18)).abs();
-                        final normalized = (1 - (distance * 2.2)).clamp(0.0, 1.0);
+                        final distance =
+                            (_loaderController.value - (index * 0.18)).abs();
+                        final normalized =
+                            (1 - (distance * 2.2)).clamp(0.0, 1.0);
                         final scale = 0.82 + (normalized * 0.34);
                         final opacity = 0.24 + (normalized * 0.76);
 
@@ -222,7 +231,8 @@ class _SplashPresentationState extends State<_SplashPresentation>
                               height: 10,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: AppColors.primary.withValues(alpha: opacity),
+                                color: AppColors.primary
+                                    .withValues(alpha: opacity),
                               ),
                             ),
                           ),

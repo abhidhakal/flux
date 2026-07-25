@@ -193,7 +193,8 @@ class AuthService {
         });
 
         // Fetch refreshed user data
-        final updatedDoc = await _firestore.collection('users').doc(user.uid).get();
+        final updatedDoc =
+            await _firestore.collection('users').doc(user.uid).get();
         return app_models.User.fromJson(updatedDoc.data()!);
       }
     } catch (e) {
@@ -252,7 +253,8 @@ class AuthService {
   }) async {
     try {
       // Update Firebase Auth email
-      final firebase_auth.User authUser = firebase_auth.FirebaseAuth.instance.currentUser!;
+      final firebase_auth.User authUser =
+          firebase_auth.FirebaseAuth.instance.currentUser!;
       await authUser.verifyBeforeUpdateEmail(newEmail);
 
       // Update Firestore user document
@@ -289,7 +291,8 @@ class AuthService {
       await user.updatePassword(newPassword);
     } catch (e) {
       final msg = e.toString();
-      if (msg.contains('wrong-password') || msg.contains('invalid-credential')) {
+      if (msg.contains('wrong-password') ||
+          msg.contains('invalid-credential')) {
         throw Exception('Current password is incorrect');
       }
       throw Exception('Failed to update password: $e');

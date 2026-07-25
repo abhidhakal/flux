@@ -7,25 +7,22 @@ import '../../../core/services/currency_service.dart';
 import '../../../core/services/transaction_service.dart';
 import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/app_bottom_sheet.dart';
+import '../../../shared/widgets/field_label.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class EditBudgetScreen {
   const EditBudgetScreen._();
 
   /// Show the edit budget bottom sheet — matches the edit transaction slider pattern.
   static void showEditBudgetSheet(BuildContext context, Budget budget) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
+    AppBottomSheet.show(
+      context,
+      radius: 20,
       isScrollControlled: true,
-      builder: (context) => Container(
+      padding: EdgeInsets.zero,
+      builder: (context) => SizedBox(
         height: MediaQuery.of(context).size.height * 0.9,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
         child: SafeArea(
           bottom: true,
           child: Builder(
@@ -36,16 +33,6 @@ class EditBudgetScreen {
               final actionColor = isDark ? Colors.white : colorScheme.onSurface;
               return Column(
                 children: [
-                  // Handle bar
-                  Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: colorScheme.outline.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
                   // Header
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -149,13 +136,12 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildSectionTitle('Budget Name'),
+              _buildSectionTitle('Budget Name', icon: LucideIcons.type),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
                   hintText: 'e.g., Monthly Food Budget',
-                  prefixIcon: const Icon(Icons.label_rounded),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8)),
                 ),
@@ -167,14 +153,13 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                 },
               ),
               const SizedBox(height: 20),
-              _buildSectionTitle('Amount'),
+              _buildSectionTitle('Amount', icon: LucideIcons.dollarSign),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   hintText: 'Enter amount',
-                  prefixIcon: const Icon(Icons.attach_money_rounded),
                   prefixText: '${CurrencyService().symbol} ',
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8)),
@@ -191,12 +176,11 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                 },
               ),
               const SizedBox(height: 20),
-              _buildSectionTitle('Category'),
+              _buildSectionTitle('Category', icon: LucideIcons.tag),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: _selectedCategory,
                 decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.category_rounded),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8)),
                 ),
@@ -206,7 +190,7 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                     child: Row(
                       children: [
                         Icon(
-                          Icons.circle,
+                          LucideIcons.circle,
                           size: 10,
                           color: Color(AppCategories.getColor(category)),
                         ),
@@ -269,7 +253,8 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, {IconData? icon}) {
+    if (icon != null) return FieldLabel(icon: icon, label: title);
     return Text(
       title,
       style: TextStyle(

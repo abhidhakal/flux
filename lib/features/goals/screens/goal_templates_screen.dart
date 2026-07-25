@@ -7,22 +7,33 @@ import '../../../core/services/goal_template_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../goals_bloc.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class GoalTemplatesScreen extends StatefulWidget {
   const GoalTemplatesScreen({super.key});
 
   static String getTemplateEmoji(GoalTemplateCategory category) {
     switch (category) {
-      case GoalTemplateCategory.retirement: return '🏖️';
-      case GoalTemplateCategory.health: return '🏥';
-      case GoalTemplateCategory.business: return '💼';
-      case GoalTemplateCategory.house: return '🏠';
-      case GoalTemplateCategory.vacation: return '✈️';
-      case GoalTemplateCategory.emergency: return '🚨';
-      case GoalTemplateCategory.car: return '🚗';
-      case GoalTemplateCategory.education: return '🎓';
-      case GoalTemplateCategory.wedding: return '💍';
-      case GoalTemplateCategory.other: return '🎯';
+      case GoalTemplateCategory.retirement:
+        return '🏖️';
+      case GoalTemplateCategory.health:
+        return '🏥';
+      case GoalTemplateCategory.business:
+        return '💼';
+      case GoalTemplateCategory.house:
+        return '🏠';
+      case GoalTemplateCategory.vacation:
+        return '✈️';
+      case GoalTemplateCategory.emergency:
+        return '🚨';
+      case GoalTemplateCategory.car:
+        return '🚗';
+      case GoalTemplateCategory.education:
+        return '🎓';
+      case GoalTemplateCategory.wedding:
+        return '💍';
+      case GoalTemplateCategory.other:
+        return '🎯';
     }
   }
 
@@ -34,7 +45,7 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
     with TickerProviderStateMixin {
   final GoalTemplateService _goalService = GoalTemplateService();
   final CurrencyService _currencyService = CurrencyService();
-  
+
   List<GoalTemplate> _templates = [];
   List<GoalTemplate> _filteredTemplates = [];
   bool _isLoading = true;
@@ -79,7 +90,7 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        AppSnackbar.showError(context, message: 'Error loading templates');
+        AppSnackbar.showError(context, message: 'Error loading templates: $e');
       }
     }
   }
@@ -87,9 +98,12 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
   void _filterTemplates() {
     setState(() {
       _filteredTemplates = _templates.where((t) {
-        final matchesSearch = t.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+        final matchesSearch = t.name
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase()) ||
             t.description.toLowerCase().contains(_searchQuery.toLowerCase());
-        final matchesCategory = _selectedCategory == null || t.category == _selectedCategory;
+        final matchesCategory =
+            _selectedCategory == null || t.category == _selectedCategory;
         return matchesSearch && matchesCategory;
       }).toList();
     });
@@ -149,7 +163,7 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
             },
             decoration: InputDecoration(
               hintText: 'Search templates...',
-              prefixIcon: const Icon(Icons.search, size: 20),
+              prefixIcon: const Icon(LucideIcons.search, size: 20),
               filled: true,
               fillColor: colorScheme.onSurface.withOpacity(0.05),
               border: OutlineInputBorder(
@@ -168,7 +182,8 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
-                    label: Text(category.name[0].toUpperCase() + category.name.substring(1)),
+                    label: Text(category.name[0].toUpperCase() +
+                        category.name.substring(1)),
                     selected: isSelected,
                     onSelected: (selected) {
                       setState(() {
@@ -179,8 +194,11 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
                     selectedColor: AppColors.primary.withOpacity(0.2),
                     checkmarkColor: AppColors.primary,
                     labelStyle: TextStyle(
-                      color: isSelected ? AppColors.primary : colorScheme.onSurface,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected
+                          ? AppColors.primary
+                          : colorScheme.onSurface,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                 );
@@ -198,7 +216,8 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off, size: 64, color: AppColors.primary.withOpacity(0.3)),
+            Icon(LucideIcons.searchX,
+                size: 64, color: AppColors.primary.withOpacity(0.3)),
             const SizedBox(height: 16),
             const Text('No templates found'),
           ],
@@ -273,7 +292,9 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.timer_outlined, size: 14, color: colorScheme.onSurface.withOpacity(0.4)),
+                      Icon(LucideIcons.timer,
+                          size: 14,
+                          color: colorScheme.onSurface.withOpacity(0.4)),
                       const SizedBox(width: 4),
                       Text(
                         '${template.suggestedDurationMonths}m',
@@ -405,7 +426,8 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
                     shape: BoxShape.circle,
                   ),
                   child: Text(
-                    GoalTemplatesScreen.getTemplateEmoji(widget.template.category),
+                    GoalTemplatesScreen.getTemplateEmoji(
+                        widget.template.category),
                     style: const TextStyle(fontSize: 32),
                   ),
                 ),
@@ -414,7 +436,8 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
             const SizedBox(height: 32),
             Text(
               'Target Amount',
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -428,22 +451,26 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
                 prefixText: '${widget.currencyService.symbol} ',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
+                  borderSide:
+                      BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
+                  borderSide:
+                      BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                  borderSide:
+                      const BorderSide(color: AppColors.primary, width: 2),
                 ),
               ),
             ),
             const SizedBox(height: 24),
             Text(
               'Timeline',
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             Container(
@@ -469,8 +496,11 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
                       child: Text(
                         '$months months',
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color: isSelected ? AppColors.primary : colorScheme.onSurface,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected
+                              ? AppColors.primary
+                              : colorScheme.onSurface,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                     );
@@ -496,11 +526,13 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
                     ? const SizedBox(
                         height: 24,
                         width: 24,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
                       )
                     : const Text(
                         'Create Goal',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
               ),
             ),
@@ -513,8 +545,9 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
 
   Future<void> _createGoal() async {
     final amountText = _amountController.text.replaceAll(',', '');
-    final amount = double.tryParse(amountText) ?? widget.template.suggestedAmount;
-    
+    final amount =
+        double.tryParse(amountText) ?? widget.template.suggestedAmount;
+
     setState(() => _isCreating = true);
     try {
       final authState = context.read<AuthBloc>().state;
@@ -525,17 +558,18 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
           customAmount: amount,
           customDurationMonths: _selectedDurationMonths,
         );
-        
+
         if (mounted) {
           context.read<GoalsBloc>().add(LoadGoals(authState.user.id));
           Navigator.pop(context); // Close sheet
           Navigator.pop(context); // Close screen
-          AppSnackbar.showSuccess(context, message: 'Goal created successfully!');
+          AppSnackbar.showSuccess(context,
+              message: 'Goal created successfully!');
         }
       }
     } catch (e) {
       if (mounted) {
-        AppSnackbar.showError(context, message: 'Failed to create goal');
+        AppSnackbar.showError(context, message: 'Failed to create goal: $e');
       }
     } finally {
       if (mounted) setState(() => _isCreating = false);
