@@ -54,6 +54,7 @@ class CurrencyService {
   String get currency => _currency;
   String get symbol => _symbol;
   String get country => _country;
+  int get decimalPlaces => _currency == 'JPY' || _currency == 'KRW' ? 0 : 2;
 
   // Set currency
   Future<void> setCurrency(String currencyCode) async {
@@ -72,10 +73,7 @@ class CurrencyService {
   // Format amount with currency symbol
   String formatAmount(double amount) {
     // Handle different decimal places for different currencies
-    int decimalPlaces = 2;
-    if (_currency == 'JPY' || _currency == 'KRW') {
-      decimalPlaces = 0; // These currencies typically don't use decimal places
-    }
+    final decimalPlaces = this.decimalPlaces;
 
     final isNegative = amount < 0;
     final normalizedAmount = isNegative ? amount.abs() : amount;

@@ -431,7 +431,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 accentColor: AppColors.primary,
                 direction: Axis.horizontal,
                 bordered: true,
-                radius: 16,
+                radius: AppTheme.controlRadius,
                 padding: const EdgeInsets.all(14),
               ),
             ),
@@ -446,7 +446,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                     : AppColors.success,
                 direction: Axis.horizontal,
                 bordered: true,
-                radius: 16,
+                radius: AppTheme.controlRadius,
                 padding: const EdgeInsets.all(14),
               ),
             ),
@@ -681,7 +681,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
-      decoration: AppTheme.surfaceDecoration(context, radius: 20),
+      decoration:
+          AppTheme.surfaceDecoration(context, radius: AppTheme.cardRadius),
       child: Row(
         children: [
           const Icon(LucideIcons.info, color: AppColors.warning),

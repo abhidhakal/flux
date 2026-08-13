@@ -8,11 +8,13 @@ import '../../../core/models/transaction_model.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../../../core/services/recurring_transaction_service.dart';
+import '../../../core/services/premium_limits_service.dart';
 import '../../../core/services/transaction_intelligence_service.dart';
 import '../../transaction/transaction_bloc.dart';
 import '../../auth/auth_bloc.dart';
 import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/premium_upgrade_prompt.dart';
 import '../../../shared/widgets/field_label.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -46,6 +48,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   Budget? _selectedBudget;
   final RecurringTransactionService _recurringTransactionService =
       RecurringTransactionService();
+  final PremiumLimitsService _premiumLimitsService = PremiumLimitsService();
   final TransactionIntelligenceService _intelligence =
       TransactionIntelligenceService();
 
@@ -861,9 +864,22 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     }
   }
 
-  void _createTransaction() {
+  Future<void> _createTransaction() async {
     final user = context.read<AuthBloc>().state;
     if (user is AuthAuthenticated) {
+      if (_isRecurring) {
+        final existingRecurring = await _recurringTransactionService
+            .getUserRecurringTransactions(user.user.id);
+        if (!_premiumLimitsService.canCreateRecurring(existingRecurring)) {
+          if (!mounted) return;
+          PremiumUpgradePrompt.show(
+            context,
+            message:
+                'Free accounts can have 1 active recurring rule. Upgrade to Flux Pro for unlimited automation.',
+          );
+          return;
+        }
+      }
       final now = DateTime.now();
       final transaction = Transaction(
         id: '',
@@ -902,6 +918,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
             )
           : null;
 
+      if (!mounted) return;
       context.read<TransactionBloc>().add(
             AddTransaction(
               transaction,

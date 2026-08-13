@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_theme.dart';
 
 /// Small icon + text label placed above a form field, replacing icons
 /// embedded inside the field itself (prefixIcon).
@@ -15,7 +16,8 @@ class FieldLabel extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon,
-            size: 16, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+            size: AppTheme.smallIconSize,
+            color: colorScheme.onSurface.withValues(alpha: 0.6)),
         const SizedBox(width: 6),
         Text(
           label,

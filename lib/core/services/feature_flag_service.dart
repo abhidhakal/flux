@@ -1,4 +1,4 @@
 class FeatureFlagService {
   // Toggle this to enable/disable the subscription model globally
-  static const bool isSubscriptionEnabled = false;
+  static const bool isSubscriptionEnabled = true;
 }

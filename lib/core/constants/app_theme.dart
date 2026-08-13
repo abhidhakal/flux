@@ -4,63 +4,63 @@ import 'package:flutter/services.dart';
 class AppColors {
   // Primary colors - Modern Blue (#0079dc)
   static const Color primary = Color(0xFF0079DC);
-  static const Color primaryLight = Color(0xFF3399FF);
-  static const Color primaryDark = Color(0xFF0056B3);
-  static const Color primaryUltraLight = Color(0xFFE6F3FF);
+  static const Color primaryLight = primary;
+  static const Color primaryDark = primary;
+  static const Color primaryUltraLight = Color(0xFFF2F2F2);
 
   // Secondary colors - Teal
-  static const Color secondary = Color(0xFF00B4D8);
-  static const Color secondaryLight = Color(0xFF4DC9E6);
-  static const Color secondaryDark = Color(0xFF0099CC);
+  static const Color secondary = Color(0xFF555555);
+  static const Color secondaryLight = Color(0xFF888888);
+  static const Color secondaryDark = Color(0xFF333333);
 
   // Accent colors - Coral
-  static const Color accent = Color(0xFFFF6B6B);
-  static const Color accentLight = Color(0xFFFF8A8A);
-  static const Color accentDark = Color(0xFFE55A5A);
+  static const Color accent = Color(0xFFE76F51);
+  static const Color accentLight = Color(0xFFF28B73);
+  static const Color accentDark = Color(0xFFC9563C);
 
   // Success colors - Modern Green
-  static const Color success = Color(0xFF00C851);
-  static const Color successLight = Color(0xFF4CD964);
-  static const Color successDark = Color(0xFF00A843);
-  static const Color successUltraLight = Color(0xFFE8F5E8);
+  static const Color success = Color(0xFF16A34A);
+  static const Color successLight = Color(0xFF4ADE80);
+  static const Color successDark = Color(0xFF15803D);
+  static const Color successUltraLight = Color(0xFFDCFCE7);
 
   // Warning colors - Amber
-  static const Color warning = Color(0xFFFFB300);
-  static const Color warningLight = Color(0xFFFFC107);
-  static const Color warningDark = Color(0xFFE6A200);
-  static const Color warningUltraLight = Color(0xFFFFF8E1);
+  static const Color warning = Color(0xFFD97706);
+  static const Color warningLight = Color(0xFFF59E0B);
+  static const Color warningDark = Color(0xFFB45309);
+  static const Color warningUltraLight = Color(0xFFFEF3C7);
 
   // Error colors - Modern Red
-  static const Color error = Color(0xFFDC3545);
-  static const Color errorLight = Color(0xFFE74C3C);
-  static const Color errorDark = Color(0xFFC82333);
-  static const Color errorUltraLight = Color(0xFFFFEBEE);
+  static const Color error = Color(0xFFDC2626);
+  static const Color errorLight = Color(0xFFEF4444);
+  static const Color errorDark = Color(0xFFB91C1C);
+  static const Color errorUltraLight = Color(0xFFFEE2E2);
 
   // Light Theme Colors
-  static const Color lightBackground = Color(0xFFFAFBFC);
+  static const Color lightBackground = Color(0xFFF6F6F6);
   static const Color lightSurface = Color(0xFFFFFFFF);
   static const Color lightCard = Color(0xFFFFFFFF);
-  static const Color lightDivider = Color(0xFFE9ECEF);
-  static const Color lightBorder = Color(0xFFE1E5E9);
-  static const Color lightTextPrimary = Color(0xFF1A1A1A);
-  static const Color lightTextSecondary = Color(0xFF6B7280);
-  static const Color lightTextTertiary = Color(0xFF9CA3AF);
+  static const Color lightDivider = Color(0xFFE8E8E8);
+  static const Color lightBorder = Colors.transparent;
+  static const Color lightTextPrimary = Color(0xFF111111);
+  static const Color lightTextSecondary = Color(0xFF666666);
+  static const Color lightTextTertiary = Color(0xFF999999);
   static const Color lightTextInverse = Color(0xFFFFFFFF);
-  static const Color lightTextMuted = Color(0xFF9CA3AF);
+  static const Color lightTextMuted = Color(0xFF999999);
 
   // Dark Theme Colors
-  static const Color darkBackground = Color(0xFF0E0E0E);
-  static const Color darkSurface = Color(0xFF161616);
-  static const Color darkCard = Color(0xFF1B1B1B);
-  static const Color darkDivider = Color(0xFF262626);
-  static const Color darkBorder = Color(0xFF303030);
-  static const Color darkTextPrimary = Color(0xFFF4F4F4);
-  static const Color darkTextSecondary = Color(0xFFB8B8B8);
-  static const Color darkTextTertiary = Color(0xFF868686);
+  static const Color darkBackground = Color(0xFF000000);
+  static const Color darkSurface = Color(0xFF0C0C0C);
+  static const Color darkCard = Color(0xFF121212);
+  static const Color darkDivider = Color(0xFF202020);
+  static const Color darkBorder = Colors.transparent;
+  static const Color darkTextPrimary = Color(0xFFF5F5F5);
+  static const Color darkTextSecondary = Color(0xFFB3B3B3);
+  static const Color darkTextTertiary = Color(0xFF808080);
   static const Color darkTextInverse = Color(0xFF000000);
-  static const Color darkTextMuted = Color(0xFF868686);
-  static const Color darkElevatedSurface = Color(0xFF202020);
-  static const Color darkNavSurface = Color(0xFF141414);
+  static const Color darkTextMuted = Color(0xFF808080);
+  static const Color darkElevatedSurface = Color(0xFF181818);
+  static const Color darkNavSurface = Color(0xFF080808);
 
   // Legacy colors (for backward compatibility)
   static const Color background = lightBackground;
@@ -75,14 +75,14 @@ class AppColors {
   static const Color textMuted = lightTextMuted;
 
   // Status colors
-  static const Color info = Color(0xFF0079DC);
-  static const Color infoLight = Color(0xFF4DA3FF);
-  static const Color infoDark = Color(0xFF0056CC);
+  static const Color info = primary;
+  static const Color infoLight = primary;
+  static const Color infoDark = primary;
 
   // Budget status colors
-  static const Color budgetOnTrack = Color(0xFF00C851);
-  static const Color budgetWarning = Color(0xFFFFB300);
-  static const Color budgetOver = Color(0xFFDC3545);
+  static const Color budgetOnTrack = success;
+  static const Color budgetWarning = warning;
+  static const Color budgetOver = error;
 
   // Brand colors (third-party)
   static const Color googleRed = Color(0xFFDB4437);
@@ -309,6 +309,15 @@ class AppTheme {
   static const double spacing40 = 40.0;
   static const double spacing48 = 48.0;
 
+  // Semantic layout tokens. Prefer these names in shared components so
+  // screens do not slowly drift into different visual systems.
+  static const double pagePadding = spacing16;
+  static const double sectionGap = spacing24;
+  static const double cardRadius = radius24;
+  static const double controlRadius = radius12;
+  static const double smallIconSize = 18.0;
+  static const double mediumIconSize = 20.0;
+
   // Border radius
   static const double radius4 = 4.0;
   static const double radius8 = 8.0;
@@ -322,7 +331,7 @@ class AppTheme {
     final theme = Theme.of(context);
     return theme.brightness == Brightness.dark
         ? AppColors.darkBackground
-        : const Color(0xFFF5F7FA);
+        : AppColors.lightBackground;
   }
 
   static Color cardSurface(BuildContext context) {
@@ -336,7 +345,7 @@ class AppTheme {
     final theme = Theme.of(context);
     return theme.brightness == Brightness.dark
         ? AppColors.darkElevatedSurface
-        : const Color(0xFFF0F4F8);
+        : const Color(0xFFFAFAFA);
   }
 
   static Color navigationBarSurface(BuildContext context) {
@@ -344,14 +353,6 @@ class AppTheme {
     return theme.brightness == Brightness.dark
         ? AppColors.darkNavSurface
         : AppColors.lightSurface;
-  }
-
-  static Color navigationBarBorder(BuildContext context) {
-    final theme = Theme.of(context);
-    final outline = theme.colorScheme.outline;
-    return outline.withValues(
-      alpha: theme.brightness == Brightness.dark ? 0.72 : 1,
-    );
   }
 
   static Color navigationBarShadow(BuildContext context) {
@@ -363,25 +364,19 @@ class AppTheme {
 
   static BoxDecoration surfaceDecoration(
     BuildContext context, {
-    double radius = radius24,
+    double radius = cardRadius,
     bool subtle = false,
   }) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return BoxDecoration(
       color: subtle ? mutedSurface(context) : cardSurface(context),
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(
-        color: colorScheme.outline.withValues(
-            alpha: theme.brightness == Brightness.dark ? 0.34 : 0.10),
-      ),
       boxShadow: [
         BoxShadow(
           color: Colors.black.withValues(
-              alpha: theme.brightness == Brightness.dark ? 0.18 : 0.05),
-          blurRadius: subtle ? 12 : 20,
-          offset: const Offset(0, 8),
+              alpha: theme.brightness == Brightness.dark ? 0.24 : 0.035),
+          blurRadius: subtle ? 10 : 14,
+          offset: const Offset(0, 4),
         ),
       ],
     );
@@ -390,25 +385,20 @@ class AppTheme {
   static BoxDecoration tintedSurfaceDecoration(
     BuildContext context, {
     required Color tint,
-    double radius = radius24,
+    double radius = cardRadius,
   }) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return BoxDecoration(
-      color: tint.withValues(
-          alpha: theme.brightness == Brightness.dark ? 0.14 : 0.10),
+      // Cards stay monochrome by default. Accent colors belong to icons,
+      // progress, and the deliberately emphasized dashboard hero card.
+      color: cardSurface(context),
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(
-        color: colorScheme.outline.withValues(
-            alpha: theme.brightness == Brightness.dark ? 0.32 : 0.10),
-      ),
       boxShadow: [
         BoxShadow(
           color: Colors.black.withValues(
-              alpha: theme.brightness == Brightness.dark ? 0.14 : 0.04),
-          blurRadius: 18,
-          offset: const Offset(0, 8),
+              alpha: theme.brightness == Brightness.dark ? 0.20 : 0.025),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
         ),
       ],
     );
@@ -507,10 +497,6 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radius16),
-          side: const BorderSide(
-            color: AppColors.lightBorder,
-            width: 1,
-          ),
         ),
         margin: const EdgeInsets.symmetric(
           horizontal: spacing8,
@@ -525,7 +511,7 @@ class AppTheme {
           elevation: 0,
           shadowColor: AppColors.shadowMedium,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radius12),
+            borderRadius: BorderRadius.circular(controlRadius),
           ),
           padding: const EdgeInsets.symmetric(
             horizontal: spacing24,
@@ -546,7 +532,7 @@ class AppTheme {
             width: 1.5,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radius12),
+            borderRadius: BorderRadius.circular(controlRadius),
           ),
           padding: const EdgeInsets.symmetric(
             horizontal: spacing24,
@@ -579,34 +565,10 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.lightSurface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius12),
-          borderSide: const BorderSide(
-            color: AppColors.lightBorder,
-            width: 1,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius12),
-          borderSide: const BorderSide(
-            color: AppColors.lightBorder,
-            width: 1,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius12),
-          borderSide: const BorderSide(
-            color: AppColors.primary,
-            width: 2,
-          ),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius12),
-          borderSide: const BorderSide(
-            color: AppColors.error,
-            width: 1,
-          ),
-        ),
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        errorBorder: InputBorder.none,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: spacing16,
           vertical: spacing16,
@@ -681,7 +643,7 @@ class AppTheme {
       canvasColor: AppColors.darkBackground,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
-        primaryContainer: AppColors.primaryDark,
+        primaryContainer: AppColors.darkElevatedSurface,
         secondary: AppColors.secondary,
         secondaryContainer: AppColors.secondaryDark,
         surface: AppColors.darkSurface,
@@ -724,10 +686,6 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radius16),
-          side: const BorderSide(
-            color: AppColors.darkBorder,
-            width: 1,
-          ),
         ),
         margin: const EdgeInsets.symmetric(
           horizontal: spacing8,
@@ -742,7 +700,7 @@ class AppTheme {
           elevation: 0,
           shadowColor: AppColors.shadowMedium,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radius12),
+            borderRadius: BorderRadius.circular(controlRadius),
           ),
           padding: const EdgeInsets.symmetric(
             horizontal: spacing24,
@@ -763,7 +721,7 @@ class AppTheme {
             width: 1.5,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radius12),
+            borderRadius: BorderRadius.circular(controlRadius),
           ),
           padding: const EdgeInsets.symmetric(
             horizontal: spacing24,
@@ -796,34 +754,10 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.darkSurface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius12),
-          borderSide: const BorderSide(
-            color: AppColors.darkBorder,
-            width: 1,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius12),
-          borderSide: const BorderSide(
-            color: AppColors.darkBorder,
-            width: 1,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius12),
-          borderSide: const BorderSide(
-            color: AppColors.primary,
-            width: 2,
-          ),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius12),
-          borderSide: const BorderSide(
-            color: AppColors.error,
-            width: 1,
-          ),
-        ),
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        errorBorder: InputBorder.none,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: spacing16,
           vertical: spacing16,

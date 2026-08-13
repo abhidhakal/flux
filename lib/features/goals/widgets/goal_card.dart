@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/app_icon_badge.dart';
+import '../../../shared/widgets/app_status_pill.dart';
+import '../../../shared/widgets/app_card.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/constants/goal_type_icons.dart';
 import '../../../core/models/goal_model.dart';
@@ -27,51 +30,31 @@ class GoalCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.1),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: () => onEditGoal?.call(goal),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context),
-                if (goal.description.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    goal.description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                _buildProgressSection(context),
-                const SizedBox(height: 16),
-                _buildActionButtons(context),
-              ],
-            ),
-          ),
+      child: AppCard(
+        onTap: () => onEditGoal?.call(goal),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(context),
+            if (goal.description.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                goal.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  height: 1.4,
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            _buildProgressSection(context),
+            const SizedBox(height: 16),
+            _buildActionButtons(context),
+          ],
         ),
       ),
     );
@@ -83,18 +66,10 @@ class GoalCard extends StatelessWidget {
 
     return Row(
       children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: goalColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            _getIconForType(goal.type),
-            color: goalColor,
-            size: 24,
-          ),
+        AppIconBadge(
+          icon: _getIconForType(goal.type),
+          color: goalColor,
+          size: AppIconBadgeSize.large,
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -147,20 +122,9 @@ class GoalCard extends StatelessWidget {
         break;
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: statusColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        statusText,
-        style: TextStyle(
-          color: statusColor,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+    return AppStatusPill(
+      label: statusText,
+      color: statusColor,
     );
   }
 

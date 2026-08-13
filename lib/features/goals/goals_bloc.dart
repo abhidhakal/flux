@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../core/models/goal_model.dart';
 import '../../core/services/goal_service.dart';
 import '../../core/services/notification_trigger_service.dart';
+import '../../core/services/premium_limits_service.dart';
 
 // Events
 abstract class GoalsEvent extends Equatable {
@@ -147,6 +148,7 @@ class GoalsSuccess extends GoalsState {
 class GoalsBloc extends Bloc<GoalsEvent, GoalsState> {
   final GoalService _goalService;
   final NotificationTriggerService _notificationTriggerService;
+  final PremiumLimitsService _premiumLimitsService = PremiumLimitsService();
 
   GoalsBloc({
     required GoalService goalService,
@@ -184,6 +186,12 @@ class GoalsBloc extends Bloc<GoalsEvent, GoalsState> {
     emit(GoalsLoading());
 
     try {
+      final existingGoals = await _goalService.getUserGoals(event.goal.userId);
+      if (!_premiumLimitsService.canCreateGoal(existingGoals)) {
+        emit(const GoalsError(
+            'Free accounts can have up to 2 active goals. Upgrade to Flux Pro for unlimited goals.'));
+        return;
+      }
       await _goalService.createGoal(event.goal);
 
       // Reload goals immediately after creation

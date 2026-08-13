@@ -523,8 +523,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration:
-            AppTheme.surfaceDecoration(context, radius: 22, subtle: true),
+        decoration: AppTheme.surfaceDecoration(context,
+            radius: AppTheme.cardRadius, subtle: true),
         child: SizedBox(
           height: 40,
           child: Row(
@@ -648,7 +648,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   void _showFilterSheet(List<Budget> budgets) {
     AppBottomSheet.show(
       context,
-      radius: 20,
+      radius: AppTheme.cardRadius,
       isScrollControlled: false,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       builder: (ctx) {
@@ -889,8 +889,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
           ),
         ),
         Container(
-          decoration:
-              AppTheme.surfaceDecoration(context, radius: 18, subtle: false),
+          decoration: AppTheme.surfaceDecoration(context,
+              radius: AppTheme.cardRadius, subtle: false),
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Column(
             children: [

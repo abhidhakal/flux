@@ -3,7 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/models/financial_snapshot.dart';
+import '../../../core/models/ai_financial_context.dart';
+import '../../../core/models/budget_model.dart';
+import '../../../core/models/goal_model.dart';
 import '../../../core/services/currency_service.dart';
+import '../../../core/services/ai_insight_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
 import '../../budget/budget_bloc.dart';
@@ -16,6 +20,9 @@ import '../widgets/for_you_actions_card.dart';
 import '../../../core/utils/date_range_filter.dart';
 import '../../../shared/widgets/stat_tile.dart';
 import '../../../shared/widgets/empty_state_view.dart';
+import '../../../shared/widgets/app_section_header.dart';
+import '../../../shared/widgets/app_card.dart';
+import '../../../shared/widgets/app_snackbar.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class AnalyticsDashboardScreen extends StatefulWidget {
@@ -30,6 +37,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   TimelineFilter _timelineFilter = TimelineFilter.lastMonth;
   DateTimeRange? _customRange;
   bool _showMonthlyTrend = false;
+  bool _isAiLoading = false;
+  AiInsightResult? _aiResult;
 
   @override
   void initState() {
@@ -139,6 +148,20 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                                 ? goalsState.goals
                                 : const [],
                           ),
+                          const SizedBox(height: 12),
+                          _buildAskFluxAction(
+                            transactions: transactions,
+                            budgets: budgetState is BudgetLoaded
+                                ? budgetState.budgets
+                                : const [],
+                            goals: goalsState is GoalsLoaded
+                                ? goalsState.goals
+                                : const [],
+                          ),
+                          if (_aiResult != null) ...[
+                            const SizedBox(height: 12),
+                            _buildAiResultCard(_aiResult!),
+                          ],
                           const SizedBox(height: 24),
                           _buildQuickStats(transactions),
                           const SizedBox(height: 24),
@@ -170,6 +193,234 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
             return _buildEmptyState();
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildAskFluxAction({
+    required List<Transaction> transactions,
+    required List<Budget> budgets,
+    required List<Goal> goals,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final gradientEnd = Color.lerp(colorScheme.primary, Colors.black, 0.18)!;
+    void onAsk() {
+      _askFlux(
+        transactions: transactions,
+        budgets: budgets,
+        goals: goals,
+      );
+    }
+
+    return Semantics(
+      button: true,
+      label: _isAiLoading ? 'Flux is thinking' : 'Ask Flux for an insight',
+      child: Opacity(
+        opacity: _isAiLoading ? 0.72 : 1,
+        child: Material(
+          color: Colors.transparent,
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [colorScheme.primary, gradientEnd],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.primary.withValues(alpha: 0.22),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: InkWell(
+              onTap: _isAiLoading ? null : onAsk,
+              borderRadius: BorderRadius.circular(14),
+              child: SizedBox(
+                height: 48,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_isAiLoading)
+                      const SizedBox.square(
+                        dimension: 17,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    else
+                      const Icon(
+                        LucideIcons.sparkles,
+                        size: 17,
+                        color: Colors.white,
+                      ),
+                    const SizedBox(width: 9),
+                    Text(
+                      _isAiLoading ? 'Thinking…' : 'Ask Flux',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    if (!_isAiLoading) ...[
+                      const SizedBox(width: 8),
+                      const Icon(
+                        LucideIcons.arrowUpRight,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _askFlux({
+    required List<Transaction> transactions,
+    required List<Budget> budgets,
+    required List<Goal> goals,
+  }) async {
+    final consented = await _confirmAiSharing();
+    if (!consented || !mounted) return;
+
+    setState(() => _isAiLoading = true);
+    try {
+      final currencyService = CurrencyService();
+      await currencyService.ensureInitialized();
+      final context = AiFinancialContext.fromData(
+        currencyCode: currencyService.currency,
+        currencySymbol: currencyService.symbol,
+        currencyDecimalPlaces: currencyService.decimalPlaces,
+        transactions: transactions,
+        budgets: budgets,
+        goals: goals,
+      );
+      final result = await AiInsightService().generate(context);
+      if (!mounted) return;
+      setState(() {
+        _aiResult = result;
+        _isAiLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isAiLoading = false);
+      AppSnackbar.showError(
+        context,
+        message:
+            'Flux AI is unavailable right now. Your local insights are still available.',
+      );
+    }
+  }
+
+  Future<bool> _confirmAiSharing() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Ask Flux with AI?'),
+        content: const Text(
+          'Flux will send anonymous financial totals and category summaries to generate this answer. Transaction names, notes, IDs, and raw records stay on your device.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    return result == true;
+  }
+
+  Widget _buildAiResultCard(AiInsightResult result) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return AppCard(
+      tint: colorScheme.primary,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(LucideIcons.sparkles, size: 18, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  result.title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+              Text(
+                'AI',
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            result.summary,
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              height: 1.4,
+            ),
+          ),
+          for (final action in result.actions) ...[
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(LucideIcons.arrowRight,
+                    size: 16, color: colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${action.label}: ',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        TextSpan(text: action.reason),
+                      ],
+                    ),
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 13,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (result.caution.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              result.caution,
+              style: TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -249,17 +500,63 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Based on your savings rate, stability, and spending efficiency.',
+                  'Your score combines savings rate, spending efficiency, and recent trend.',
                   style: TextStyle(
                     fontSize: 12,
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
+                if (analysis != null) ...[
+                  const SizedBox(height: 10),
+                  _buildHealthDrivers(analysis, colorScheme),
+                ],
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildHealthDrivers(
+      Map<String, dynamic> analysis, ColorScheme colorScheme) {
+    final savingsRate = (analysis['savingsRate'] as num?)?.toDouble();
+    final efficiency = analysis['efficiency'] as Map<String, dynamic>?;
+    final wants = (efficiency?['wants'] as num?)?.toDouble();
+    final trend = analysis['spendingTrend'] as String?;
+    final trendLabel = switch (trend) {
+      'increasing' => 'Spending rising',
+      'decreasing' => 'Spending falling',
+      _ => 'Spending stable',
+    };
+    final labels = <String>[
+      if (savingsRate != null) 'Savings ${savingsRate.toStringAsFixed(0)}%',
+      if (wants != null) 'Wants ${wants.toStringAsFixed(0)}%',
+      trendLabel,
+    ];
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: labels
+          .map(
+            (label) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: colorScheme.surface.withValues(alpha: 0.65),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -566,25 +863,15 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       value: CurrencyService().formatAmountCompact(amount),
       icon: icon,
       accentColor: color,
-      radius: 24,
+      radius: AppTheme.cardRadius,
       bordered: true,
     );
   }
 
   Widget _buildSectionHeader(String title, String subtitle) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: AppTheme.sectionTitleStyle(context)
-              .copyWith(fontSize: 20, fontWeight: FontWeight.w600),
-        ),
-        Text(
-          subtitle,
-          style: AppTheme.sectionSubtitleStyle(context),
-        ),
-      ],
+    return AppSectionHeader(
+      title: title,
+      subtitle: subtitle,
     );
   }
 

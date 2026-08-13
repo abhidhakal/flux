@@ -106,10 +106,6 @@ class SkeletonComponents {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.2),
-          width: 1,
-        ),
       ),
       child: children != null
           ? SingleChildScrollView(

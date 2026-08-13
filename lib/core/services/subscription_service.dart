@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'feature_flag_service.dart';
 
 class SubscriptionService {
   static final SubscriptionService _instance = SubscriptionService._internal();
@@ -16,15 +17,11 @@ class SubscriptionService {
   // Product IDs
   static const String _kMonthlySubscriptionId = 'premium_monthly';
   static const String _kYearlySubscriptionId = 'premium_yearly';
-  static const String _kLifetimeSubscriptionId = 'premium_lifetime';
 
   static const Set<String> _kProductIds = {
     _kMonthlySubscriptionId,
     _kYearlySubscriptionId,
-    _kLifetimeSubscriptionId,
   };
-
-  static const String _kPremiumExpiryKey = 'premium_expiry';
 
   bool _isAvailable = false;
   List<ProductDetails> _products = [];
@@ -107,24 +104,16 @@ class SubscriptionService {
         id: _kMonthlySubscriptionId,
         title: 'Monthly Premium',
         description: 'Unlock all features',
-        price: '\$1.49',
-        rawPrice: 1.49,
+        price: '\$5.99',
+        rawPrice: 5.99,
         currencyCode: 'USD',
       ),
       ProductDetails(
         id: _kYearlySubscriptionId,
         title: 'Yearly Premium',
         description: 'Unlock all features',
-        price: '\$11.99',
-        rawPrice: 11.99,
-        currencyCode: 'USD',
-      ),
-      ProductDetails(
-        id: _kLifetimeSubscriptionId,
-        title: 'Lifetime Access',
-        description: 'Pay once, keep forever',
-        price: '\$34.99',
-        rawPrice: 34.99,
+        price: '\$39.99',
+        rawPrice: 39.99,
         currencyCode: 'USD',
       ),
     ];
@@ -178,59 +167,33 @@ class SubscriptionService {
 
   Future<void> _deliverProduct(PurchaseDetails purchaseDetails) async {
     if (_kProductIds.contains(purchaseDetails.productID)) {
-      await _setPremiumStatusForProduct(purchaseDetails.productID);
-      _purchaseController.add(true);
+      try {
+        final platform = Platform.isIOS ? 'ios' : 'android';
+        final verificationData = purchaseDetails.verificationData;
+        final callable = FirebaseFunctions.instanceFor(
+          region: 'us-central1',
+        ).httpsCallable('verifySubscriptionPurchase');
+
+        final response = await callable.call({
+          'platform': platform,
+          'productId': purchaseDetails.productID,
+          if (platform == 'android')
+            'purchaseToken': verificationData.serverVerificationData,
+          if (platform == 'ios') 'transactionId': purchaseDetails.purchaseID,
+        });
+
+        final data = response.data;
+        if (data is Map && data['isPremium'] == true) {
+          _isPremium = true;
+          _purchaseController.add(true);
+        }
+      } catch (error) {
+        debugPrint('Subscription verification failed: $error');
+      }
     }
   }
-
-  Future<void> _setPremiumStatusForProduct(String productId) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    final prefs = await SharedPreferences.getInstance();
-    DateTime expiryDate;
-
-    switch (productId) {
-      case _kMonthlySubscriptionId:
-        expiryDate = DateTime.now().add(const Duration(days: 30));
-        break;
-      case _kYearlySubscriptionId:
-        expiryDate = DateTime.now().add(const Duration(days: 365));
-        break;
-      case _kLifetimeSubscriptionId:
-        expiryDate =
-            DateTime.now().add(const Duration(days: 365 * 100)); // 100 years
-        break;
-      default:
-        expiryDate = DateTime.now().add(const Duration(days: 30));
-    }
-
-    await prefs.setString(
-        _getExpiryKey(user.uid), expiryDate.toIso8601String());
-
-    // Clear legacy key
-    if (prefs.containsKey('is_premium')) {
-      await prefs.remove('is_premium');
-    }
-
-    _isPremium = true;
-  }
-
-  static const List<String> _developerEmails = [
-    'dhakalabhinav4@gmail.com',
-    'subhishrestha08@gmail.com',
-  ];
-
-  static String _getExpiryKey(String uid) => '${_kPremiumExpiryKey}_$uid';
 
   Future<void> _checkPremiumStatus() async {
-    // During development, disabling subscriptions grants access to all
-    // premium features without involving the store.
-    if (!FeatureFlagService.isSubscriptionEnabled) {
-      _isPremium = true;
-      return;
-    }
-
     _isPremium = false; // Reset first
 
     final user = FirebaseAuth.instance.currentUser;
@@ -239,34 +202,16 @@ class SubscriptionService {
       return;
     }
 
-    // Developer Bypass
-    if (user.email != null && _developerEmails.contains(user.email)) {
+    final entitlement = await FirebaseFirestore.instance
+        .collection('entitlements')
+        .doc(user.uid)
+        .get();
+    final data = entitlement.data();
+    final expiresAt = data?['expiresAt'];
+    if (data?['status'] == 'active' &&
+        expiresAt is Timestamp &&
+        expiresAt.toDate().isAfter(DateTime.now())) {
       _isPremium = true;
-      return;
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    final userExpiryKey = _getExpiryKey(user.uid);
-
-    // Check for legacy device-wide key first and clear it
-    if (prefs.containsKey('is_premium')) {
-      await prefs.remove('is_premium');
-    }
-    if (prefs.containsKey(_kPremiumExpiryKey)) {
-      // This was the old global expiry key, we should probably remove it to be safe
-      // but we don't want to accidentally remove a legit purchase that hasn't migrated.
-      // However, since this is "mocking" mostly and real IAP should be restored, it's safer to use user-specific keys.
-    }
-
-    final expiryString = prefs.getString(userExpiryKey);
-    if (expiryString != null) {
-      final expiryDate = DateTime.tryParse(expiryString);
-      if (expiryDate != null && expiryDate.isAfter(DateTime.now())) {
-        _isPremium = true;
-      } else {
-        // Expired
-        await prefs.remove(userExpiryKey);
-      }
     }
   }
 

@@ -33,7 +33,7 @@ class OfflineIndicator extends StatelessWidget {
                 Icon(
                   isOffline ? LucideIcons.wifiOff : LucideIcons.refreshCw,
                   color: Colors.white,
-                  size: 16,
+                  size: AppTheme.smallIconSize,
                 ),
                 const SizedBox(width: 8),
                 Text(

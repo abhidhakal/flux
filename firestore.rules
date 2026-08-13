@@ -79,6 +79,14 @@ service cloud.firestore {
       }
     }
 
+    // Subscription entitlements are written only by trusted server code.
+    // The client reads premium state through the subscription service, which
+    // intentionally does not trust client-writable documents.
+    match /entitlements/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

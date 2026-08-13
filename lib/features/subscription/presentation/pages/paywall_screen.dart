@@ -71,7 +71,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
                   // Title
                   Text(
-                    'Go Premium',
+                    'Flux Pro',
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
@@ -82,7 +82,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   const SizedBox(height: 6),
 
                   Text(
-                    'Unlock all features',
+                    'More clarity, less guesswork.',
                     style: TextStyle(
                       fontSize: 15,
                       color: colorScheme.onSurface.withValues(alpha: 0.6),
@@ -92,11 +92,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   const Spacer(flex: 1),
 
                   // Features - compact
-                  _buildBenefitRow(LucideIcons.flag, 'Unlimited custom goals'),
+                  _buildBenefitRow(
+                      LucideIcons.sparkles, 'Ask Flux AI insights'),
                   const SizedBox(height: 10),
-                  _buildBenefitRow(LucideIcons.download, 'Export your data'),
+                  _buildBenefitRow(
+                      LucideIcons.lineChart, 'Advanced budgets and forecasts'),
                   const SizedBox(height: 10),
-                  _buildBenefitRow(LucideIcons.lineChart, 'Advanced insights'),
+                  _buildBenefitRow(
+                      LucideIcons.download, 'Exports, widgets, and automation'),
 
                   const Spacer(flex: 1),
 
@@ -299,7 +302,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: const Text(
-                            'SAVE 33%',
+                            'SAVE 44%',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 9,

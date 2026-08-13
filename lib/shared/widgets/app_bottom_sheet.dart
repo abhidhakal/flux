@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_theme.dart';
 
 /// Shared chrome for modal bottom sheets: rounded-top container + drag
 /// handle, so screens stop hand-rolling this per dialog.
@@ -6,10 +7,10 @@ class AppBottomSheet {
   static Future<T?> show<T>(
     BuildContext context, {
     required WidgetBuilder builder,
-    double radius = 20,
+    double radius = AppTheme.cardRadius,
     bool isScrollControlled = true,
     bool showHandle = true,
-    EdgeInsetsGeometry padding = const EdgeInsets.all(24),
+    EdgeInsetsGeometry padding = const EdgeInsets.all(AppTheme.spacing24),
   }) {
     return showModalBottomSheet<T>(
       context: context,

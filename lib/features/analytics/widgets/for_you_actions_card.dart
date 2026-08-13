@@ -7,6 +7,9 @@ import '../../../core/services/financial_insights_service.dart';
 import '../../goals/screens/goals_screen.dart';
 import '../../main/widgets/budgets_screen.dart';
 import '../../main/widgets/transactions_screen.dart';
+import '../../../shared/widgets/app_card.dart';
+import '../../../shared/widgets/app_icon_badge.dart';
+import '../../../shared/widgets/app_status_pill.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class ForYouActionsCard extends StatelessWidget {
@@ -29,9 +32,9 @@ class ForYouActionsCard extends StatelessWidget {
         .toList();
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      decoration: AppTheme.surfaceDecoration(context, radius: 20, subtle: true),
+      subtle: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -44,6 +47,11 @@ class ForYouActionsCard extends StatelessWidget {
                     ),
               ),
               const Spacer(),
+              const AppStatusPill(
+                label: 'On-device',
+                color: AppColors.success,
+              ),
+              const SizedBox(width: 8),
               if (insights.isNotEmpty)
                 Text(
                   '${insights.length} action${insights.length == 1 ? '' : 's'}',
@@ -101,22 +109,14 @@ class _InsightRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              insight.tone == InsightTone.attention
-                  ? LucideIcons.alertTriangle
-                  : insight.tone == InsightTone.positive
-                      ? LucideIcons.trendingUp
-                      : LucideIcons.target,
-              color: color,
-              size: 17,
-            ),
+          AppIconBadge(
+            icon: insight.tone == InsightTone.attention
+                ? LucideIcons.alertTriangle
+                : insight.tone == InsightTone.positive
+                    ? LucideIcons.trendingUp
+                    : LucideIcons.target,
+            color: color,
+            size: AppIconBadgeSize.small,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -131,6 +131,17 @@ class _InsightRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 3),
+                Text(
+                  insight.basedOn,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Text(
                   insight.message,
                   maxLines: featured ? 3 : 2,

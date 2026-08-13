@@ -56,28 +56,28 @@ class AppCategories {
 
   // Category colors mapping
   static const Map<String, int> categoryColors = {
-    'Food & Dining': 0xFFFF6B6B,
-    'Transportation': 0xFF4ECDC4,
-    'Entertainment': 0xFF45B7D1,
-    'Shopping': 0xFFFF9500,
-    'Bills & Utilities': 0xFF34C759,
-    'Healthcare': 0xFFFF3B30,
-    'Education': 0xFF5856D6,
-    'Housing': 0xFF007AFF,
-    'Insurance': 0xFFAF52DE,
-    'Personal Care': 0xFFFF2D92,
-    'Travel': 0xFF00C7BE,
-    'Gifts': 0xFFFF9500,
-    'Other': 0xFF8E8E93,
-    'Salary': 0xFF34C759,
-    'Freelance': 0xFF007AFF,
-    'Investment': 0xFF5856D6,
-    'Business': 0xFFAF52DE,
-    'Other Income': 0xFF34C759,
+    'Food & Dining': 0xFF333333,
+    'Transportation': 0xFF444444,
+    'Entertainment': 0xFF555555,
+    'Shopping': 0xFF666666,
+    'Bills & Utilities': 0xFF777777,
+    'Healthcare': 0xFF888888,
+    'Education': 0xFF999999,
+    'Housing': 0xFFAAAAAA,
+    'Insurance': 0xFFBBBBBB,
+    'Personal Care': 0xFFCCCCCC,
+    'Travel': 0xFFDDDDDD,
+    'Gifts': 0xFF666666,
+    'Other': 0xFF888888,
+    'Salary': 0xFF555555,
+    'Freelance': 0xFF777777,
+    'Investment': 0xFF999999,
+    'Business': 0xFFBBBBBB,
+    'Other Income': 0xFF666666,
   };
 
   // Get color for category
   static int getColor(String category) {
-    return categoryColors[category] ?? 0xFF8E8E93;
+    return categoryColors[category] ?? 0xFF888888;
   }
 }

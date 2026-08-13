@@ -3,6 +3,9 @@ import '../../../core/constants/app_theme.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../../budget/screens/edit_budget_screen.dart';
+import '../../../shared/widgets/app_card.dart';
+import '../../../shared/widgets/app_icon_badge.dart';
+import '../../../shared/widgets/app_status_pill.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class BudgetCard extends StatelessWidget {
@@ -20,246 +23,233 @@ class BudgetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final spent = budget.spent;
-    final total = budget.totalAvailable;
     final percentage = budget.progressPercentage;
     final isOverBudget = budget.isOverBudget;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Card stays neutral for every status - the icon chip and progress bar
-    // carry the color signal instead of washing the whole card background.
-    final cardColor = muted
-        ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
-        : AppTheme.cardSurface(context);
-    final borderColor =
-        colorScheme.outline.withValues(alpha: muted ? 0.2 : 0.12);
-
-    return InkWell(
+    return AppCard(
       onTap: () => EditBudgetScreen.showEditBudgetSheet(context, budget),
       onLongPress: onDelete,
-      borderRadius: BorderRadius.circular(AppTheme.radius16),
-      child: Card(
-        margin: EdgeInsets.zero, // Card margin handled by ListView separator
-        elevation: 0,
-        color: cardColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radius20),
-          side: BorderSide(
-            color: borderColor,
-            width: 1,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.all(18),
+      subtle: muted,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row with icon and title
+          Row(
             children: [
-              // Header row with icon and title
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(AppTheme.spacing8),
-                    decoration: BoxDecoration(
-                      color: muted
-                          ? colorScheme.outline.withValues(alpha: 0.15)
-                          : isOverBudget
-                              ? AppColors.error.withValues(alpha: 0.1)
-                              : percentage > 80
-                                  ? AppColors.warning.withValues(alpha: 0.1)
-                                  : AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppTheme.radius8),
+              AppIconBadge(
+                icon: muted
+                    ? LucideIcons.pauseCircle
+                    : isOverBudget
+                        ? LucideIcons.alertTriangle
+                        : percentage > 80
+                            ? LucideIcons.trendingUp
+                            : LucideIcons.wallet,
+                color: muted
+                    ? colorScheme.onSurface.withValues(alpha: 0.65)
+                    : isOverBudget
+                        ? AppColors.error
+                        : percentage > 80
+                            ? AppColors.warning
+                            : AppColors.primary,
+                size: AppIconBadgeSize.small,
+              ),
+              const SizedBox(width: AppTheme.spacing12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      budget.name,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface
+                            .withValues(alpha: muted ? 0.7 : 1),
+                      ),
                     ),
-                    child: Icon(
-                      muted
-                          ? LucideIcons.pauseCircle
-                          : isOverBudget
-                              ? LucideIcons.alertTriangle
-                              : percentage > 80
-                                  ? LucideIcons.trendingUp
-                                  : LucideIcons.wallet,
-                      color: muted
-                          ? colorScheme.onSurface.withValues(alpha: 0.65)
-                          : isOverBudget
-                              ? AppColors.error
-                              : percentage > 80
-                                  ? AppColors.warning
-                                  : AppColors.primary,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: AppTheme.spacing12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
                       children: [
                         Text(
-                          budget.name,
+                          '${budget.category} • ${_periodLabel(budget.period.name)}',
                           style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: colorScheme.onSurface
-                                .withValues(alpha: muted ? 0.7 : 1),
+                            fontSize: 12,
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
-                        Row(
-                          children: [
-                            Text(
-                              '${budget.category} • ${_periodLabel(budget.period.name)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
-                              ),
-                            ),
-                            if (!budget.isActive) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.outline
-                                      .withValues(alpha: 0.16),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  'Inactive',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: colorScheme.onSurface
-                                        .withValues(alpha: 0.75),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
+                        if (!budget.isActive) ...[
+                          const SizedBox(width: 8),
+                          AppStatusPill(
+                            label: 'Inactive',
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ],
                       ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppTheme.spacing8),
-              // Amount row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${CurrencyService().formatAmount(spent)} / ${CurrencyService().formatAmount(total)}',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: muted
-                          ? colorScheme.onSurface.withValues(alpha: 0.7)
-                          : isOverBudget
-                              ? AppColors.error
-                              : colorScheme.onSurface.withValues(alpha: 0.8),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(99),
-                child: LinearProgressIndicator(
-                  value: (percentage / 100).clamp(0.0, 1.0),
-                  minHeight: 6,
-                  backgroundColor: colorScheme.outline.withValues(alpha: 0.3),
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    muted
-                        ? colorScheme.onSurface.withValues(alpha: 0.3)
-                        : isOverBudget
-                            ? AppColors.error
-                            : percentage > 80
-                                ? AppColors.warning
-                                : AppColors.primary,
-                  ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${percentage.toStringAsFixed(1)}% used',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: muted
-                          ? colorScheme.onSurface.withValues(alpha: 0.65)
-                          : isOverBudget
-                              ? AppColors.error
-                              : colorScheme.onSurface.withValues(alpha: 0.8),
-                    ),
-                  ),
-                  Text(
-                    '${CurrencyService().formatAmount(budget.remaining)} remaining',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ],
-              ),
-              if (!muted && !isOverBudget) _buildPaceLine(context, percentage),
-              if (!muted && budget.hasWeeklyTarget)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    'Weekly target: ${CurrencyService().formatAmount(budget.weeklyTarget)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.6),
-                    ),
-                  ),
-                ),
-              if (!muted && budget.hasTemporaryAdjustment)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    '${budget.temporaryAdjustment >= 0 ? 'Includes' : 'Subtracts'} ${CurrencyService().formatAmount(budget.temporaryAdjustment.abs())} temporary adjustment',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              if (isOverBudget && !muted)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    'Over budget by ${CurrencyService().formatAmount(-budget.remaining)}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.error,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              if (budget.hasRollover)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    'Includes ${CurrencyService().formatAmount(budget.rolloverAmount)} rollover',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.success,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
             ],
           ),
-        ),
+          const SizedBox(height: AppTheme.spacing8),
+          // Amount row
+          Row(
+            children: [
+              Expanded(
+                child: _amountSummary(
+                  context,
+                  label: 'Spent',
+                  value: CurrencyService().formatAmount(spent),
+                  color: muted
+                      ? colorScheme.onSurface.withValues(alpha: 0.7)
+                      : colorScheme.onSurface,
+                ),
+              ),
+              Expanded(
+                child: _amountSummary(
+                  context,
+                  label: isOverBudget ? 'Over by' : 'Remaining',
+                  value: CurrencyService().formatAmount(
+                    isOverBudget ? -budget.remaining : budget.remaining,
+                  ),
+                  color: muted
+                      ? colorScheme.onSurface.withValues(alpha: 0.7)
+                      : isOverBudget
+                          ? AppColors.error
+                          : AppColors.success,
+                  alignEnd: true,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: LinearProgressIndicator(
+              value: (percentage / 100).clamp(0.0, 1.0),
+              minHeight: 6,
+              backgroundColor: colorScheme.outline.withValues(alpha: 0.3),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                muted
+                    ? colorScheme.onSurface.withValues(alpha: 0.3)
+                    : isOverBudget
+                        ? AppColors.error
+                        : percentage > 80
+                            ? AppColors.warning
+                            : AppColors.primary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${percentage.toStringAsFixed(1)}% used',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: muted
+                      ? colorScheme.onSurface.withValues(alpha: 0.65)
+                      : isOverBudget
+                          ? AppColors.error
+                          : colorScheme.onSurface.withValues(alpha: 0.8),
+                ),
+              ),
+            ],
+          ),
+          if (!muted && !isOverBudget) _buildPaceLine(context, percentage),
+          if (!muted && budget.hasWeeklyTarget)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'Weekly target: ${CurrencyService().formatAmount(budget.weeklyTarget)}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
+                ),
+              ),
+            ),
+          if (!muted && budget.hasTemporaryAdjustment)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '${budget.temporaryAdjustment >= 0 ? 'Includes' : 'Subtracts'} ${CurrencyService().formatAmount(budget.temporaryAdjustment.abs())} temporary adjustment',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          if (isOverBudget && !muted)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Over budget by ${CurrencyService().formatAmount(-budget.remaining)}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          if (budget.hasRollover)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Includes ${CurrencyService().formatAmount(budget.rolloverAmount)} rollover',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 
   String _periodLabel(String name) =>
       name.isEmpty ? name : name[0].toUpperCase() + name.substring(1);
+
+  Widget _amountSummary(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required Color color,
+    bool alignEnd = false,
+  }) {
+    return Column(
+      crossAxisAlignment:
+          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.58),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
 
   // How spend% compares to how far through the period we are - lets a user
   // tell "60% spent, day 5 of 30" (way ahead of pace) apart from "60% spent,

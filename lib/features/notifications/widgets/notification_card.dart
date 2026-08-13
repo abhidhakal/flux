@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/notification_model.dart' as app_notification;
+import '../../../shared/widgets/app_icon_badge.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class NotificationCard extends StatelessWidget {
@@ -181,18 +182,10 @@ class NotificationCard extends StatelessWidget {
         break;
     }
 
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Icon(
-        icon,
-        color: color,
-        size: 20,
-      ),
+    return AppIconBadge(
+      icon: icon,
+      color: color,
+      size: AppIconBadgeSize.medium,
     );
   }
 

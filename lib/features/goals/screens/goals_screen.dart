@@ -161,7 +161,7 @@ class _GoalsScreenState extends State<GoalsScreen>
 
     AppBottomSheet.show(
       context,
-      radius: 24,
+      radius: AppTheme.cardRadius,
       isScrollControlled: false,
       padding: const EdgeInsets.symmetric(vertical: 24),
       builder: (context) => Column(
@@ -286,7 +286,7 @@ class _GoalsScreenState extends State<GoalsScreen>
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: AppTheme.surfaceDecoration(context,
-                    radius: 20, subtle: true),
+                    radius: AppTheme.cardRadius, subtle: true),
                 child: Column(
                   children: [
                     Row(
@@ -619,7 +619,8 @@ class _GoalsScreenState extends State<GoalsScreen>
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: AppTheme.surfaceDecoration(context, radius: 20),
+              decoration: AppTheme.surfaceDecoration(context,
+                  radius: AppTheme.cardRadius),
               child: SizedBox(
                   height: 200, child: GoalProgressChart(goals: allGoals)),
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/services/currency_service.dart';
+import '../../../shared/widgets/app_icon_badge.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class TransactionTile extends StatelessWidget {
@@ -82,18 +83,12 @@ class TransactionTile extends StatelessWidget {
                 ),
               )
             else
-              Container(
-                width: 44,
-                height: 44,
-                margin: const EdgeInsets.only(right: 14),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  isIncome ? LucideIcons.plus : LucideIcons.minus,
+              Padding(
+                padding: const EdgeInsets.only(right: 14),
+                child: AppIconBadge(
+                  icon: isIncome ? LucideIcons.plus : LucideIcons.minus,
                   color: accentColor,
-                  size: 22,
+                  size: AppIconBadgeSize.large,
                 ),
               ),
 

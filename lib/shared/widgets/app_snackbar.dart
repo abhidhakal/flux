@@ -94,7 +94,8 @@ class AppSnackbar {
                         horizontal: 14, vertical: 14),
                     child: Row(
                       children: [
-                        Icon(icon ?? defaultIcon, color: accentColor, size: 20),
+                        Icon(icon ?? defaultIcon,
+                            color: accentColor, size: AppTheme.mediumIconSize),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(

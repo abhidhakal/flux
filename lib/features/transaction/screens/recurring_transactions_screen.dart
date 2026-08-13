@@ -8,6 +8,9 @@ import '../../../core/services/currency_service.dart';
 import '../../../core/services/recurring_transaction_service.dart';
 import '../../../core/utils/date_format_utils.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/app_card.dart';
+import '../../../shared/widgets/app_icon_badge.dart';
+import '../../../shared/widgets/app_status_pill.dart';
 import '../../auth/auth_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -25,6 +28,7 @@ class _RecurringTransactionsScreenState
   final RecurringTransactionService _recurringTransactionService =
       RecurringTransactionService();
   Future<List<RecurringTransaction>>? _recurringTransactionsFuture;
+  TransactionType? _filterType;
 
   @override
   void initState() {
@@ -208,7 +212,8 @@ class _RecurringTransactionsScreenState
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Edit recurring payment'),
+          title: Text(
+              'Edit recurring ${recurring.type == TransactionType.income ? 'income' : 'expense'}'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -303,10 +308,18 @@ class _RecurringTransactionsScreenState
       await _recurringTransactionService.updateRecurringTransaction(edited);
       if (!mounted) return;
       _loadRecurringTransactions();
-      AppSnackbar.showSuccess(context, message: 'Recurring payment updated');
+      AppSnackbar.showSuccess(
+        context,
+        message:
+            'Recurring ${recurring.type == TransactionType.income ? 'income' : 'expense'} updated',
+      );
     } catch (e) {
       if (!mounted) return;
-      AppSnackbar.showError(context, message: 'Failed to edit payment: $e');
+      AppSnackbar.showError(
+        context,
+        message:
+            'Failed to edit recurring ${recurring.type == TransactionType.income ? 'income' : 'expense'}: $e',
+      );
     }
   }
 
@@ -408,16 +421,104 @@ class _RecurringTransactionsScreenState
               children: [
                 _buildRecurringSummary(recurringTransactions),
                 const SizedBox(height: 12),
-                ...recurringTransactions.map(
-                  (recurring) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _buildRecurringTile(recurring),
+                _buildTypeFilter(),
+                const SizedBox(height: 12),
+                if (_filteredRecurring(recurringTransactions).isEmpty)
+                  _buildFilteredEmptyState()
+                else
+                  ..._filteredRecurring(recurringTransactions).map(
+                    (recurring) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildRecurringTile(recurring),
+                    ),
                   ),
-                ),
               ],
             );
           },
         ),
+      ),
+    );
+  }
+
+  List<RecurringTransaction> _filteredRecurring(
+      List<RecurringTransaction> recurringTransactions) {
+    if (_filterType == null) return recurringTransactions;
+    return recurringTransactions
+        .where((item) => item.type == _filterType)
+        .toList();
+  }
+
+  Widget _buildTypeFilter() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _filterChip('All', null, colorScheme),
+          const SizedBox(width: 8),
+          _filterChip('Income', TransactionType.income, colorScheme),
+          const SizedBox(width: 8),
+          _filterChip('Expenses', TransactionType.expense, colorScheme),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip(
+    String label,
+    TransactionType? type,
+    ColorScheme colorScheme,
+  ) {
+    final selected = _filterType == type;
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => setState(() => _filterType = type),
+      selectedColor: colorScheme.primary.withValues(alpha: 0.14),
+      labelStyle: TextStyle(
+        color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w700,
+        fontSize: 12,
+      ),
+      side: BorderSide(
+        color: selected
+            ? colorScheme.primary.withValues(alpha: 0.35)
+            : colorScheme.outline.withValues(alpha: 0.18),
+      ),
+      showCheckmark: false,
+    );
+  }
+
+  Widget _buildFilteredEmptyState() {
+    final label = _filterType == TransactionType.income ? 'income' : 'expenses';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
+      child: Column(
+        children: [
+          Icon(
+            _filterType == TransactionType.income
+                ? LucideIcons.arrowUp
+                : LucideIcons.arrowDown,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            size: 28,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'No recurring $label yet',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Use Add Transaction and enable Repeat this transaction.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 12,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -440,7 +541,8 @@ class _RecurringTransactionsScreenState
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: AppTheme.surfaceDecoration(context, radius: 20, subtle: true),
+      decoration: AppTheme.surfaceDecoration(context,
+          radius: AppTheme.cardRadius, subtle: true),
       child: Row(
         children: [
           Expanded(
@@ -516,27 +618,19 @@ class _RecurringTransactionsScreenState
       RecurringTransactionStatus.ended => colorScheme.outline,
     };
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: AppTheme.surfaceDecoration(context, radius: 20, subtle: true),
+    return AppCard(
+      subtle: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  recurring.type == TransactionType.income
-                      ? LucideIcons.plus
-                      : LucideIcons.minus,
-                  color: accentColor,
-                ),
+              AppIconBadge(
+                icon: recurring.type == TransactionType.income
+                    ? LucideIcons.plus
+                    : LucideIcons.minus,
+                color: accentColor,
+                size: AppIconBadgeSize.large,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -561,20 +655,9 @@ class _RecurringTransactionsScreenState
                   ],
                 ),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  recurring.status.name,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+              AppStatusPill(
+                label: recurring.status.name,
+                color: statusColor,
               ),
               PopupMenuButton<String>(
                 tooltip: 'More actions',
@@ -656,6 +739,14 @@ class _RecurringTransactionsScreenState
                 child: _metaItem(
                   label: 'Next run',
                   value: formatShortDate(recurring.nextRunAt),
+                ),
+              ),
+              Expanded(
+                child: _metaItem(
+                  label: 'Last run',
+                  value: recurring.lastRunAt == null
+                      ? 'Never'
+                      : formatShortDate(recurring.lastRunAt!),
                 ),
               ),
             ],

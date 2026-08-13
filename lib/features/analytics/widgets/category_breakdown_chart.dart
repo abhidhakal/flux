@@ -176,12 +176,12 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
 
   static const List<Color> _categoryColors = [
     AppColors.primary,
-    Color(0xFF10B981), // Green
-    Color(0xFFFF6B6B), // Coral
-    Color(0xFFFFB300), // Amber
-    Color(0xFF805AD5), // Purple
-    Color(0xFF607D8B), // Slate
-    Color(0xFFE91E63), // Pink
+    Color(0xFF333333),
+    Color(0xFF555555),
+    Color(0xFF777777),
+    Color(0xFF999999),
+    Color(0xFFBBBBBB),
+    Color(0xFFD6D6D6),
   ];
 
   List<PieChartSectionData> _getPieSections(

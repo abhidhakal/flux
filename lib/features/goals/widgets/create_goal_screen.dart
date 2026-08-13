@@ -7,6 +7,7 @@ import '../../../core/models/goal_model.dart';
 import '../../auth/auth_bloc.dart';
 import '../goals_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/premium_upgrade_prompt.dart';
 import '../../../core/services/currency_service.dart';
 import '../../../shared/widgets/field_label.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -40,13 +41,13 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
 
   final List<Map<String, dynamic>> _colorOptions = [
     {'color': 0xFF0079DC, 'name': 'Blue'},
-    {'color': 0xFF00C851, 'name': 'Green'},
-    {'color': 0xFFFF6B6B, 'name': 'Coral'},
-    {'color': 0xFFFFB300, 'name': 'Amber'},
-    {'color': 0xFF805AD5, 'name': 'Purple'},
-    {'color': 0xFF00B4D8, 'name': 'Teal'},
-    {'color': 0xFFE91E63, 'name': 'Pink'},
-    {'color': 0xFF607D8B, 'name': 'Slate'},
+    {'color': 0xFF333333, 'name': 'Charcoal'},
+    {'color': 0xFF555555, 'name': 'Graphite'},
+    {'color': 0xFF777777, 'name': 'Slate'},
+    {'color': 0xFF999999, 'name': 'Silver'},
+    {'color': 0xFFBBBBBB, 'name': 'Ash'},
+    {'color': 0xFFD6D6D6, 'name': 'Stone'},
+    {'color': 0xFF222222, 'name': 'Ink'},
   ];
 
   @override
@@ -150,7 +151,11 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
             AppSnackbar.showSuccess(context, message: state.message);
             Navigator.pop(context);
           } else if (state is GoalsError) {
-            AppSnackbar.showError(context, message: state.message);
+            if (state.message.contains('Upgrade to Flux Pro')) {
+              PremiumUpgradePrompt.show(context, message: state.message);
+            } else {
+              AppSnackbar.showError(context, message: state.message);
+            }
           }
         },
         child: FadeTransition(

@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../core/models/budget_model.dart';
 import '../../core/services/budget_service.dart';
 import '../../core/services/notification_trigger_service.dart';
+import '../../core/services/premium_limits_service.dart';
 
 // Events
 abstract class BudgetEvent extends Equatable {
@@ -109,6 +110,7 @@ class BudgetSuccess extends BudgetState {
 class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
   final BudgetService _budgetService;
   final NotificationTriggerService _notificationTriggerService;
+  final PremiumLimitsService _premiumLimitsService = PremiumLimitsService();
 
   BudgetBloc({
     required BudgetService budgetService,
@@ -145,6 +147,13 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
     emit(BudgetLoading());
 
     try {
+      final existingBudgets =
+          await _budgetService.getUserBudgets(event.budget.userId);
+      if (!_premiumLimitsService.canCreateBudget(existingBudgets)) {
+        emit(const BudgetError(
+            'Free accounts can have up to 3 active budgets. Upgrade to Flux Pro for unlimited budgets.'));
+        return;
+      }
       await _budgetService.createBudget(event.budget);
 
       // Reload budgets

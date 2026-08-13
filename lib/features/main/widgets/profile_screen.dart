@@ -18,6 +18,8 @@ import '../screens/terms_of_service_screen.dart';
 import '../../../core/services/widget_service.dart';
 import '../../theme/theme_bloc.dart';
 import '../../notifications/screens/notification_settings_screen.dart';
+import '../../subscription/subscription_bloc.dart';
+import '../../subscription/presentation/pages/paywall_screen.dart';
 import '../../../shared/widgets/app_bottom_sheet.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/stat_tile.dart';
@@ -105,6 +107,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final transactionState = context.watch<TransactionBloc>().state;
+    final subscriptionState = context.watch<SubscriptionBloc>().state;
     final progressSnapshot = transactionState is TransactionLoaded
         ? _userProgressService.calculateProgress(transactionState.transactions)
         : UserProgressSnapshot.empty();
@@ -114,7 +117,13 @@ class _ProfileScreenState extends State<ProfileScreen>
       slivers: [
         // Modern Header
         SliverToBoxAdapter(
-          child: _buildModernHeader(user, colorScheme, theme, progressSnapshot),
+          child: _buildModernHeader(
+            user,
+            colorScheme,
+            theme,
+            progressSnapshot,
+            isPremium: subscriptionState is SubscriptionPremium,
+          ),
         ),
         // Stats Row
         SliverToBoxAdapter(
@@ -235,12 +244,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildModernHeader(
-    User user,
-    ColorScheme colorScheme,
-    ThemeData theme,
-    UserProgressSnapshot progressSnapshot,
-  ) {
+  Widget _buildModernHeader(User user, ColorScheme colorScheme, ThemeData theme,
+      UserProgressSnapshot progressSnapshot,
+      {required bool isPremium}) {
     return Container(
       margin: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + 10,
@@ -362,6 +368,24 @@ class _ProfileScreenState extends State<ProfileScreen>
                       runSpacing: 10,
                       children: [
                         _buildHeaderPill(
+                          icon: isPremium
+                              ? LucideIcons.sparkles
+                              : LucideIcons.user,
+                          label: isPremium ? 'Pro' : 'Free',
+                          colorScheme: colorScheme,
+                          emphasized: isPremium,
+                          accentColor: isPremium
+                              ? const Color(0xFFD6A84F)
+                              : colorScheme.onSurfaceVariant,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const PaywallScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildHeaderPill(
                           icon: LucideIcons.flame,
                           label: UserProgressService.formatStreakLabel(
                             progressSnapshot.currentStreak,
@@ -386,17 +410,21 @@ class _ProfileScreenState extends State<ProfileScreen>
     required String label,
     required ColorScheme colorScheme,
     bool emphasized = false,
+    Color? accentColor,
+    VoidCallback? onTap,
   }) {
-    return Container(
+    final pillColor = accentColor ?? colorScheme.primary;
+
+    final pill = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: emphasized
-            ? colorScheme.primary.withValues(alpha: 0.1)
+            ? pillColor.withValues(alpha: 0.14)
             : AppTheme.mutedSurface(context),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: emphasized
-              ? colorScheme.primary.withValues(alpha: 0.18)
+              ? pillColor.withValues(alpha: 0.28)
               : colorScheme.outline.withValues(alpha: 0.08),
         ),
       ),
@@ -406,8 +434,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           Icon(
             icon,
             size: 15,
-            color:
-                emphasized ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            color: emphasized ? pillColor : colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: 8),
           Text(
@@ -415,12 +442,19 @@ class _ProfileScreenState extends State<ProfileScreen>
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: emphasized ? colorScheme.primary : colorScheme.onSurface,
+              color: emphasized ? pillColor : colorScheme.onSurface,
             ),
           ),
         ],
       ),
     );
+
+    return onTap == null
+        ? pill
+        : GestureDetector(
+            onTap: onTap,
+            child: pill,
+          );
   }
 
   Widget _buildStatsRow(
@@ -464,7 +498,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     return StatTile(
       label: label,
       value: value,
-      radius: 20,
+      radius: AppTheme.cardRadius,
       bordered: true,
       valueFirst: true,
       valueFontSize: 21,
@@ -489,7 +523,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildSettingsGroup(
       List<_SettingsItem> items, ColorScheme colorScheme) {
     return Container(
-      decoration: AppTheme.surfaceDecoration(context, radius: 20),
+      decoration:
+          AppTheme.surfaceDecoration(context, radius: AppTheme.cardRadius),
       child: Column(
         children: items.asMap().entries.map((entry) {
           final index = entry.key;
@@ -569,7 +604,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     final colorScheme = Theme.of(context).colorScheme;
     AppBottomSheet.show(
       context,
-      radius: 24,
+      radius: AppTheme.cardRadius,
       isScrollControlled: true,
       padding: EdgeInsets.zero,
       builder: (context) => SizedBox(
@@ -657,7 +692,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     final themeBloc = context.read<ThemeBloc>();
     AppBottomSheet.show(
       context,
-      radius: 24,
+      radius: AppTheme.cardRadius,
       isScrollControlled: false,
       builder: (dialogContext) => BlocProvider.value(
         value: themeBloc,
@@ -827,7 +862,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     final colorScheme = Theme.of(context).colorScheme;
     AppBottomSheet.show(
       context,
-      radius: 20,
+      radius: AppTheme.cardRadius,
       isScrollControlled: false,
       builder: (context) => Column(
         mainAxisSize: MainAxisSize.min,

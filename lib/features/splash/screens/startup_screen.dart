@@ -188,7 +188,7 @@ class _SplashPresentationState extends State<_SplashPresentation>
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  isDark ? const Color(0xFF111827) : const Color(0xFFF6FBFF),
+                  isDark ? const Color(0xFF111111) : Colors.white,
                   isDark ? AppColors.darkBackground : AppColors.lightBackground,
                 ],
               ),

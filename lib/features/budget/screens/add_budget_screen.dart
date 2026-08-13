@@ -7,6 +7,7 @@ import '../../../core/services/currency_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/premium_upgrade_prompt.dart';
 import '../../../shared/widgets/field_label.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -91,7 +92,11 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
           }
 
           if (state is BudgetError) {
-            AppSnackbar.showError(context, message: state.message);
+            if (state.message.contains('Upgrade to Flux Pro')) {
+              PremiumUpgradePrompt.show(context, message: state.message);
+            } else {
+              AppSnackbar.showError(context, message: state.message);
+            }
           }
         },
         child: SingleChildScrollView(

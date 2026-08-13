@@ -5,6 +5,9 @@ import 'planning_insights_service.dart';
 
 class FinancialInsight {
   final String title;
+
+  /// A plain-language explanation of the data signal that triggered this insight.
+  final String basedOn;
   final String message;
   final InsightTone tone;
   final String actionLabel;
@@ -12,6 +15,7 @@ class FinancialInsight {
 
   const FinancialInsight({
     required this.title,
+    required this.basedOn,
     required this.message,
     required this.tone,
     required this.actionLabel,
@@ -41,8 +45,9 @@ class FinancialInsightsService {
       final forecast = atRisk.first;
       insights.add(FinancialInsight(
         title: 'Protect your ${forecast.budget.name} budget',
+        basedOn: 'Based on your projected spending pace',
         message:
-            'At your current pace, it may exceed its limit by ${forecast.projectedOverage.toStringAsFixed(0)}. Slow spending here first.',
+            'At your current pace, it may exceed its limit by ${forecast.projectedOverage.toStringAsFixed(0)}. Acting early gives you more room to adjust.',
         tone: InsightTone.attention,
         actionLabel: 'Review budget',
         action: FinancialInsightAction.budgets,
@@ -52,8 +57,9 @@ class FinancialInsightsService {
     if (snapshot.savingsRate != null && snapshot.savingsRate! >= 20) {
       insights.add(const FinancialInsight(
         title: 'Strong savings pace',
+        basedOn: 'Based on this month\'s income and spending',
         message:
-            'You are keeping at least 20% of this month\'s income. Consider directing the surplus toward a priority goal.',
+            'You are keeping at least 20% of this month\'s income. Directing part of that surplus toward a priority goal can make it tangible.',
         tone: InsightTone.positive,
         actionLabel: 'View goals',
         action: FinancialInsightAction.goals,
@@ -62,8 +68,9 @@ class FinancialInsightsService {
         snapshot.monthlyIncome > 0) {
       insights.add(const FinancialInsight(
         title: 'This month is running negative',
+        basedOn: 'Based on this month\'s income and spending',
         message:
-            'Expenses are above income so far. Review the largest recent categories before adding new commitments.',
+            'Expenses are above income so far. Reviewing the largest recent categories can help you find the quickest adjustment.',
         tone: InsightTone.attention,
         actionLabel: 'Review spending',
         action: FinancialInsightAction.transactions,
@@ -75,8 +82,9 @@ class FinancialInsightsService {
       insights.add(FinancialInsight(
         title:
             'Revisit $overdueGoals overdue goal${overdueGoals == 1 ? '' : 's'}',
+        basedOn: 'Based on your goal dates and progress',
         message:
-            'Adjust the target date or monthly contribution so your plan reflects reality.',
+            'Adjust the target date or monthly contribution so the plan reflects reality instead of becoming background noise.',
         tone: InsightTone.attention,
         actionLabel: 'Review goals',
         action: FinancialInsightAction.goals,
@@ -84,8 +92,9 @@ class FinancialInsightsService {
     } else if (snapshot.activeGoalCount == 0) {
       insights.add(const FinancialInsight(
         title: 'Give your surplus a purpose',
+        basedOn: 'Based on your current goals and monthly surplus',
         message:
-            'Create a savings goal so Flux can show the monthly amount needed to reach it.',
+            'Create a savings goal so Flux can turn your available surplus into a clear monthly target.',
         tone: InsightTone.neutral,
         actionLabel: 'Create a goal',
         action: FinancialInsightAction.goals,
@@ -95,8 +104,9 @@ class FinancialInsightsService {
     if (insights.isEmpty) {
       insights.add(const FinancialInsight(
         title: 'Keep building your picture',
+        basedOn: 'Based on the amount of recent activity',
         message:
-            'A few more days of transactions will make your spending forecasts and recommendations more accurate.',
+            'A few more days of transactions will make your spending forecasts and recommendations more useful.',
         tone: InsightTone.neutral,
         actionLabel: 'Add transaction',
         action: FinancialInsightAction.transactions,
