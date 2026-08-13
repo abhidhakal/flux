@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_theme.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 enum AppSnackbarType {
   success,
@@ -70,10 +70,10 @@ class AppSnackbar {
         decoration: BoxDecoration(
           color: cs.inverseSurface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: cs.outline.withOpacity(0.12)),
+          border: Border.all(color: cs.outline.withValues(alpha: 0.12)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),

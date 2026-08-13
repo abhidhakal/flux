@@ -1,12 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:flutter/foundation.dart';
-import 'package:uuid/uuid.dart';
 import '../models/notification_model.dart';
 
 class NotificationService {
   final firestore.FirebaseFirestore _firestore =
       firestore.FirebaseFirestore.instance;
-  final Uuid _uuid = const Uuid();
 
   // Create a notification
   Future<void> createNotification(Notification notification) async {
@@ -173,77 +171,6 @@ class NotificationService {
       await batch.commit();
     } catch (e) {
       throw Exception('Failed to mark all as read: $e');
-    }
-  }
-
-  // --- PRIVATE GENERATION METHODS (DEPRECATED) ---
-
-  // Generate unique ID
-  String generateId() {
-    return _uuid.v4();
-  }
-
-  // Get last smart notification generation time
-  Future<DateTime?> _getLastSmartNotificationGeneration(String userId) async {
-    try {
-      final userDoc = await _firestore.collection('users').doc(userId).get();
-
-      if (userDoc.exists && userDoc.data() != null) {
-        final data = userDoc.data()!;
-        final lastGenerated = data['lastSmartNotificationGeneration'];
-        if (lastGenerated != null) {
-          return DateTime.parse(lastGenerated);
-        }
-      }
-      return null;
-    } catch (e) {
-      debugPrint(
-          '❌ NOTIFICATION SERVICE: Error getting last generation time: $e');
-      return null;
-    }
-  }
-
-  // Check if smart notifications can be generated (not within cooldown period)
-  Future<bool> canGenerateSmartNotifications(String userId) async {
-    try {
-      final lastGenerated = await _getLastSmartNotificationGeneration(userId);
-      if (lastGenerated == null) return true;
-
-      final timeSinceLastGeneration = DateTime.now().difference(lastGenerated);
-      return timeSinceLastGeneration.inHours >= 1;
-    } catch (e) {
-      debugPrint(
-          '❌ NOTIFICATION SERVICE: Error checking generation eligibility: $e');
-      return true; // Allow generation if there's an error
-    }
-  }
-
-  // Update last smart notification generation time (Now public for use by triggers/background tasks)
-  Future<void> updateLastSmartNotificationGeneration(String userId) async {
-    try {
-      await _firestore.collection('users').doc(userId).update({
-        'lastSmartNotificationGeneration': DateTime.now().toIso8601String(),
-      });
-    } catch (e) {
-      debugPrint(
-          '❌ NOTIFICATION SERVICE: Error updating last generation time: $e');
-    }
-  }
-
-  // Get time until next generation is allowed
-  Future<Duration?> getTimeUntilNextGeneration(String userId) async {
-    try {
-      final lastGenerated = await _getLastSmartNotificationGeneration(userId);
-      if (lastGenerated == null) return null;
-
-      final timeSinceLastGeneration = DateTime.now().difference(lastGenerated);
-      if (timeSinceLastGeneration.inHours >= 1) return null;
-
-      return Duration(minutes: 60 - timeSinceLastGeneration.inMinutes);
-    } catch (e) {
-      debugPrint(
-          '❌ NOTIFICATION SERVICE: Error getting time until next generation: $e');
-      return null;
     }
   }
 }

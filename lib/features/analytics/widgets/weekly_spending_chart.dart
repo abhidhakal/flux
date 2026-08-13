@@ -3,7 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/services/currency_service.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class WeeklySpendingChart extends StatelessWidget {
   final List<Transaction> transactions;
@@ -62,7 +62,8 @@ class WeeklySpendingChart extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radius24),
         border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+            color:
+                Theme.of(context).colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: [
@@ -114,7 +115,7 @@ class WeeklySpendingChart extends StatelessWidget {
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onSurface
-                                    .withOpacity(0.5),
+                                    .withValues(alpha: 0.5),
                                 fontWeight: FontWeight.w600,
                                 fontSize: 10,
                               ),
@@ -139,7 +140,7 @@ class WeeklySpendingChart extends StatelessWidget {
                             color: Theme.of(context)
                                 .colorScheme
                                 .onSurface
-                                .withOpacity(0.5),
+                                .withValues(alpha: 0.5),
                             fontWeight: FontWeight.w600,
                             fontSize: 10,
                           ),
@@ -158,7 +159,7 @@ class WeeklySpendingChart extends StatelessWidget {
                       color: Theme.of(context)
                           .colorScheme
                           .outline
-                          .withOpacity(0.05),
+                          .withValues(alpha: 0.05),
                       strokeWidth: 1,
                     );
                   },

@@ -66,7 +66,7 @@ class GoalProgressChart extends StatelessWidget {
               getTitlesWidget: (double value, TitleMeta meta) {
                 if (value.toInt() >= 0 && value.toInt() < activeGoals.length) {
                   final goal = activeGoals[value.toInt()];
-                  return Container(
+                  return SizedBox(
                     width: 60,
                     child: Text(
                       goal.name.length > 8

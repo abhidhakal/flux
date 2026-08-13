@@ -10,7 +10,7 @@ import '../../auth/auth_bloc.dart';
 import '../../budget/budget_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
 import '../../../shared/widgets/app_bottom_sheet.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 void showExportFormatDialog(BuildContext context) {
   final colorScheme = Theme.of(context).colorScheme;
@@ -72,13 +72,13 @@ void showExportFormatDialog(BuildContext context) {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         color: filterMode == 'time'
-                            ? colorScheme.primary.withOpacity(0.1)
+                            ? colorScheme.primary.withValues(alpha: 0.1)
                             : colorScheme.surface,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: filterMode == 'time'
                               ? colorScheme.primary
-                              : colorScheme.outline.withOpacity(0.3),
+                              : colorScheme.outline.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Column(
@@ -120,17 +120,18 @@ void showExportFormatDialog(BuildContext context) {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         color: budgets.isEmpty
-                            ? colorScheme.surfaceVariant.withOpacity(0.2)
+                            ? colorScheme.surfaceContainerHighest
+                                .withValues(alpha: 0.2)
                             : filterMode == 'budget'
-                                ? colorScheme.primary.withOpacity(0.1)
+                                ? colorScheme.primary.withValues(alpha: 0.1)
                                 : colorScheme.surface,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: budgets.isEmpty
-                              ? colorScheme.outline.withOpacity(0.1)
+                              ? colorScheme.outline.withValues(alpha: 0.1)
                               : filterMode == 'budget'
                                   ? colorScheme.primary
-                                  : colorScheme.outline.withOpacity(0.3),
+                                  : colorScheme.outline.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Column(
@@ -138,7 +139,7 @@ void showExportFormatDialog(BuildContext context) {
                           Icon(
                             LucideIcons.wallet,
                             color: budgets.isEmpty
-                                ? colorScheme.onSurface.withOpacity(0.3)
+                                ? colorScheme.onSurface.withValues(alpha: 0.3)
                                 : filterMode == 'budget'
                                     ? colorScheme.primary
                                     : colorScheme.onSurfaceVariant,
@@ -155,7 +156,7 @@ void showExportFormatDialog(BuildContext context) {
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: budgets.isEmpty
-                                  ? colorScheme.onSurface.withOpacity(0.3)
+                                  ? colorScheme.onSurface.withValues(alpha: 0.3)
                                   : filterMode == 'budget'
                                       ? colorScheme.primary
                                       : colorScheme.onSurface,
@@ -184,10 +185,11 @@ void showExportFormatDialog(BuildContext context) {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceVariant.withOpacity(0.3),
+                  color: colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(12),
-                  border:
-                      Border.all(color: colorScheme.outline.withOpacity(0.1)),
+                  border: Border.all(
+                      color: colorScheme.outline.withValues(alpha: 0.1)),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<int>(
@@ -228,10 +230,11 @@ void showExportFormatDialog(BuildContext context) {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceVariant.withOpacity(0.3),
+                  color: colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(12),
-                  border:
-                      Border.all(color: colorScheme.outline.withOpacity(0.1)),
+                  border: Border.all(
+                      color: colorScheme.outline.withValues(alpha: 0.1)),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<Budget?>(
@@ -334,13 +337,13 @@ Widget _buildFormatOption(String label, IconData icon, bool isSelected,
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
         color: isSelected
-            ? colorScheme.primary.withOpacity(0.1)
+            ? colorScheme.primary.withValues(alpha: 0.1)
             : colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSelected
               ? colorScheme.primary
-              : colorScheme.outline.withOpacity(0.2),
+              : colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -555,7 +558,7 @@ Widget _buildActionButton({
         decoration: BoxDecoration(
           border: isPrimary
               ? null
-              : Border.all(color: colorScheme.outline.withOpacity(0.2)),
+              : Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(

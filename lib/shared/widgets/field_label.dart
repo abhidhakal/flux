@@ -14,7 +14,8 @@ class FieldLabel extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+        Icon(icon,
+            size: 16, color: colorScheme.onSurface.withValues(alpha: 0.6)),
         const SizedBox(width: 6),
         Text(
           label,

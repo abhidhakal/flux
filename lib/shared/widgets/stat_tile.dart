@@ -43,7 +43,7 @@ class StatTile extends StatelessWidget {
         : Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-                color: color.withOpacity(0.1), shape: BoxShape.circle),
+                color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
             child: Icon(icon,
                 color: color, size: direction == Axis.horizontal ? 18 : 16),
           );
@@ -53,7 +53,7 @@ class StatTile extends StatelessWidget {
       style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w500,
-        color: colorScheme.onSurface.withOpacity(0.65),
+        color: colorScheme.onSurface.withValues(alpha: 0.65),
       ),
     );
 

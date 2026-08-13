@@ -167,11 +167,6 @@ class EnhancedNotificationService {
     });
   }
 
-  // Get pending notifications
-  Future<List<PendingNotificationRequest>> getPendingNotifications() async {
-    return await _pushService.getPendingNotifications();
-  }
-
   // Delegate methods to original notification service
   Future<List<Notification>> getUserNotifications(String userId) async {
     return await _notificationService.getUserNotifications(userId);
@@ -203,64 +198,6 @@ class EnhancedNotificationService {
 
   Future<void> pruneOldNotifications(String userId) async {
     return await _notificationService.pruneOldNotifications(userId);
-  }
-
-  Future<bool> canGenerateSmartNotifications(String userId) async {
-    return await _notificationService.canGenerateSmartNotifications(userId);
-  }
-
-  Future<Duration?> getTimeUntilNextGeneration(String userId) async {
-    return await _notificationService.getTimeUntilNextGeneration(userId);
-  }
-
-  Future<void> updateLastSmartNotificationGeneration(String userId) async {
-    return await _notificationService
-        .updateLastSmartNotificationGeneration(userId);
-  }
-
-  // Test notification methods
-  Future<void> showBudgetAlert({
-    required String budgetName,
-    required double percentageUsed,
-    required double remaining,
-  }) async {
-    await _pushService.showBudgetAlert(
-      budgetName: budgetName,
-      percentageUsed: percentageUsed,
-      remaining: remaining,
-    );
-  }
-
-  Future<void> showGoalMilestone({
-    required String goalName,
-    required double progress,
-    required String milestone,
-  }) async {
-    await _pushService.showGoalMilestone(
-      goalName: goalName,
-      progress: progress,
-      milestone: milestone,
-    );
-  }
-
-  Future<void> showSpendingAlert({
-    required String message,
-    required int transactionCount,
-  }) async {
-    await _pushService.showSpendingAlert(
-      message: message,
-      transactionCount: transactionCount,
-    );
-  }
-
-  Future<void> showFinancialTip({
-    required String title,
-    required String message,
-  }) async {
-    await _pushService.showFinancialTip(
-      title: title,
-      message: message,
-    );
   }
 
   // --- Smart Daily Log Reminder Logic ---

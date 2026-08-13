@@ -32,6 +32,8 @@ class RecurringTransaction extends Equatable {
   final DateTime? lastRunAt;
   final bool autoCreate;
   final RecurringTransactionStatus status;
+  final bool reminderEnabled;
+  final int reminderDaysBefore;
   final DateTime createdAt;
   final DateTime updatedAt;
   final Map<String, dynamic> metadata;
@@ -53,12 +55,23 @@ class RecurringTransaction extends Equatable {
     this.lastRunAt,
     this.autoCreate = true,
     this.status = RecurringTransactionStatus.active,
+    this.reminderEnabled = false,
+    this.reminderDaysBefore = 1,
     required this.createdAt,
     required this.updatedAt,
     this.metadata = const {},
   });
 
   bool get isActive => status == RecurringTransactionStatus.active;
+
+  double get monthlyEquivalent {
+    return switch (frequency) {
+      RecurringTransactionFrequency.daily => amount * 365 / 12,
+      RecurringTransactionFrequency.weekly => amount * 52 / 12,
+      RecurringTransactionFrequency.monthly => amount,
+      RecurringTransactionFrequency.yearly => amount / 12,
+    };
+  }
 
   RecurringTransaction copyWith({
     String? id,
@@ -77,6 +90,8 @@ class RecurringTransaction extends Equatable {
     DateTime? lastRunAt,
     bool? autoCreate,
     RecurringTransactionStatus? status,
+    bool? reminderEnabled,
+    int? reminderDaysBefore,
     DateTime? createdAt,
     DateTime? updatedAt,
     Map<String, dynamic>? metadata,
@@ -98,6 +113,8 @@ class RecurringTransaction extends Equatable {
       lastRunAt: lastRunAt ?? this.lastRunAt,
       autoCreate: autoCreate ?? this.autoCreate,
       status: status ?? this.status,
+      reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+      reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       metadata: metadata ?? this.metadata,
@@ -122,6 +139,8 @@ class RecurringTransaction extends Equatable {
       'lastRunAt': lastRunAt?.toIso8601String(),
       'autoCreate': autoCreate,
       'status': status.name,
+      'reminderEnabled': reminderEnabled,
+      'reminderDaysBefore': reminderDaysBefore,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'metadata': metadata,
@@ -163,6 +182,8 @@ class RecurringTransaction extends Equatable {
         (value) => value.name == json['status'],
         orElse: () => RecurringTransactionStatus.active,
       ),
+      reminderEnabled: json['reminderEnabled'] as bool? ?? false,
+      reminderDaysBefore: (json['reminderDaysBefore'] as num?)?.toInt() ?? 1,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : DateTime.now(),
@@ -191,6 +212,8 @@ class RecurringTransaction extends Equatable {
         lastRunAt,
         autoCreate,
         status,
+        reminderEnabled,
+        reminderDaysBefore,
         createdAt,
         updatedAt,
         metadata,

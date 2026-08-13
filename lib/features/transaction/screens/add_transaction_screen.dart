@@ -8,12 +8,13 @@ import '../../../core/models/transaction_model.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../../../core/services/recurring_transaction_service.dart';
+import '../../../core/services/transaction_intelligence_service.dart';
 import '../../transaction/transaction_bloc.dart';
 import '../../auth/auth_bloc.dart';
 import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/field_label.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final TransactionType? initialType;
@@ -36,6 +37,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
   bool _isEssential = false;
+  String? _suggestedCategory;
+  bool _categoryWasManuallySelected = false;
   bool _isRecurring = false;
   RecurringTransactionFrequency _recurringFrequency =
       RecurringTransactionFrequency.monthly;
@@ -43,6 +46,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   Budget? _selectedBudget;
   final RecurringTransactionService _recurringTransactionService =
       RecurringTransactionService();
+  final TransactionIntelligenceService _intelligence =
+      TransactionIntelligenceService();
 
   late final AnimationController _entranceController;
   late final Animation<double> _entranceFade;
@@ -94,18 +99,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final saveIconColor = isDark ? Colors.white : colorScheme.onBackground;
+    final saveIconColor = isDark ? Colors.white : colorScheme.onSurface;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('Add Transaction'),
         centerTitle: false,
-        backgroundColor: colorScheme.background,
-        foregroundColor: colorScheme.onBackground,
-        iconTheme: IconThemeData(color: colorScheme.onBackground),
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
         titleTextStyle: theme.textTheme.titleLarge?.copyWith(
-          color: colorScheme.onBackground,
+          color: colorScheme.onSurface,
           fontWeight: FontWeight.w600,
         ),
         elevation: 0,
@@ -270,6 +275,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           } else {
             _selectedCategory = 'Food & Dining';
           }
+          _categoryWasManuallySelected = false;
+          _suggestedCategory = null;
         });
       },
       child: AnimatedContainer(
@@ -316,6 +323,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   Widget _buildTitleField() {
     return TextFormField(
       controller: _titleController,
+      onChanged: (_) => _updateCategorySuggestion(),
       decoration: InputDecoration(
         hintText: 'Enter transaction title',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -332,12 +340,41 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   Widget _buildDescriptionField() {
     return TextFormField(
       controller: _descriptionController,
+      onChanged: (_) => _updateCategorySuggestion(),
       decoration: InputDecoration(
         hintText: 'Enter description (optional)',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       ),
       maxLines: 2,
     );
+  }
+
+  void _updateCategorySuggestion() {
+    if (_categoryWasManuallySelected) return;
+    final title = _titleController.text.trim();
+    final description = _descriptionController.text.trim();
+    if (title.isEmpty && description.isEmpty) {
+      if (_suggestedCategory != null && mounted) {
+        setState(() => _suggestedCategory = null);
+      }
+      return;
+    }
+
+    final suggestion = _intelligence.suggestCategory(
+      title: title,
+      description: description,
+    );
+    final validCategories = _selectedType == TransactionType.income
+        ? AppCategories.incomeCategories
+        : AppCategories.expenseCategories;
+    if (!validCategories.contains(suggestion)) return;
+
+    if (mounted) {
+      setState(() {
+        _suggestedCategory = suggestion;
+        _selectedCategory = suggestion;
+      });
+    }
   }
 
   Widget _buildAmountField() {
@@ -381,37 +418,56 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
         ? AppCategories.incomeCategories
         : AppCategories.expenseCategories;
 
-    return DropdownButtonFormField<String>(
-      initialValue: _selectedCategory,
-      decoration: InputDecoration(
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-      items: categories.map((category) {
-        return DropdownMenuItem(
-          value: category,
-          child: Row(
-            children: [
-              Icon(
-                LucideIcons.circle,
-                size: 10,
-                color: Color(AppCategories.getColor(category)),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                category,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          initialValue: _selectedCategory,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           ),
-        );
-      }).toList(),
-      onChanged: (value) {
-        setState(() {
-          _selectedCategory = value!;
-        });
-      },
+          items: categories.map((category) {
+            return DropdownMenuItem(
+              value: category,
+              child: Row(
+                children: [
+                  Icon(
+                    LucideIcons.circle,
+                    size: 10,
+                    color: Color(AppCategories.getColor(category)),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    category,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedCategory = value!;
+              _categoryWasManuallySelected = true;
+              _suggestedCategory = null;
+            });
+          },
+        ),
+        if (_suggestedCategory != null && !_categoryWasManuallySelected)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(
+              'Suggested from your description: $_suggestedCategory',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -449,7 +505,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
               formatShortDate(_selectedDate),
               style: TextStyle(
                 fontSize: 16,
-                color: Theme.of(context).colorScheme.onBackground,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -491,7 +547,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.bold,
-        color: Theme.of(context).colorScheme.onBackground,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }
@@ -664,18 +720,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: SwitchListTile(
         title: Text(
           'Mark as Essential',
           style: TextStyle(
-              fontWeight: FontWeight.w600, color: colorScheme.onBackground),
+              fontWeight: FontWeight.w600, color: colorScheme.onSurface),
         ),
         subtitle: Text(
           'Is this a "Need" (Housing, Bills) or a "Want"?',
-          style: TextStyle(color: colorScheme.onBackground.withOpacity(0.6)),
+          style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
         ),
         value: _isEssential,
         activeThumbColor: AppColors.primary,
@@ -702,13 +758,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
               'Repeat this transaction',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: colorScheme.onBackground,
+                color: colorScheme.onSurface,
               ),
             ),
             subtitle: Text(
               'Automatically create future ${_selectedType == TransactionType.income ? 'income' : 'expense'} entries.',
               style: TextStyle(
-                color: colorScheme.onBackground.withValues(alpha: 0.6),
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             value: _isRecurring,

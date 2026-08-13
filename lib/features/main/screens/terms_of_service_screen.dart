@@ -10,19 +10,19 @@ class TermsOfServiceScreen extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('Terms of Service'),
         centerTitle: false,
-        backgroundColor: colorScheme.background,
-        foregroundColor: colorScheme.onBackground,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
         titleTextStyle: theme.textTheme.displaySmall?.copyWith(
           fontSize: 24,
           letterSpacing: -1,
         ),
-        iconTheme: IconThemeData(color: colorScheme.onBackground),
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -33,7 +33,7 @@ class TermsOfServiceScreen extends StatelessWidget {
               'Effective Date: December 13, 2024',
               style: TextStyle(
                 fontSize: 14,
-                color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -75,7 +75,8 @@ class TermsOfServiceScreen extends StatelessWidget {
             ),
             const LegalSectionText(
               title: '8. Contact Us',
-              content: 'If you have any questions about these Terms, please contact us:\n\n'
+              content:
+                  'If you have any questions about these Terms, please contact us:\n\n'
                   '• By email: info@klivo.com.np\n'
                   '• By visiting our website: klivostudios.com',
             ),

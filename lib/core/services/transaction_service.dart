@@ -3,12 +3,16 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/transaction_model.dart';
 import '../models/budget_model.dart';
+import 'local_data_cache_service.dart';
+import 'sync_status_service.dart';
 import 'user_bootstrap.dart';
 
 class TransactionService {
-  final firestore.FirebaseFirestore _firestore =
+  static const int transactionFetchLimit = 1000;
+  firestore.FirebaseFirestore get _firestore =>
       firestore.FirebaseFirestore.instance;
   final Uuid _uuid = const Uuid();
+  final LocalDataCacheService _cache = LocalDataCacheService();
 
   // Add transaction with automatic budget update
   Future<void> addTransaction(Transaction transaction) async {
@@ -32,13 +36,18 @@ class TransactionService {
           _firestore.collection('transactions').doc(transactionId);
       batch.set(transactionRef, transactionToSave.toJson());
 
+      // Update the local view before the remote write so offline additions
+      // appear immediately while Firestore queues/synchronizes the write.
+      await _cache.upsertTransaction(
+          transactionToSave.userId, transactionToSave);
+
       // If it's an expense, update the corresponding budget
       if (transactionToSave.isExpense && transactionToSave.isActive) {
         await _updateBudgetForTransaction(transactionToSave, batch);
       }
 
       // Commit the batch
-      await batch.commit();
+      await SyncStatusService().track(() => batch.commit());
 
       debugPrint('✅ TRANSACTION SERVICE: Transaction added successfully');
       debugPrint('✅ Budget updated (if expense)');
@@ -73,13 +82,14 @@ class TransactionService {
       final transactionRef =
           _firestore.collection('transactions').doc(newTransaction.id);
       batch.update(transactionRef, newTransaction.toJson());
+      await _cache.upsertTransaction(newTransaction.userId, newTransaction);
 
       // Handle budget updates
       await _handleBudgetUpdateForTransactionChange(
           oldTransaction, newTransaction, batch);
 
       // Commit the batch
-      await batch.commit();
+      await SyncStatusService().track(() => batch.commit());
 
       debugPrint('✅ TRANSACTION SERVICE: Transaction updated successfully');
     } catch (e) {
@@ -111,6 +121,7 @@ class TransactionService {
       final transactionRef =
           _firestore.collection('transactions').doc(transactionId);
       batch.delete(transactionRef);
+      await _cache.removeTransaction(transaction.userId, transactionId);
 
       // If it was an expense, adjust the budget
       if (transaction.isExpense && transaction.isActive) {
@@ -118,7 +129,7 @@ class TransactionService {
       }
 
       // Commit the batch
-      await batch.commit();
+      await SyncStatusService().track(() => batch.commit());
 
       debugPrint('✅ TRANSACTION SERVICE: Transaction deleted successfully');
     } catch (e) {
@@ -140,6 +151,7 @@ class TransactionService {
       final querySnapshot = await _firestore
           .collection('transactions')
           .where('userId', isEqualTo: userId)
+          .limit(transactionFetchLimit)
           .get();
 
       final transactions = <Transaction>[];
@@ -160,12 +172,17 @@ class TransactionService {
 
       transactions.sort((a, b) => b.date.compareTo(a.date));
 
+      await _cache.saveTransactions(userId, transactions);
+
       debugPrint(
           '✅ TRANSACTION SERVICE: Found ${transactions.length} transactions');
       return transactions;
     } catch (e) {
       debugPrint('❌ TRANSACTION SERVICE: Error getting transactions: $e');
-      return [];
+      final cached = await _cache.loadTransactions(userId);
+      debugPrint(
+          'ℹ️ TRANSACTION SERVICE: Returning ${cached.length} cached transactions');
+      return cached;
     }
   }
 
@@ -461,14 +478,14 @@ class TransactionService {
 
         count++;
         if (count >= maxBatchSize) {
-          await currentBatch.commit();
+          await SyncStatusService().track(() => currentBatch.commit());
           currentBatch = _firestore.batch();
           count = 0;
         }
       }
 
       if (count > 0) {
-        await currentBatch.commit();
+        await SyncStatusService().track(() => currentBatch.commit());
       }
     } catch (e) {
       throw Exception('Failed to sync budget transactions: $e');

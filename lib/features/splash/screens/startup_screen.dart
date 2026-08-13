@@ -7,6 +7,8 @@ import '../../../core/constants/app_theme.dart';
 import '../../auth/auth_bloc.dart';
 import '../../auth/screens/welcome_screen.dart';
 import '../../main/screens/main_screen.dart';
+import '../../onboarding/screens/onboarding_screen.dart';
+import '../../../core/services/onboarding_service.dart';
 
 class StartupScreen extends StatefulWidget {
   const StartupScreen({super.key});
@@ -21,6 +23,8 @@ class _StartupScreenState extends State<StartupScreen> {
   late final Timer _minimumTimer;
 
   bool _minimumTimeElapsed = false;
+  Future<bool>? _onboardingFuture;
+  String? _onboardingUserId;
 
   @override
   void initState() {
@@ -64,10 +68,42 @@ class _StartupScreenState extends State<StartupScreen> {
 
   Widget _buildDestination(AuthState authState) {
     if (authState is AuthAuthenticated) {
-      return const MainScreen(key: ValueKey('main-screen'));
+      if (_onboardingUserId != authState.user.id) {
+        _onboardingUserId = authState.user.id;
+        _onboardingFuture = OnboardingService().isComplete(authState.user.id);
+      }
+      return FutureBuilder<bool>(
+        future: _onboardingFuture,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const _StartupProgress(key: ValueKey('onboarding-check'));
+          }
+          if (snapshot.data == true) {
+            return const MainScreen(key: ValueKey('main-screen'));
+          }
+          return OnboardingScreen(
+            key: const ValueKey('onboarding-screen'),
+            userId: authState.user.id,
+            onCompleted: () => setState(() {
+              _onboardingFuture = Future.value(true);
+            }),
+          );
+        },
+      );
     }
 
     return const WelcomeScreen(key: ValueKey('welcome-screen'));
+  }
+}
+
+class _StartupProgress extends StatelessWidget {
+  const _StartupProgress({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
   }
 }
 

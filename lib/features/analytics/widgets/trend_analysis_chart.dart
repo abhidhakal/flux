@@ -3,7 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/services/currency_service.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class TrendAnalysisChart extends StatelessWidget {
   final List<Transaction> transactions;
@@ -22,7 +22,8 @@ class TrendAnalysisChart extends StatelessWidget {
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(AppTheme.radius12),
           border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+              color:
+                  Theme.of(context).colorScheme.outline.withValues(alpha: 0.1)),
         ),
         child: const Center(
           child: Column(
@@ -66,7 +67,8 @@ class TrendAnalysisChart extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radius12),
         border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+            color:
+                Theme.of(context).colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: [
@@ -174,7 +176,7 @@ class TrendAnalysisChart extends StatelessWidget {
                       color: Theme.of(context)
                           .colorScheme
                           .outline
-                          .withOpacity(0.05),
+                          .withValues(alpha: 0.05),
                       strokeWidth: 1,
                     );
                   },

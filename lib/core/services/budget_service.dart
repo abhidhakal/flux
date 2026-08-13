@@ -4,11 +4,15 @@ import 'package:uuid/uuid.dart';
 import '../models/budget_model.dart';
 import '../models/transaction_model.dart';
 import 'user_bootstrap.dart';
+import 'local_data_cache_service.dart';
+import 'sync_status_service.dart';
 
 class BudgetService {
+  static const int budgetFetchLimit = 100;
   final firestore.FirebaseFirestore _firestore =
       firestore.FirebaseFirestore.instance;
   final Uuid _uuid = const Uuid();
+  final LocalDataCacheService _cache = LocalDataCacheService();
 
   // Create new budget
   Future<void> createBudget(Budget budget) async {
@@ -25,10 +29,12 @@ class BudgetService {
       final budgetId = budget.id.isEmpty ? _uuid.v4() : budget.id;
       final budgetToSave = budget.copyWith(id: budgetId);
 
-      await _firestore
+      await _cache.upsertBudget(budgetToSave.userId, budgetToSave);
+
+      await SyncStatusService().track(() => _firestore
           .collection('budgets')
           .doc(budgetId)
-          .set(budgetToSave.toJson());
+          .set(budgetToSave.toJson()));
 
       debugPrint('✅ BUDGET SERVICE: Budget created successfully');
     } catch (e) {
@@ -43,10 +49,11 @@ class BudgetService {
       debugPrint('🔵 BUDGET SERVICE: Updating budget');
       debugPrint('🔵 Budget ID: ${budget.id}');
 
-      await _firestore
+      await SyncStatusService().track(() => _firestore
           .collection('budgets')
           .doc(budget.id)
-          .update(budget.toJson());
+          .update(budget.toJson()));
+      await _cache.upsertBudget(budget.userId, budget);
 
       debugPrint('✅ BUDGET SERVICE: Budget updated successfully');
     } catch (e) {
@@ -56,12 +63,16 @@ class BudgetService {
   }
 
   // Delete budget
-  Future<void> deleteBudget(String budgetId) async {
+  Future<void> deleteBudget(String budgetId, {String? userId}) async {
     try {
       debugPrint('🔵 BUDGET SERVICE: Deleting budget');
       debugPrint('🔵 Budget ID: $budgetId');
 
-      await _firestore.collection('budgets').doc(budgetId).delete();
+      await SyncStatusService()
+          .track(() => _firestore.collection('budgets').doc(budgetId).delete());
+      if (userId != null) {
+        await _cache.removeBudget(userId, budgetId);
+      }
 
       debugPrint('✅ BUDGET SERVICE: Budget deleted successfully');
     } catch (e) {
@@ -81,6 +92,7 @@ class BudgetService {
       final querySnapshot = await _firestore
           .collection('budgets')
           .where('userId', isEqualTo: userId)
+          .limit(budgetFetchLimit)
           .get();
 
       final budgets = querySnapshot.docs.map((doc) {
@@ -99,11 +111,16 @@ class BudgetService {
       // Sort by creation date (newest first)
       budgets.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
+      await _cache.saveBudgets(userId, budgets);
+
       debugPrint('✅ BUDGET SERVICE: Found ${budgets.length} budgets');
       return budgets;
     } catch (e) {
       debugPrint('❌ BUDGET SERVICE: Error getting budgets: $e');
-      throw Exception('Failed to load budgets: $e');
+      final cached = await _cache.loadBudgets(userId);
+      debugPrint(
+          'ℹ️ BUDGET SERVICE: Returning ${cached.length} cached budgets');
+      return cached;
     }
   }
 
@@ -192,7 +209,7 @@ class BudgetService {
       }
 
       // Commit the batch
-      await batch.commit();
+      await SyncStatusService().track(() => batch.commit());
 
       debugPrint('✅ BUDGET SERVICE: Budget spent amounts recalculated');
     } catch (e) {
@@ -243,7 +260,7 @@ class BudgetService {
       final newBudgetRef = _firestore.collection('budgets').doc(newBudget.id);
       batch.set(newBudgetRef, newBudget.toJson());
 
-      await batch.commit();
+      await SyncStatusService().track(() => batch.commit());
 
       debugPrint(
           '✅ BUDGET SERVICE: Rollover processed - \$$rolloverAmount carried over');

@@ -12,7 +12,7 @@ import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/app_bottom_sheet.dart';
 import '../../../shared/widgets/field_label.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class EditTransactionScreen {
   const EditTransactionScreen._();
@@ -315,12 +315,12 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                     child: Row(
                       children: [
                         Icon(LucideIcons.calendar,
-                            color: colorScheme.onBackground),
+                            color: colorScheme.onSurface),
                         const SizedBox(width: 12),
                         Text(
                           formatShortDate(_selectedDate),
                           style: TextStyle(
-                              fontSize: 16, color: colorScheme.onBackground),
+                              fontSize: 16, color: colorScheme.onSurface),
                         ),
                       ],
                     ),
@@ -375,7 +375,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
       style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.bold,
-        color: colorScheme.onBackground,
+        color: colorScheme.onSurface,
       ),
     );
   }
@@ -483,9 +483,10 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: colorScheme.errorContainer.withOpacity(0.3),
+                  color: colorScheme.errorContainer.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: colorScheme.error.withOpacity(0.3)),
+                  border: Border.all(
+                      color: colorScheme.error.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -537,7 +538,8 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                               fontSize: 11,
                               color: isOverBudget
                                   ? colorScheme.error
-                                  : colorScheme.onSurface.withOpacity(0.7),
+                                  : colorScheme.onSurface
+                                      .withValues(alpha: 0.7),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -559,7 +561,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer.withOpacity(0.3),
+                  color: colorScheme.primaryContainer.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -583,7 +585,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                           fontSize: 12,
                           color: _selectedBudget!.isOverBudget
                               ? colorScheme.error
-                              : colorScheme.onSurface.withOpacity(0.8),
+                              : colorScheme.onSurface.withValues(alpha: 0.8),
                         ),
                       ),
                     ),

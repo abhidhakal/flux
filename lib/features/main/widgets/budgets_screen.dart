@@ -3,8 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/services/currency_service.dart';
+import '../../../core/services/planning_insights_service.dart';
+import '../../../core/services/adaptive_budget_service.dart';
 import '../../../shared/widgets/skeleton_components.dart';
-import '../../../core/widgets/app_banner_ad.dart';
 import '../../auth/auth_bloc.dart';
 import '../../budget/budget_bloc.dart';
 import '../../budget/screens/add_budget_screen.dart';
@@ -12,7 +13,7 @@ import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/stat_tile.dart';
 import '../../../shared/widgets/empty_state_view.dart';
 import 'budget_card.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class BudgetsScreen extends StatefulWidget {
   const BudgetsScreen({super.key});
@@ -23,6 +24,8 @@ class BudgetsScreen extends StatefulWidget {
 
 class _BudgetsScreenState extends State<BudgetsScreen> {
   bool _showInactiveBudgets = false;
+  final PlanningInsightsService _planning = PlanningInsightsService();
+  final AdaptiveBudgetService _adaptiveBudget = AdaptiveBudgetService();
 
   @override
   void initState() {
@@ -41,8 +44,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         title: const Text('Budgets'),
         centerTitle: false,
         backgroundColor: AppTheme.pageBackground(context),
-        foregroundColor: colorScheme.onBackground,
-        iconTheme: IconThemeData(color: colorScheme.onBackground),
+        foregroundColor: colorScheme.onSurface,
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
         titleTextStyle: theme.textTheme.displaySmall?.copyWith(
           fontSize: 24,
           letterSpacing: -1,
@@ -52,7 +55,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         actions: [
           IconButton(
             icon: Icon(LucideIcons.refreshCw,
-                color: colorScheme.onBackground, size: 20),
+                color: colorScheme.onSurface, size: 20),
             tooltip: 'Recalculate budget totals from transactions',
             onPressed: () {
               final user = context.read<AuthBloc>().state;
@@ -64,7 +67,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             },
           ),
           IconButton(
-            icon: Icon(LucideIcons.plus, color: colorScheme.onBackground),
+            icon: Icon(LucideIcons.plus, color: colorScheme.onSurface),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -183,6 +186,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           activeCount: activeBudgets.length,
           inactiveCount: inactiveBudgets.length,
         ),
+        _buildForecastCard(activeBudgets),
+        _buildAdaptivePlanCard(activeBudgets),
         _buildSectionHeading(
           title: 'Active Budgets',
           subtitle: '',
@@ -212,11 +217,141 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 )),
           ],
         ],
-        const Padding(
-          padding: EdgeInsets.only(top: 24),
-          child: AppBannerAd(),
-        ),
       ],
+    );
+  }
+
+  Widget _buildForecastCard(List<Budget> budgets) {
+    final forecasts = _planning.forecastBudgets(budgets);
+    if (forecasts.isEmpty) return const SizedBox.shrink();
+    final forecast = forecasts.first;
+    final colorScheme = Theme.of(context).colorScheme;
+    final atRisk = forecast.likelyOverBudget;
+    final title =
+        atRisk ? 'Budget forecast needs attention' : 'Budget forecast';
+    final detail = atRisk
+        ? '${forecast.budget.name} may exceed its limit by ${CurrencyService().formatAmount(forecast.projectedOverage)}.'
+        : 'Your current pace keeps ${forecast.budget.name} within its limit.';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: (atRisk ? AppColors.warning : AppColors.primary)
+            .withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: (atRisk ? AppColors.warning : AppColors.primary)
+              .withValues(alpha: 0.16),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(atRisk ? LucideIcons.alertTriangle : LucideIcons.trendingUp,
+              color: atRisk ? AppColors.warning : AppColors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                Text(detail,
+                    style: TextStyle(
+                        color: colorScheme.onSurfaceVariant, fontSize: 12)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdaptivePlanCard(List<Budget> budgets) {
+    final insights = _adaptiveBudget.analyzeAll(budgets);
+    if (insights.isEmpty) return const SizedBox.shrink();
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final weeklySafeSpend = insights.fold<double>(
+      0,
+      (total, insight) => total + insight.weeklySafeSpend,
+    );
+    final priority = insights.first;
+    final isAttention = priority.needsAttention;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: (isAttention ? AppColors.warning : AppColors.success)
+            .withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: (isAttention ? AppColors.warning : AppColors.success)
+              .withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isAttention ? LucideIcons.shieldAlert : LucideIcons.gauge,
+                color: isAttention ? AppColors.warning : AppColors.success,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Adaptive spending plan',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+              ),
+              Text(
+                '${CurrencyService().formatAmount(weeklySafeSpend)} / week',
+                style: TextStyle(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Recommended weekly spending across your active budgets.',
+            style: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.65),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            priority.recommendation,
+            style: TextStyle(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+              height: 1.35,
+            ),
+          ),
+          if (priority.daysRemaining > 0) ...[
+            const SizedBox(height: 8),
+            Text(
+              '${priority.budget.name}: ${CurrencyService().formatAmount(priority.dailySafeSpend)} per day remaining',
+              style: TextStyle(
+                color: colorScheme.onSurface.withValues(alpha: 0.65),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 

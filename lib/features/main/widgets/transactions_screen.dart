@@ -4,6 +4,7 @@ import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/services/currency_service.dart';
+import '../../../core/services/transaction_intelligence_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
 import '../../transaction/screens/edit_transaction_screen.dart';
@@ -13,12 +14,11 @@ import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/page_transitions.dart';
 import '../../../shared/widgets/skeleton_components.dart';
-import '../../../core/widgets/app_banner_ad.dart';
 import 'transaction_tile.dart';
 import '../../../core/utils/date_range_filter.dart';
 import '../../../shared/widgets/app_bottom_sheet.dart';
 import '../../../shared/widgets/empty_state_view.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 // ─── Filter enums ────────────────────────────────────────────────────────────
 
@@ -47,6 +47,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   _TypeFilter _typeFilter = _TypeFilter.all;
   String? _selectedBudgetId; // null = all budgets
   DateTimeRange? _customRange;
+  String _searchQuery = '';
+  final TransactionIntelligenceService _intelligence =
+      TransactionIntelligenceService();
 
   @override
   void initState() {
@@ -108,6 +111,13 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       if (_typeFilter == _TypeFilter.income && !transaction.isIncome) {
         continue;
       }
+      if (_searchQuery.trim().isNotEmpty) {
+        final query = _searchQuery.trim().toLowerCase();
+        final haystack = '${transaction.title} ${transaction.description} '
+                '${transaction.category}'
+            .toLowerCase();
+        if (!haystack.contains(query)) continue;
+      }
       result.add(transaction);
     }
     result.sort((a, b) {
@@ -129,7 +139,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       appBar: _isSelectionMode
           ? AppBar(
               backgroundColor: AppTheme.pageBackground(context),
-              foregroundColor: colorScheme.onBackground,
+              foregroundColor: colorScheme.onSurface,
               elevation: 0,
               scrolledUnderElevation: 0,
               leading: IconButton(
@@ -142,7 +152,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               title: Text(
                 '${_selectedIds.length} selected',
                 style: theme.textTheme.titleLarge?.copyWith(
-                  color: colorScheme.onBackground,
+                  color: colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -151,13 +161,13 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   onPressed: _selectedIds.isEmpty ? null : _deleteSelectedItems,
                   icon: Icon(LucideIcons.trash2,
                       color: _selectedIds.isEmpty
-                          ? colorScheme.onBackground.withOpacity(0.3)
+                          ? colorScheme.onSurface.withValues(alpha: 0.3)
                           : AppColors.error),
                   label: Text(
                     'Delete',
                     style: TextStyle(
                       color: _selectedIds.isEmpty
-                          ? colorScheme.onBackground.withOpacity(0.3)
+                          ? colorScheme.onSurface.withValues(alpha: 0.3)
                           : AppColors.error,
                       fontWeight: FontWeight.w600,
                     ),
@@ -170,8 +180,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               title: const Text('Transactions'),
               centerTitle: false,
               backgroundColor: AppTheme.pageBackground(context),
-              foregroundColor: colorScheme.onBackground,
-              iconTheme: IconThemeData(color: colorScheme.onBackground),
+              foregroundColor: colorScheme.onSurface,
+              iconTheme: IconThemeData(color: colorScheme.onSurface),
               titleTextStyle: theme.textTheme.displaySmall?.copyWith(
                 fontSize: 24,
                 letterSpacing: -1,
@@ -180,15 +190,14 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               scrolledUnderElevation: 0,
               actions: [
                 IconButton(
-                  icon:
-                      Icon(LucideIcons.repeat, color: colorScheme.onBackground),
+                  icon: Icon(LucideIcons.repeat, color: colorScheme.onSurface),
                   onPressed: () => context.pushSmooth(
                     const RecurringTransactionsScreen(),
                   ),
                   tooltip: 'Recurring Transactions',
                 ),
                 IconButton(
-                  icon: Icon(LucideIcons.plus, color: colorScheme.onBackground),
+                  icon: Icon(LucideIcons.plus, color: colorScheme.onSurface),
                   onPressed: () => context.pushSmooth(
                     const AddTransactionScreen(),
                     transitionType: PageTransitionType.slideFromBottom,
@@ -204,8 +213,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               if (state is TransactionLoaded && state.message != null) {
                 AppSnackbar.showSuccess(context, message: state.message!);
               }
-              if (state is TransactionError)
+              if (state is TransactionError) {
                 AppSnackbar.showError(context, message: state.message);
+              }
             },
           ),
         ],
@@ -226,8 +236,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
           final filtered = _applyFilters(transactions);
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_fadeController.status != AnimationStatus.completed)
+            if (_fadeController.status != AnimationStatus.completed) {
               _fadeController.forward();
+            }
           });
 
           return RefreshIndicator(
@@ -242,6 +253,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildSummaryBar(filtered),
+                        _buildSearchField(),
+                        _buildIntelligenceNotice(transactions),
                         _buildFilterRow(budgets),
                       ],
                     ),
@@ -252,18 +265,101 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                           padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
                           sliver: _buildTransactionSliver(filtered),
                         ),
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: AppBannerAd(),
-                    ),
-                  ),
                 ],
               ),
             ),
           );
         }),
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      child: TextField(
+        onChanged: (value) => setState(() => _searchQuery = value),
+        decoration: InputDecoration(
+          hintText: 'Search merchant, category, or note',
+          prefixIcon: const Icon(LucideIcons.search, size: 19),
+          suffixIcon: _searchQuery.isEmpty
+              ? null
+              : IconButton(
+                  tooltip: 'Clear search',
+                  icon: const Icon(LucideIcons.x, size: 18),
+                  onPressed: () => setState(() => _searchQuery = ''),
+                ),
+          filled: true,
+          fillColor: AppTheme.cardSurface(context),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide:
+                BorderSide(color: colorScheme.outline.withValues(alpha: 0.12)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide:
+                BorderSide(color: colorScheme.outline.withValues(alpha: 0.12)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: colorScheme.primary),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIntelligenceNotice(List<Transaction> transactions) {
+    final recurring = _intelligence.findRecurring(transactions);
+    final duplicates = _intelligence.findDuplicates(transactions);
+    if (recurring.isEmpty && duplicates.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final parts = <String>[];
+    if (recurring.isNotEmpty) {
+      parts.add(
+          '${recurring.length} recurring pattern${recurring.length == 1 ? '' : 's'}');
+    }
+    if (duplicates.isNotEmpty) {
+      parts.add(
+          '${duplicates.length} possible duplicate${duplicates.length == 1 ? '' : 's'}');
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.14)),
+        ),
+        child: Row(
+          children: [
+            Icon(LucideIcons.sparkles, size: 17, color: AppColors.primary),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                parts.join(' · '),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (recurring.isNotEmpty)
+              TextButton(
+                onPressed: () => context.pushSmooth(
+                  const RecurringTransactionsScreen(),
+                ),
+                child: const Text('Review'),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -284,7 +380,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       decoration: BoxDecoration(
         color: isDark ? colorScheme.surface : Colors.black,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         children: [
@@ -297,7 +393,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   Text(
                     'Balance',
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       letterSpacing: 1.2,
                       fontWeight: FontWeight.bold,
                     ),
@@ -315,7 +411,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -339,7 +435,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                 width: 1,
                 height: 40,
                 margin: const EdgeInsets.symmetric(horizontal: 20),
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
               ),
               _modernSummaryItem(
                 label: 'Expenses',
@@ -366,7 +462,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, size: 16, color: color),
@@ -380,7 +476,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   label,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -458,7 +554,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                       border: Border.all(
                         color: hasActiveSecondary
                             ? AppColors.primary
-                            : colorScheme.outline.withOpacity(0.2),
+                            : colorScheme.outline.withValues(alpha: 0.2),
                         width: hasActiveSecondary ? 1.5 : 1,
                       ),
                       borderRadius: BorderRadius.circular(20),
@@ -471,7 +567,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                           size: 15,
                           color: hasActiveSecondary
                               ? Colors.white
-                              : colorScheme.onBackground.withOpacity(0.7),
+                              : colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                         if (hasActiveSecondary) ...[
                           const SizedBox(width: 5),
@@ -517,7 +613,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
           border: Border.all(
             color: selected
                 ? AppColors.primary
-                : colorScheme.outline.withOpacity(0.4),
+                : colorScheme.outline.withValues(alpha: 0.4),
             width: selected ? 1.5 : 1,
           ),
           borderRadius: BorderRadius.circular(20),
@@ -530,7 +626,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   size: 13,
                   color: selected
                       ? Colors.white
-                      : colorScheme.onBackground.withOpacity(0.7)),
+                      : colorScheme.onSurface.withValues(alpha: 0.7)),
               const SizedBox(width: 5),
             ],
             Text(
@@ -540,7 +636,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                 fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
                 color: selected
                     ? Colors.white
-                    : colorScheme.onBackground.withOpacity(0.8),
+                    : colorScheme.onSurface.withValues(alpha: 0.8),
               ),
             ),
           ],
@@ -570,7 +666,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                     Text('Filters',
                         style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: colorScheme.onBackground,
+                              color: colorScheme.onSurface,
                             )),
                     TextButton(
                       onPressed: () {
@@ -593,7 +689,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: colorScheme.onBackground.withOpacity(0.55))),
+                        color: colorScheme.onSurface.withValues(alpha: 0.55))),
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -636,7 +732,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                       style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: colorScheme.onBackground.withOpacity(0.55))),
+                          color:
+                              colorScheme.onSurface.withValues(alpha: 0.55))),
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
@@ -707,7 +804,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
           border: Border.all(
             color: selected
                 ? AppColors.primary
-                : colorScheme.outline.withOpacity(0.4),
+                : colorScheme.outline.withValues(alpha: 0.4),
             width: selected ? 1.5 : 1,
           ),
           borderRadius: BorderRadius.circular(20),
@@ -720,7 +817,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   size: 13,
                   color: selected
                       ? Colors.white
-                      : colorScheme.onBackground.withOpacity(0.7)),
+                      : colorScheme.onSurface.withValues(alpha: 0.7)),
               const SizedBox(width: 5),
             ],
             Text(
@@ -730,7 +827,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                 fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
                 color: selected
                     ? Colors.white
-                    : colorScheme.onBackground.withOpacity(0.8),
+                    : colorScheme.onSurface.withValues(alpha: 0.8),
               ),
             ),
           ],
@@ -776,7 +873,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: colorScheme.onBackground.withOpacity(0.55),
+                  color: colorScheme.onSurface.withValues(alpha: 0.55),
                   letterSpacing: 0.4,
                 ),
               ),
@@ -785,14 +882,15 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: colorScheme.onBackground.withOpacity(0.4),
+                  color: colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
               ),
             ],
           ),
         ),
         Container(
-          decoration: AppTheme.surfaceDecoration(context, radius: 18, subtle: false),
+          decoration:
+              AppTheme.surfaceDecoration(context, radius: 18, subtle: false),
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Column(
             children: [
@@ -801,7 +899,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   Divider(
                     height: 1,
                     thickness: 1,
-                    color: colorScheme.outline.withOpacity(0.15),
+                    color: colorScheme.outline.withValues(alpha: 0.15),
                   ),
                 TransactionTile(
                   item: items[i],

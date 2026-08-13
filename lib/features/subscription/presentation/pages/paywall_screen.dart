@@ -4,7 +4,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import '../../../../core/constants/app_theme.dart';
 import '../../subscription_bloc.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -22,7 +22,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -75,7 +75,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: colorScheme.onBackground,
+                      color: colorScheme.onSurface,
                     ),
                   ),
 
@@ -85,7 +85,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     'Unlock all features',
                     style: TextStyle(
                       fontSize: 15,
-                      color: colorScheme.onBackground.withOpacity(0.6),
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
 
@@ -156,7 +156,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         child: Text(
                           'Restore',
                           style: TextStyle(
-                            color: colorScheme.onBackground.withOpacity(0.5),
+                            color: colorScheme.onSurface.withValues(alpha: 0.5),
                             fontSize: 13,
                           ),
                         ),
@@ -164,7 +164,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       Text(
                         '•',
                         style: TextStyle(
-                          color: colorScheme.onBackground.withOpacity(0.3),
+                          color: colorScheme.onSurface.withValues(alpha: 0.3),
                         ),
                       ),
                       TextButton(
@@ -172,7 +172,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         child: Text(
                           'Maybe later',
                           style: TextStyle(
-                            color: colorScheme.onBackground.withOpacity(0.5),
+                            color: colorScheme.onSurface.withValues(alpha: 0.5),
                             fontSize: 13,
                           ),
                         ),
@@ -204,7 +204,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: AppColors.primary, size: 18),
@@ -236,13 +236,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.08)
+              ? AppColors.primary.withValues(alpha: 0.08)
               : colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
                 ? AppColors.primary
-                : colorScheme.outline.withOpacity(0.3),
+                : colorScheme.outline.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -334,7 +334,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colorScheme.errorContainer.withOpacity(0.3),
+        color: colorScheme.errorContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(

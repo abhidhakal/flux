@@ -10,19 +10,19 @@ class PrivacyPolicyScreen extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('Privacy Policy'),
         centerTitle: false,
-        backgroundColor: colorScheme.background,
-        foregroundColor: colorScheme.onBackground,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
         titleTextStyle: theme.textTheme.displaySmall?.copyWith(
           fontSize: 24,
           letterSpacing: -1,
         ),
-        iconTheme: IconThemeData(color: colorScheme.onBackground),
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -33,7 +33,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               'Effective Date: December 13, 2024',
               style: TextStyle(
                 fontSize: 14,
-                color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -53,7 +53,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
             ),
             const LegalSectionText(
               title: '3. How We Use Your Information',
-              content: 'We use your personal information for the following purposes:\n\n'
+              content:
+                  'We use your personal information for the following purposes:\n\n'
                   '• To provide and maintain our Service.\n'
                   '• To personalize your experience and provide AI-driven insights.\n'
                   '• To notify you about changes to our Service.\n'
@@ -67,7 +68,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
             ),
             const LegalSectionText(
               title: '5. Contact Us',
-              content: 'If you have any questions about this Privacy Policy, please contact us:\n\n'
+              content:
+                  'If you have any questions about this Privacy Policy, please contact us:\n\n'
                   '• By email: info@klivo.com.np\n'
                   '• By visiting our website: klivostudios.com',
             ),

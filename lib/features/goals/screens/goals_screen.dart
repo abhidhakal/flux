@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/goal_model.dart';
 import '../../../core/services/currency_service.dart';
+import '../../../core/services/planning_insights_service.dart';
 import '../../../core/services/widget_service.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/skeleton_components.dart';
@@ -21,7 +22,7 @@ import '../../../shared/widgets/app_bottom_sheet.dart';
 import '../../../shared/widgets/empty_state_view.dart';
 import '../../../shared/widgets/stat_tile.dart';
 import '../../../core/services/feature_flag_service.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class GoalsScreen extends StatefulWidget {
   const GoalsScreen({super.key});
@@ -34,6 +35,7 @@ class _GoalsScreenState extends State<GoalsScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   String _selectedFilter = 'All'; // All, Active, Paused
+  final PlanningInsightsService _planning = PlanningInsightsService();
 
   @override
   void initState() {
@@ -72,12 +74,12 @@ class _GoalsScreenState extends State<GoalsScreen>
         title: const Text('Financial Goals'),
         centerTitle: false,
         backgroundColor: AppTheme.pageBackground(context),
-        foregroundColor: colorScheme.onBackground,
-        iconTheme: IconThemeData(color: colorScheme.onBackground),
+        foregroundColor: colorScheme.onSurface,
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
         titleTextStyle: theme.textTheme.displaySmall?.copyWith(
           fontSize: 24,
           letterSpacing: -1,
-          color: colorScheme.onBackground,
+          color: colorScheme.onSurface,
         ),
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -85,7 +87,7 @@ class _GoalsScreenState extends State<GoalsScreen>
           controller: _tabController,
           indicatorColor: AppColors.primary,
           labelColor: AppColors.primary,
-          unselectedLabelColor: colorScheme.onBackground.withOpacity(0.5),
+          unselectedLabelColor: colorScheme.onSurface.withValues(alpha: 0.5),
           tabs: const [
             Tab(text: 'Goals'),
             Tab(text: 'Completed'),
@@ -94,7 +96,7 @@ class _GoalsScreenState extends State<GoalsScreen>
         ),
         actions: [
           IconButton(
-            icon: Icon(LucideIcons.plus, color: colorScheme.onBackground),
+            icon: Icon(LucideIcons.plus, color: colorScheme.onSurface),
             onPressed: () => _showAddGoalOptions(context),
           ),
         ],
@@ -178,7 +180,7 @@ class _GoalsScreenState extends State<GoalsScreen>
             leading: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(LucideIcons.pencil, color: AppColors.primary),
@@ -208,7 +210,7 @@ class _GoalsScreenState extends State<GoalsScreen>
             leading: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: colorScheme.secondary.withOpacity(0.1),
+                color: colorScheme.secondary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(LucideIcons.fileText, color: colorScheme.secondary),
@@ -380,7 +382,7 @@ class _GoalsScreenState extends State<GoalsScreen>
       backgroundColor: AppTheme.cardSurface(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       side: BorderSide(
-          color: colorScheme.outline.withOpacity(isSelected ? 0 : 0.08)),
+          color: colorScheme.outline.withValues(alpha: isSelected ? 0 : 0.08)),
     );
   }
 
@@ -390,26 +392,44 @@ class _GoalsScreenState extends State<GoalsScreen>
     final totalProgress = goals.fold(0.0, (sum, g) => sum + g.currentAmount);
     final averageProgress =
         totalTarget > 0 ? (totalProgress / totalTarget * 100) : 0.0;
+    final plans = _planning.fundingPlans(goals);
+    final monthlyFunding =
+        plans.fold<double>(0, (total, plan) => total + plan.monthlyAmount);
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: AppTheme.surfaceDecoration(context, radius: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
         children: [
-          _buildOverviewStat('${goals.length}', 'Goals', colorScheme),
-          Container(
-              width: 1,
-              height: 40,
-              color: colorScheme.outline.withOpacity(0.1)),
-          _buildOverviewStat('$currency${totalTarget.toStringAsFixed(0)}',
-              'Target', colorScheme),
-          Container(
-              width: 1,
-              height: 40,
-              color: colorScheme.outline.withOpacity(0.1)),
-          _buildOverviewStat('${averageProgress.toStringAsFixed(0)}%',
-              'Progress', colorScheme),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildOverviewStat('${goals.length}', 'Goals', colorScheme),
+              Container(
+                  width: 1,
+                  height: 40,
+                  color: colorScheme.outline.withValues(alpha: 0.1)),
+              _buildOverviewStat('$currency${totalTarget.toStringAsFixed(0)}',
+                  'Target', colorScheme),
+              Container(
+                  width: 1,
+                  height: 40,
+                  color: colorScheme.outline.withValues(alpha: 0.1)),
+              _buildOverviewStat('${averageProgress.toStringAsFixed(0)}%',
+                  'Progress', colorScheme),
+            ],
+          ),
+          if (monthlyFunding > 0) ...[
+            const SizedBox(height: 14),
+            Text(
+              'Suggested monthly funding: ${CurrencyService().formatAmount(monthlyFunding)}',
+              style: TextStyle(
+                color: colorScheme.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -470,7 +490,7 @@ class _GoalsScreenState extends State<GoalsScreen>
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppColors.success.withOpacity(0.1),
+                              color: AppColors.success.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(LucideIcons.checkCircle2,

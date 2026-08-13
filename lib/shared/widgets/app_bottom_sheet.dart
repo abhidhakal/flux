@@ -50,7 +50,7 @@ class _Handle extends StatelessWidget {
       width: 40,
       height: 4,
       decoration: BoxDecoration(
-        color: colorScheme.onSurface.withOpacity(0.2),
+        color: colorScheme.onSurface.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(2),
       ),
     );

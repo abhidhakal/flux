@@ -80,10 +80,6 @@ class SubscriptionService {
     _isInitialized = true;
   }
 
-  Future<void> checkStatus() async {
-    await _checkPremiumStatus();
-  }
-
   Future<void> _loadProducts() async {
     if (!_isAvailable) {
       _products = _getMockProducts();
@@ -228,9 +224,8 @@ class SubscriptionService {
   static String _getExpiryKey(String uid) => '${_kPremiumExpiryKey}_$uid';
 
   Future<void> _checkPremiumStatus() async {
-    // If subscriptions are disabled globally (Ad-supported mode),
-    // we grant premium status to unlock all features.
-    // Ads will be handled separately by AdService.
+    // During development, disabling subscriptions grants access to all
+    // premium features without involving the store.
     if (!FeatureFlagService.isSubscriptionEnabled) {
       _isPremium = true;
       return;
@@ -273,14 +268,6 @@ class SubscriptionService {
         await prefs.remove(userExpiryKey);
       }
     }
-  }
-
-  bool isDeveloperUser() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null && user.email != null) {
-      return _developerEmails.contains(user.email);
-    }
-    return false;
   }
 
   void dispose() {

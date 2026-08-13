@@ -6,7 +6,7 @@ import '../../../core/models/goal_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../goals_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class EditGoalScreen extends StatefulWidget {
   final Goal goal;
@@ -96,7 +96,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('Edit Goal'),
         centerTitle: false,
@@ -170,7 +170,8 @@ class _EditGoalScreenState extends State<EditGoalScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Goal Name
-                          _buildSectionLabel('Goal Name', icon: LucideIcons.flag),
+                          _buildSectionLabel('Goal Name',
+                              icon: LucideIcons.flag),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _nameController,
@@ -300,7 +301,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
           end: Alignment.bottomRight,
           colors: [
             Color(_selectedColor),
-            Color(_selectedColor).withOpacity(0.7),
+            Color(_selectedColor).withValues(alpha: 0.7),
           ],
         ),
       ),
@@ -317,7 +318,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -347,7 +348,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
                         Text(
                           _selectedType.displayName,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withValues(alpha: 0.8),
                             fontSize: 14,
                           ),
                         ),
@@ -369,7 +370,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
                         Text(
                           'Current Progress',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withValues(alpha: 0.8),
                             fontSize: 12,
                           ),
                         ),
@@ -389,7 +390,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -410,7 +411,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
               Container(
                 height: 8,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.3),
+                  color: Colors.white.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: FractionallySizedBox(
@@ -431,7 +432,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
               Text(
                 'of ${CurrencyService().formatAmount(targetAmount)} target',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 14,
                 ),
               ),
@@ -443,7 +444,8 @@ class _EditGoalScreenState extends State<EditGoalScreen>
   }
 
   Widget _buildSectionLabel(String label, {IconData? icon}) {
-    final color = Theme.of(context).colorScheme.onSurface.withOpacity(0.7);
+    final color =
+        Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7);
     final style = TextStyle(
       fontSize: 14,
       fontWeight: FontWeight.w600,
@@ -467,7 +469,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
     final colorScheme = Theme.of(context).colorScheme;
     return InputDecoration(
       hintText: hintText,
-      hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.4)),
+      hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.4)),
       prefixText: prefixText,
       prefixStyle: TextStyle(
         color: colorScheme.onSurface,
@@ -478,11 +480,13 @@ class _EditGoalScreenState extends State<EditGoalScreen>
       fillColor: colorScheme.surface,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+        borderSide:
+            BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+        borderSide:
+            BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -507,7 +511,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -533,7 +537,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
                     style: TextStyle(
                       fontSize: 12,
                       color: daysRemaining > 0
-                          ? colorScheme.onSurface.withOpacity(0.6)
+                          ? colorScheme.onSurface.withValues(alpha: 0.6)
                           : AppColors.error,
                     ),
                   ),
@@ -542,7 +546,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
             ),
             Icon(
               LucideIcons.chevronRight,
-              color: colorScheme.onSurface.withOpacity(0.4),
+              color: colorScheme.onSurface.withValues(alpha: 0.4),
             ),
           ],
         ),
@@ -567,13 +571,13 @@ class _EditGoalScreenState extends State<EditGoalScreen>
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppColors.primary.withOpacity(0.1)
+                  ? AppColors.primary.withValues(alpha: 0.1)
                   : colorScheme.surface,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isSelected
                     ? AppColors.primary
-                    : colorScheme.outline.withOpacity(0.3),
+                    : colorScheme.outline.withValues(alpha: 0.3),
                 width: isSelected ? 2 : 1,
               ),
             ),
@@ -585,7 +589,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
                   size: 18,
                   color: isSelected
                       ? AppColors.primary
-                      : colorScheme.onSurface.withOpacity(0.6),
+                      : colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
                 const SizedBox(width: 6),
                 Text(
@@ -596,7 +600,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
                         isSelected ? FontWeight.w600 : FontWeight.normal,
                     color: isSelected
                         ? AppColors.primary
-                        : colorScheme.onSurface.withOpacity(0.8),
+                        : colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -635,7 +639,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: Color(colorValue).withOpacity(0.4),
+                        color: Color(colorValue).withValues(alpha: 0.4),
                         blurRadius: 8,
                         spreadRadius: 2,
                       ),
@@ -656,7 +660,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -672,7 +676,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
               'Goal will reset after completion',
               style: TextStyle(
                 fontSize: 12,
-                color: colorScheme.onSurface.withOpacity(0.6),
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             value: _isRecurring,
@@ -683,7 +687,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
                 if (!value) _recurringPeriod = null;
               });
             },
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           ),
@@ -723,13 +727,13 @@ class _EditGoalScreenState extends State<EditGoalScreen>
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.1)
+              ? AppColors.primary.withValues(alpha: 0.1)
               : colorScheme.surface,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
                 ? AppColors.primary
-                : colorScheme.outline.withOpacity(0.3),
+                : colorScheme.outline.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -802,7 +806,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
           'Cancel',
           style: TextStyle(
             fontSize: 16,
-            color: colorScheme.onSurface.withOpacity(0.6),
+            color: colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
       ),

@@ -9,7 +9,7 @@ import '../goals_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../core/services/currency_service.dart';
 import '../../../shared/widgets/field_label.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class CreateGoalScreen extends StatefulWidget {
   final Map<String, dynamic>? prefillData;
@@ -99,18 +99,18 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final saveIconColor = isDark ? Colors.white : colorScheme.onBackground;
+    final saveIconColor = isDark ? Colors.white : colorScheme.onSurface;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('Create Goal'),
         centerTitle: false,
-        backgroundColor: colorScheme.background,
-        foregroundColor: colorScheme.onBackground,
-        iconTheme: IconThemeData(color: colorScheme.onBackground),
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
         titleTextStyle: theme.textTheme.titleLarge?.copyWith(
-          color: colorScheme.onBackground,
+          color: colorScheme.onSurface,
           fontWeight: FontWeight.w600,
         ),
         elevation: 0,
@@ -269,7 +269,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
       style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.bold,
-        color: Theme.of(context).colorScheme.onBackground,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }
@@ -304,10 +304,10 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
         borderSide: BorderSide(color: colorScheme.error, width: 2),
       ),
       hintStyle: theme.textTheme.bodyLarge?.copyWith(
-        color: colorScheme.onBackground.withValues(alpha: 0.45),
+        color: colorScheme.onSurface.withValues(alpha: 0.45),
       ),
       prefixStyle: theme.textTheme.bodyLarge?.copyWith(
-        color: colorScheme.onBackground,
+        color: colorScheme.onSurface,
         fontWeight: FontWeight.w500,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -347,7 +347,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: colorScheme.onBackground,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -358,7 +358,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
                     style: TextStyle(
                       fontSize: 13,
                       color: daysRemaining > 0
-                          ? colorScheme.onBackground.withValues(alpha: 0.6)
+                          ? colorScheme.onSurface.withValues(alpha: 0.6)
                           : AppColors.error,
                     ),
                   ),
@@ -367,7 +367,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
             ),
             Icon(
               LucideIcons.chevronRight,
-              color: colorScheme.onBackground.withValues(alpha: 0.4),
+              color: colorScheme.onSurface.withValues(alpha: 0.4),
             ),
           ],
         ),
@@ -409,7 +409,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
                   size: 17,
                   color: isSelected
                       ? AppColors.primary
-                      : colorScheme.onBackground.withValues(alpha: 0.6),
+                      : colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -419,7 +419,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     color: isSelected
                         ? AppColors.primary
-                        : colorScheme.onBackground.withValues(alpha: 0.7),
+                        : colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -478,14 +478,14 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
               'Recurring Goal',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: colorScheme.onBackground,
+                color: colorScheme.onSurface,
               ),
             ),
             subtitle: Text(
               'Reset progress automatically after completion',
               style: TextStyle(
                 fontSize: 13,
-                color: colorScheme.onBackground.withValues(alpha: 0.6),
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             value: _isRecurring,
@@ -553,7 +553,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               color: isSelected
                   ? AppColors.primary
-                  : colorScheme.onBackground.withValues(alpha: 0.7),
+                  : colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
         ),

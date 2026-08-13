@@ -24,7 +24,7 @@ import '../../../shared/widgets/stat_tile.dart';
 import '../../../core/services/user_progress_service.dart';
 import 'edit_profile_dialog.dart';
 import 'export_data_dialog.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -254,7 +254,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            colorScheme.primary.withOpacity(0.12),
+            colorScheme.primary.withValues(alpha: 0.12),
             AppTheme.cardSurface(context),
           ],
         ),
@@ -288,8 +288,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
                           colors: [
-                            colorScheme.primary.withOpacity(0.45),
-                            colorScheme.tertiary.withOpacity(0.25),
+                            colorScheme.primary.withValues(alpha: 0.45),
+                            colorScheme.tertiary.withValues(alpha: 0.25),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -391,13 +391,13 @@ class _ProfileScreenState extends State<ProfileScreen>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: emphasized
-            ? colorScheme.primary.withOpacity(0.1)
+            ? colorScheme.primary.withValues(alpha: 0.1)
             : AppTheme.mutedSurface(context),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: emphasized
-              ? colorScheme.primary.withOpacity(0.18)
-              : colorScheme.outline.withOpacity(0.08),
+              ? colorScheme.primary.withValues(alpha: 0.18)
+              : colorScheme.outline.withValues(alpha: 0.08),
         ),
       ),
       child: Row(
@@ -502,7 +502,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Divider(
                   height: 1,
                   indent: 56,
-                  color: colorScheme.outline.withOpacity(0.1),
+                  color: colorScheme.outline.withValues(alpha: 0.1),
                 ),
             ],
           );
@@ -517,7 +517,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: colorScheme.primary.withOpacity(0.1),
+          color: colorScheme.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(item.icon, color: colorScheme.primary, size: 20),
@@ -540,7 +540,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           : null,
       trailing: Icon(
         LucideIcons.chevronRight,
-        color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
       ),
       onTap: item.onTap,
     );
@@ -555,8 +555,8 @@ class _ProfileScreenState extends State<ProfileScreen>
         style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.w600),
       ),
       style: OutlinedButton.styleFrom(
-        backgroundColor: colorScheme.error.withOpacity(0.06),
-        side: BorderSide(color: colorScheme.error.withOpacity(0.25)),
+        backgroundColor: colorScheme.error.withValues(alpha: 0.06),
+        side: BorderSide(color: colorScheme.error.withValues(alpha: 0.25)),
         padding: const EdgeInsets.symmetric(vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
@@ -608,9 +608,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                           _selectedCountry = country['country']!;
                         });
                         await CurrencyService().setCurrency(country['code']!);
-                        if (context.mounted) {
-                          WidgetService.refreshWidgets(context);
-                        }
+                        if (!context.mounted) return;
+                        WidgetService.refreshWidgets(context);
                         Navigator.pop(context);
                         AppSnackbar.showSuccess(
                           context,
@@ -715,12 +714,12 @@ class _ProfileScreenState extends State<ProfileScreen>
         side: BorderSide(
           color: isSelected
               ? colorScheme.primary
-              : colorScheme.outline.withOpacity(0.2),
+              : colorScheme.outline.withValues(alpha: 0.2),
           width: isSelected ? 2 : 1,
         ),
       ),
       tileColor: isSelected
-          ? colorScheme.primary.withOpacity(0.05)
+          ? colorScheme.primary.withValues(alpha: 0.05)
           : Colors.transparent,
       leading: Icon(icon,
           color:
@@ -763,7 +762,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             width: 68,
             height: 68,
             decoration: BoxDecoration(
-              color: cs.error.withOpacity(0.1),
+              color: cs.error.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(22),
             ),
             child: Icon(LucideIcons.logOut, color: cs.error, size: 32),
@@ -793,7 +792,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
-                    side: BorderSide(color: cs.outline.withOpacity(0.4)),
+                    side: BorderSide(color: cs.outline.withValues(alpha: 0.4)),
                   ),
                   child: Text('Cancel',
                       style: TextStyle(
@@ -874,6 +873,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       final XFile? image = await _picker.pickImage(
           source: source, maxWidth: 512, maxHeight: 512, imageQuality: 85);
       if (image != null) {
+        if (!mounted) return;
         final authState = context.read<AuthBloc>().state;
         if (authState is AuthAuthenticated) {
           final imageFile = File(image.path);

@@ -6,7 +6,7 @@ import '../../../core/services/auth_service.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../auth/auth_bloc.dart';
 import '../../../shared/widgets/app_bottom_sheet.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 void showEditProfileDialog(BuildContext context, User user) {
   final authService = AuthService();
@@ -113,7 +113,7 @@ void showEditProfileDialog(BuildContext context, User user) {
 
                   if (isEmailUser) ...[
                     const SizedBox(height: 28),
-                    Divider(color: cs.outline.withOpacity(0.15)),
+                    Divider(color: cs.outline.withValues(alpha: 0.15)),
                     const SizedBox(height: 20),
 
                     // ── Email ──────────────────────────────────
@@ -187,7 +187,7 @@ void showEditProfileDialog(BuildContext context, User user) {
                     ),
 
                     const SizedBox(height: 28),
-                    Divider(color: cs.outline.withOpacity(0.15)),
+                    Divider(color: cs.outline.withValues(alpha: 0.15)),
                     const SizedBox(height: 20),
 
                     // ── Password ───────────────────────────────
@@ -225,7 +225,7 @@ void showEditProfileDialog(BuildContext context, User user) {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.primary,
                           side: BorderSide(
-                              color: AppColors.primary.withOpacity(0.5)),
+                              color: AppColors.primary.withValues(alpha: 0.5)),
                           padding: const EdgeInsets.symmetric(vertical: 13),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14)),
@@ -245,7 +245,8 @@ void showEditProfileDialog(BuildContext context, User user) {
                     Row(
                       children: [
                         Expanded(
-                            child: Divider(color: cs.outline.withOpacity(0.2))),
+                            child: Divider(
+                                color: cs.outline.withValues(alpha: 0.2))),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text('or change manually',
@@ -253,7 +254,8 @@ void showEditProfileDialog(BuildContext context, User user) {
                                   ?.copyWith(color: cs.onSurfaceVariant)),
                         ),
                         Expanded(
-                            child: Divider(color: cs.outline.withOpacity(0.2))),
+                            child: Divider(
+                                color: cs.outline.withValues(alpha: 0.2))),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -388,13 +390,13 @@ InputDecoration _inputDeco(ColorScheme cs,
     hintText: hint,
     suffixIcon: suffix,
     filled: true,
-    fillColor: cs.surfaceVariant.withOpacity(0.35),
+    fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.35),
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
     border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
     enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: cs.outline.withOpacity(0.15))),
+        borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.15))),
     focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: AppColors.primary, width: 1.5)),

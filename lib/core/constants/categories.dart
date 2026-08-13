@@ -76,23 +76,8 @@ class AppCategories {
     'Other Income': 0xFF34C759,
   };
 
-  // Get icon for category
-  static String getIcon(String category) {
-    return categoryIcons[category] ?? '📝';
-  }
-
   // Get color for category
   static int getColor(String category) {
     return categoryColors[category] ?? 0xFF8E8E93;
-  }
-
-  // Check if category is expense
-  static bool isExpenseCategory(String category) {
-    return expenseCategories.contains(category);
-  }
-
-  // Check if category is income
-  static bool isIncomeCategory(String category) {
-    return incomeCategories.contains(category);
   }
 }

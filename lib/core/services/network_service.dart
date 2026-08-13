@@ -75,28 +75,6 @@ class NetworkService {
   // Check if device is online (synchronous)
   bool get isConnected => _isOnline;
 
-  // Check if device is online (asynchronous)
-  Future<bool> isOnlineAsync() async {
-    try {
-      final results =
-          await _connectivity.checkConnectivity(); // List<ConnectivityResult>
-      return results.any((r) => r != ConnectivityResult.none);
-    } catch (e) {
-      debugPrint('❌ NETWORK SERVICE: Error checking online status: $e');
-      return false;
-    }
-  }
-
-  // Get detailed connectivity info (new API returns a list)
-  Future<List<ConnectivityResult>> getConnectivityResult() async {
-    try {
-      return await _connectivity.checkConnectivity();
-    } catch (e) {
-      debugPrint('❌ NETWORK SERVICE: Error getting connectivity result: $e');
-      return [ConnectivityResult.none];
-    }
-  }
-
   // Dispose resources
   void dispose() {
     _connectivitySubscription?.cancel();

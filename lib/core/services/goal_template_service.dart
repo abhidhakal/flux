@@ -31,73 +31,6 @@ class GoalTemplateService {
     }
   }
 
-  // Get templates by category
-  Future<List<GoalTemplate>> getTemplatesByCategory(
-      GoalTemplateCategory category) async {
-    try {
-      final querySnapshot = await _firestore
-          .collection('goal_templates')
-          .where('category', isEqualTo: category.name)
-          .orderBy('completionRate', descending: true)
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => GoalTemplate.fromJson(doc.data()))
-          .toList();
-    } catch (e) {
-      debugPrint(
-          'GOAL TEMPLATE SERVICE: Error getting templates by category: $e');
-      return _getDefaultTemplates()
-          .where((t) => t.category == category)
-          .toList();
-    }
-  }
-
-  // Get popular templates
-  Future<List<GoalTemplate>> getPopularTemplates() async {
-    try {
-      // First try to get popular templates from Firestore
-      final querySnapshot = await _firestore
-          .collection('goal_templates')
-          .where('isPopular', isEqualTo: true)
-          .limit(10)
-          .get();
-
-      final templates = querySnapshot.docs
-          .map((doc) => GoalTemplate.fromJson(doc.data()))
-          .toList();
-
-      // Sort by completion rate locally to avoid index requirement
-      templates.sort((a, b) => b.completionRate.compareTo(a.completionRate));
-
-      return templates;
-    } catch (e) {
-      debugPrint('GOAL TEMPLATE SERVICE: Error getting popular templates: $e');
-      // Fallback to default templates
-      final defaultTemplates =
-          _getDefaultTemplates().where((t) => t.isPopular).toList();
-      defaultTemplates
-          .sort((a, b) => b.completionRate.compareTo(a.completionRate));
-      return defaultTemplates;
-    }
-  }
-
-  // Search templates
-  Future<List<GoalTemplate>> searchTemplates(String query) async {
-    try {
-      final allTemplates = await getAllTemplates();
-      return allTemplates.where((template) {
-        return template.name.toLowerCase().contains(query.toLowerCase()) ||
-            template.description.toLowerCase().contains(query.toLowerCase()) ||
-            template.tags
-                .any((tag) => tag.toLowerCase().contains(query.toLowerCase()));
-      }).toList();
-    } catch (e) {
-      debugPrint('GOAL TEMPLATE SERVICE: Error searching templates: $e');
-      return [];
-    }
-  }
-
   // Create goal from template
   Future<Map<String, dynamic>> createGoalFromTemplate(
     GoalTemplate template,
@@ -161,24 +94,6 @@ class GoalTemplateService {
       await trackTemplateUsage(template.id, userId);
     } catch (e) {
       throw Exception('Failed to create goal from template: $e');
-    }
-  }
-
-  // Initialize default templates
-  Future<void> initializeDefaultTemplates() async {
-    try {
-      final templates = _getDefaultTemplates();
-
-      for (final template in templates) {
-        await _firestore
-            .collection('goal_templates')
-            .doc(template.id)
-            .set(template.toJson());
-      }
-
-      debugPrint('GOAL TEMPLATE SERVICE: Default templates initialized');
-    } catch (e) {
-      debugPrint('GOAL TEMPLATE SERVICE: Error initializing templates: $e');
     }
   }
 
@@ -603,28 +518,6 @@ class GoalTemplateService {
       });
     } catch (e) {
       debugPrint('GOAL TEMPLATE SERVICE: Error tracking usage: $e');
-    }
-  }
-
-  // Get template usage statistics
-  Future<Map<String, dynamic>> getTemplateStats(String templateId) async {
-    try {
-      final usageSnapshot = await _firestore
-          .collection('goal_templates')
-          .doc(templateId)
-          .collection('usage')
-          .get();
-
-      return {
-        'totalUsage': usageSnapshot.docs.length,
-        'recentUsage': usageSnapshot.docs.where((doc) {
-          final usedAt = DateTime.parse(doc.data()['usedAt']);
-          return DateTime.now().difference(usedAt).inDays <= 30;
-        }).length,
-      };
-    } catch (e) {
-      debugPrint('GOAL TEMPLATE SERVICE: Error getting stats: $e');
-      return {'totalUsage': 0, 'recentUsage': 0};
     }
   }
 

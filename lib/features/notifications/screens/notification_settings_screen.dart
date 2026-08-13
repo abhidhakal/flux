@@ -7,7 +7,7 @@ import '../../../core/services/enhanced_notification_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/app_bottom_sheet.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -123,11 +123,11 @@ class _NotificationSettingsScreenState
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('Notifications'),
-        backgroundColor: colorScheme.background,
-        foregroundColor: colorScheme.onBackground,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
         titleTextStyle: theme.textTheme.displaySmall?.copyWith(
@@ -159,7 +159,7 @@ class _NotificationSettingsScreenState
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,7 +172,7 @@ class _NotificationSettingsScreenState
                   color: (_notificationsEnabled
                           ? AppColors.primary
                           : colorScheme.onSurfaceVariant)
-                      .withOpacity(0.1),
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -204,7 +204,7 @@ class _NotificationSettingsScreenState
                           : 'Enable to receive alerts',
                       style: TextStyle(
                         fontSize: 14,
-                        color: colorScheme.onSurface.withOpacity(0.6),
+                        color: colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -228,7 +228,7 @@ class _NotificationSettingsScreenState
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,7 +246,7 @@ class _NotificationSettingsScreenState
             'These alerts are triggered automatically based on your activity',
             style: TextStyle(
               fontSize: 14,
-              color: colorScheme.onSurface.withOpacity(0.6),
+              color: colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 20),
@@ -303,7 +303,7 @@ class _NotificationSettingsScreenState
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: AppColors.primary, size: 20),
@@ -326,7 +326,7 @@ class _NotificationSettingsScreenState
                 description,
                 style: TextStyle(
                   fontSize: 13,
-                  color: colorScheme.onSurface.withOpacity(0.6),
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -347,7 +347,7 @@ class _NotificationSettingsScreenState
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -365,7 +365,7 @@ class _NotificationSettingsScreenState
             'Set up recurring reminders to stay on track',
             style: TextStyle(
               fontSize: 14,
-              color: colorScheme.onSurface.withOpacity(0.6),
+              color: colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 20),
@@ -436,7 +436,7 @@ class _NotificationSettingsScreenState
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: AppColors.primary, size: 20),
@@ -463,7 +463,7 @@ class _NotificationSettingsScreenState
                       child: Icon(
                         LucideIcons.settings,
                         size: 18,
-                        color: colorScheme.onSurface.withOpacity(0.5),
+                        color: colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -474,7 +474,7 @@ class _NotificationSettingsScreenState
                 description,
                 style: TextStyle(
                   fontSize: 13,
-                  color: colorScheme.onSurface.withOpacity(0.6),
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -535,109 +535,106 @@ class _NotificationSettingsScreenState
       radius: 24,
       builder: (sheetContext) => StatefulBuilder(
         builder: (sheetContext, setModalState) => Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Daily Reminder Schedule',
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Daily Reminder Schedule',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text('Reminder Type',
                 style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
+                    fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              initialValue: _dailyReminderType,
+              decoration: InputDecoration(
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
-              const SizedBox(height: 24),
-              Text('Reminder Type',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface)),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: _dailyReminderType,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-                items: const [
-                  DropdownMenuItem(
-                      value: 'expense_log', child: Text('Log your expenses')),
-                  DropdownMenuItem(
-                      value: 'budget_check', child: Text('Check your budget')),
-                  DropdownMenuItem(
-                      value: 'goal_update',
-                      child: Text('Update goal progress')),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setModalState(() => _dailyReminderType = value);
-                    setState(() => _dailyReminderType = value);
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              Text('Time',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface)),
-              const SizedBox(height: 8),
-              InkWell(
-                onTap: () async {
-                  await _pickDailyReminderTime(colorScheme);
-                  setModalState(() {});
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                        color: colorScheme.outline.withOpacity(0.35)),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(LucideIcons.clock, color: AppColors.primary),
-                      const SizedBox(width: 12),
-                      Text(
-                        _formatTime(_dailyReminderHour, _dailyReminderMinute),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      const Spacer(),
-                      Icon(
-                        LucideIcons.chevronDown,
-                        color: colorScheme.onSurface.withOpacity(0.65),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
+              items: const [
+                DropdownMenuItem(
+                    value: 'expense_log', child: Text('Log your expenses')),
+                DropdownMenuItem(
+                    value: 'budget_check', child: Text('Check your budget')),
+                DropdownMenuItem(
+                    value: 'goal_update', child: Text('Update goal progress')),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  setModalState(() => _dailyReminderType = value);
+                  setState(() => _dailyReminderType = value);
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            Text('Time',
+                style: TextStyle(
+                    fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: () async {
+                await _pickDailyReminderTime(colorScheme);
+                setModalState(() {});
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
                 width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    _scheduleDailyReminder();
-                    Navigator.pop(sheetContext);
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Save'),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                      color: colorScheme.outline.withValues(alpha: 0.35)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.clock, color: AppColors.primary),
+                    const SizedBox(width: 12),
+                    Text(
+                      _formatTime(_dailyReminderHour, _dailyReminderMinute),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      LucideIcons.chevronDown,
+                      color: colorScheme.onSurface.withValues(alpha: 0.65),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () {
+                  _scheduleDailyReminder();
+                  Navigator.pop(sheetContext);
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Save'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -666,6 +663,7 @@ class _NotificationSettingsScreenState
               await BackgroundTaskService()
                   .registerDailyHealthCheck(user.user.id);
             }
+            if (!mounted) return;
           }
           AppSnackbar.showSuccess(context, message: 'Notifications enabled');
         } else {

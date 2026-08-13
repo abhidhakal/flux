@@ -17,6 +17,9 @@ class Budget extends Equatable {
   final DateTime createdAt;
   final bool enableRollover;
   final double rolloverAmount;
+  final double weeklyTarget;
+  final double temporaryAdjustment;
+  final DateTime? adjustmentExpiresAt;
 
   const Budget({
     required this.id,
@@ -32,15 +35,40 @@ class Budget extends Equatable {
     required this.createdAt,
     this.enableRollover = false,
     this.rolloverAmount = 0.0,
+    this.weeklyTarget = 0.0,
+    this.temporaryAdjustment = 0.0,
+    this.adjustmentExpiresAt,
   });
 
   // Core budget calculations
-  double get totalAvailable => amount + rolloverAmount;
+  double get effectiveAmount {
+    final adjustmentIsActive = adjustmentExpiresAt == null ||
+        DateTime.now().isBefore(adjustmentExpiresAt!);
+    return amount + (adjustmentIsActive ? temporaryAdjustment : 0);
+  }
+
+  double get totalAvailable => effectiveAmount + rolloverAmount;
   double get remaining => totalAvailable - spent;
   double get progressPercentage =>
       totalAvailable > 0 ? (spent / totalAvailable) * 100 : 0;
   bool get isOverBudget => spent > totalAvailable;
   bool get hasRollover => rolloverAmount > 0;
+  bool get hasWeeklyTarget => weeklyTarget > 0;
+  bool get hasTemporaryAdjustment =>
+      temporaryAdjustment != 0 &&
+      (adjustmentExpiresAt == null ||
+          DateTime.now().isBefore(adjustmentExpiresAt!));
+
+  double get resolvedWeeklyTarget {
+    if (weeklyTarget > 0) return weeklyTarget;
+    final periodDays = switch (period) {
+      BudgetPeriod.daily => 1,
+      BudgetPeriod.weekly => 7,
+      BudgetPeriod.monthly => 30.4375,
+      BudgetPeriod.yearly => 365,
+    };
+    return effectiveAmount / periodDays * 7;
+  }
 
   // Budget status
   bool get isExpired => DateTime.now().isAfter(endDate);
@@ -60,6 +88,9 @@ class Budget extends Equatable {
     DateTime? createdAt,
     bool? enableRollover,
     double? rolloverAmount,
+    double? weeklyTarget,
+    double? temporaryAdjustment,
+    DateTime? adjustmentExpiresAt,
   }) {
     return Budget(
       id: id ?? this.id,
@@ -75,6 +106,9 @@ class Budget extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       enableRollover: enableRollover ?? this.enableRollover,
       rolloverAmount: rolloverAmount ?? this.rolloverAmount,
+      weeklyTarget: weeklyTarget ?? this.weeklyTarget,
+      temporaryAdjustment: temporaryAdjustment ?? this.temporaryAdjustment,
+      adjustmentExpiresAt: adjustmentExpiresAt ?? this.adjustmentExpiresAt,
     );
   }
 
@@ -93,6 +127,9 @@ class Budget extends Equatable {
       'createdAt': createdAt.toIso8601String(),
       'enableRollover': enableRollover,
       'rolloverAmount': rolloverAmount,
+      'weeklyTarget': weeklyTarget,
+      'temporaryAdjustment': temporaryAdjustment,
+      'adjustmentExpiresAt': adjustmentExpiresAt?.toIso8601String(),
     };
   }
 
@@ -120,6 +157,12 @@ class Budget extends Equatable {
           : DateTime.now(),
       enableRollover: json['enableRollover'] as bool? ?? false,
       rolloverAmount: (json['rolloverAmount'] as num?)?.toDouble() ?? 0.0,
+      weeklyTarget: (json['weeklyTarget'] as num?)?.toDouble() ?? 0.0,
+      temporaryAdjustment:
+          (json['temporaryAdjustment'] as num?)?.toDouble() ?? 0.0,
+      adjustmentExpiresAt: json['adjustmentExpiresAt'] != null
+          ? DateTime.parse(json['adjustmentExpiresAt'] as String)
+          : null,
     );
   }
 
@@ -138,5 +181,8 @@ class Budget extends Equatable {
         createdAt,
         enableRollover,
         rolloverAmount,
+        weeklyTarget,
+        temporaryAdjustment,
+        adjustmentExpiresAt,
       ];
 }

@@ -4,13 +4,21 @@ import 'package:uuid/uuid.dart';
 
 import '../models/recurring_transaction_model.dart';
 import '../models/transaction_model.dart';
+import 'currency_service.dart';
+import 'push_notification_service.dart';
+import 'sync_status_service.dart';
 import 'transaction_service.dart';
 
 class RecurringTransactionService {
-  final firestore.FirebaseFirestore _firestore =
+  static const int recurringFetchLimit = 100;
+  firestore.FirebaseFirestore get _firestore =>
       firestore.FirebaseFirestore.instance;
   final TransactionService _transactionService;
+  final PushNotificationService _pushNotificationService =
+      PushNotificationService();
   final Uuid _uuid = const Uuid();
+
+  static const int _recurringReminderIdOffset = 3000;
 
   RecurringTransactionService({TransactionService? transactionService})
       : _transactionService = transactionService ?? TransactionService();
@@ -22,10 +30,10 @@ class RecurringTransactionService {
       updatedAt: DateTime.now(),
     );
 
-    await _firestore
+    await SyncStatusService().track(() => _firestore
         .collection('recurring_transactions')
         .doc(recurringId)
-        .set(recurringToSave.toJson());
+        .set(recurringToSave.toJson()));
   }
 
   Future<List<RecurringTransaction>> getUserRecurringTransactions(
@@ -35,6 +43,7 @@ class RecurringTransactionService {
       final querySnapshot = await _firestore
           .collection('recurring_transactions')
           .where('userId', isEqualTo: userId)
+          .limit(recurringFetchLimit)
           .get();
 
       final recurringTransactions = querySnapshot.docs
@@ -53,16 +62,14 @@ class RecurringTransactionService {
     RecurringTransaction recurring,
   ) async {
     try {
-      await _firestore
-          .collection('recurring_transactions')
-          .doc(recurring.id)
-          .set(
-            recurring
-                .copyWith(
-                  updatedAt: DateTime.now(),
-                )
-                .toJson(),
-          );
+      await SyncStatusService().track(() =>
+          _firestore.collection('recurring_transactions').doc(recurring.id).set(
+                recurring
+                    .copyWith(
+                      updatedAt: DateTime.now(),
+                    )
+                    .toJson(),
+              ));
     } catch (e) {
       debugPrint('Failed to update recurring transaction: $e');
       rethrow;
@@ -71,15 +78,79 @@ class RecurringTransactionService {
 
   Future<void> deleteRecurringTransaction(String recurringId) async {
     try {
-      await _firestore
+      await SyncStatusService().track(() => _firestore
           .collection('recurring_transactions')
           .doc(recurringId)
-          .delete();
+          .delete());
     } catch (e) {
       debugPrint('Failed to delete recurring transaction: $e');
       rethrow;
     }
   }
+
+  Future<void> skipNextOccurrence(RecurringTransaction recurring) async {
+    if (recurring.status == RecurringTransactionStatus.ended) return;
+
+    final nextRunAt = calculateInitialNextRunAt(
+      recurring.nextRunAt,
+      recurring.frequency,
+      fromDate: recurring.nextRunAt,
+    );
+    await updateRecurringTransaction(recurring.copyWith(nextRunAt: nextRunAt));
+  }
+
+  Future<void> endRecurringTransaction(RecurringTransaction recurring) async {
+    await updateRecurringTransaction(
+      recurring.copyWith(status: RecurringTransactionStatus.ended),
+    );
+    await cancelReminder(recurring);
+  }
+
+  Future<void> scheduleReminder(
+    RecurringTransaction recurring, {
+    int daysBefore = 1,
+  }) async {
+    final reminderDate = recurring.nextRunAt.subtract(
+      Duration(days: daysBefore),
+    );
+    final scheduledDate = DateTime(
+      reminderDate.year,
+      reminderDate.month,
+      reminderDate.day,
+      9,
+    );
+    if (!scheduledDate.isAfter(DateTime.now())) {
+      throw Exception('This occurrence is too soon to schedule a reminder.');
+    }
+
+    final updatedRecurring = recurring.copyWith(
+      reminderEnabled: true,
+      reminderDaysBefore: daysBefore,
+    );
+    await updateRecurringTransaction(updatedRecurring);
+
+    await _pushNotificationService.scheduleNotification(
+      id: _reminderId(recurring),
+      title: '${recurring.title} is coming up',
+      body:
+          '${CurrencyService().formatAmount(recurring.amount)} scheduled ${recurring.type == TransactionType.expense ? 'expense' : 'income'} tomorrow.',
+      scheduledDate: scheduledDate,
+      payload: 'recurring:${recurring.id}',
+    );
+  }
+
+  Future<void> cancelReminder(RecurringTransaction recurring) async {
+    await _pushNotificationService.cancelNotification(_reminderId(recurring));
+  }
+
+  Future<void> disableReminder(RecurringTransaction recurring) async {
+    await updateRecurringTransaction(
+        recurring.copyWith(reminderEnabled: false));
+    await cancelReminder(recurring);
+  }
+
+  int _reminderId(RecurringTransaction recurring) =>
+      (recurring.id.hashCode & 0x7fffffff) + _recurringReminderIdOffset;
 
   Future<void> processDueTransactions(String userId) async {
     try {
@@ -166,10 +237,10 @@ class RecurringTransactionService {
         }
 
         if (hasChanges) {
-          await _firestore
+          await SyncStatusService().track(() => _firestore
               .collection('recurring_transactions')
               .doc(recurring.id)
-              .set(recurring.toJson());
+              .set(recurring.toJson()));
         }
       }
     } catch (e) {

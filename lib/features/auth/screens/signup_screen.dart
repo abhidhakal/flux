@@ -5,7 +5,7 @@ import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/google_logo.dart';
 import '../../../core/constants/app_theme.dart';
 import '../widgets/auth_form_helpers.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -98,7 +98,8 @@ class _SignUpScreenState extends State<SignUpScreen>
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Material(
-                        color: cs.surfaceVariant.withOpacity(0.5),
+                        color:
+                            cs.surfaceContainerHighest.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(12),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
@@ -235,7 +236,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                               backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
                               disabledBackgroundColor:
-                                  AppColors.primary.withOpacity(0.5),
+                                  AppColors.primary.withValues(alpha: 0.5),
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16)),
@@ -269,7 +270,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16)),
                               side: BorderSide(
-                                  color: cs.outline.withOpacity(0.4)),
+                                  color: cs.outline.withValues(alpha: 0.4)),
                             ),
                             icon: const GoogleLogo(size: 18),
                             label: Text(

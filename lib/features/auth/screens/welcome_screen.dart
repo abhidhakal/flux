@@ -133,7 +133,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 height: size.width * 0.8,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                 ),
               ),
             ),
@@ -147,7 +147,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 height: size.width * 0.65,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                 ),
               ),
             ),
@@ -202,7 +202,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               'Your finances,\nunder control.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.92),
+                                color: Colors.white.withValues(alpha: 0.92),
                                 fontSize: 22,
                                 fontWeight: FontWeight.w600,
                                 height: 1.35,
@@ -213,7 +213,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               'Track spending, plan budgets, and\nachieve your financial goals.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.62),
+                                color: Colors.white.withValues(alpha: 0.62),
                                 fontSize: 15,
                                 height: 1.5,
                               ),
@@ -245,7 +245,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               Container(
                                 width: 32,
                                 height: 1,
-                                color: Colors.white.withOpacity(0.25),
+                                color: Colors.white.withValues(alpha: 0.25),
                               ),
                               Padding(
                                 padding:
@@ -253,7 +253,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                 child: Text(
                                   'or continue with email',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.5),
+                                    color: Colors.white.withValues(alpha: 0.5),
                                     fontSize: 13,
                                   ),
                                 ),
@@ -261,7 +261,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               Container(
                                 width: 32,
                                 height: 1,
-                                color: Colors.white.withOpacity(0.25),
+                                color: Colors.white.withValues(alpha: 0.25),
                               ),
                             ],
                           ),
@@ -278,7 +278,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               side: BorderSide(
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white.withValues(alpha: 0.6),
                                 width: 1.5,
                               ),
                               shape: RoundedRectangleBorder(
@@ -303,7 +303,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               Text(
                                 'New here? ',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: Colors.white.withValues(alpha: 0.7),
                                   fontSize: 14,
                                 ),
                               ),
@@ -350,19 +350,19 @@ class _GoogleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textColor =
-        primary ? AppColors.primary : Colors.white.withOpacity(0.9);
+        primary ? AppColors.primary : Colors.white.withValues(alpha: 0.9);
 
     return GestureDetector(
       onTap: onPressed,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: primary ? Colors.white : Colors.white.withOpacity(0.1),
+          color: primary ? Colors.white : Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
           border: primary
               ? null
               : Border.all(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   width: 1.5,
                 ),
         ),

@@ -69,7 +69,7 @@ class NotificationTriggerService {
 
       if (recentTransactions.isNotEmpty) {
         final totalSpent =
-            recentTransactions.fold(0.0, (sum, t) => sum + t.amount);
+            recentTransactions.fold(0.0, (total, t) => total + t.amount);
 
         // Calculate daily average to check for spikes
         final dailyAverage = totalSpent / 7;
@@ -79,7 +79,7 @@ class NotificationTriggerService {
                 t.date.month == now.month &&
                 t.date.year == now.year &&
                 t.isExpense)
-            .fold(0.0, (sum, t) => sum + t.amount);
+            .fold(0.0, (total, t) => total + t.amount);
 
         if (todaySpent > dailyAverage * 2 && todaySpent > 50) {
           await _triggerDailySpendingAlert(userId, todaySpent, dailyAverage);
@@ -393,7 +393,8 @@ class NotificationTriggerService {
     return '${today.year}_${today.month}_${today.day}';
   }
 
-  String _dailyCountKey(String userId) => 'alert_count_${userId}_${_todayStr()}';
+  String _dailyCountKey(String userId) =>
+      'alert_count_${userId}_${_todayStr()}';
 
   // Caps non-urgent alerts (warning/spending pattern/daily spending) per day.
   // Critical/exceeded/goal alerts bypass this - they're rare and important.

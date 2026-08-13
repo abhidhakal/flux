@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "907032241510-jcrf2ar2n53kt8d0fd3cig78iunubtcu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.klivostudios.flux",
+            "certificate_hash": "1b695f9119b3f908d36d96a9fee9bfc62106d347"
+          }
+        },
+        {
           "client_id": "907032241510-ovfcdjn0ejk6q3hmauh39hc9pq36fi88.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

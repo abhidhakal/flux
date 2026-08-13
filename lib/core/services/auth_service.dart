@@ -298,32 +298,4 @@ class AuthService {
       throw Exception('Failed to update password: $e');
     }
   }
-
-  // Set premium status on user preferences
-  Future<void> setPremiumStatus({
-    required String userId,
-    required bool isPremium,
-  }) async {
-    try {
-      await _firestore.collection('users').doc(userId).set({
-        'preferences': {
-          'isPremium': isPremium,
-        },
-      }, firestore.SetOptions(merge: true));
-    } catch (e) {
-      throw Exception('Failed to update premium status: $e');
-    }
-  }
-
-  // Get user by ID
-  Future<app_models.User?> getUserById(String userId) async {
-    try {
-      final doc = await _firestore.collection('users').doc(userId).get();
-
-      if (!doc.exists) return null;
-      return app_models.User.fromJson(doc.data()!);
-    } catch (e) {
-      throw Exception('Failed to get user: $e');
-    }
-  }
 }

@@ -9,7 +9,7 @@ import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/app_bottom_sheet.dart';
 import '../../../shared/widgets/field_label.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class EditBudgetScreen {
   const EditBudgetScreen._();
@@ -84,11 +84,14 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _amountController;
+  late final TextEditingController _weeklyTargetController;
+  late final TextEditingController _adjustmentController;
 
   late BudgetPeriod _selectedPeriod;
   late String _selectedCategory;
   late bool _enableRollover;
   late bool _isActive;
+  late DateTime? _adjustmentExpiresAt;
   bool _isLoading = false;
 
   @override
@@ -97,16 +100,29 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
     _nameController = TextEditingController(text: widget.budget.name);
     _amountController =
         TextEditingController(text: widget.budget.amount.toStringAsFixed(2));
+    _weeklyTargetController = TextEditingController(
+      text: widget.budget.weeklyTarget > 0
+          ? widget.budget.weeklyTarget.toStringAsFixed(2)
+          : '',
+    );
+    _adjustmentController = TextEditingController(
+      text: widget.budget.temporaryAdjustment != 0
+          ? widget.budget.temporaryAdjustment.toStringAsFixed(2)
+          : '',
+    );
     _selectedPeriod = widget.budget.period;
     _selectedCategory = widget.budget.category;
     _enableRollover = widget.budget.enableRollover;
     _isActive = widget.budget.isActive;
+    _adjustmentExpiresAt = widget.budget.adjustmentExpiresAt;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _amountController.dispose();
+    _weeklyTargetController.dispose();
+    _adjustmentController.dispose();
     super.dispose();
   }
 
@@ -176,6 +192,30 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                 },
               ),
               const SizedBox(height: 20),
+              _buildSectionTitle('Weekly Target', icon: LucideIcons.target),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _weeklyTargetController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Optional spending limit per week',
+                  prefixText: '${CurrencyService().symbol} ',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) return null;
+                  final amount = double.tryParse(value);
+                  if (amount == null || amount <= 0) {
+                    return 'Enter a valid weekly target';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
               _buildSectionTitle('Category', icon: LucideIcons.tag),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
@@ -221,6 +261,8 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                 value: _enableRollover,
                 onChanged: (v) => setState(() => _enableRollover = v),
               ),
+              const SizedBox(height: 12),
+              _buildTemporaryAdjustment(),
               const SizedBox(height: 32),
               ElevatedButton(
                 onPressed: _isLoading ? null : _handleSave,
@@ -354,6 +396,10 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
 
     final selectedStatus = _isActive;
     final wasActive = widget.budget.isActive;
+    final weeklyTarget =
+        double.tryParse(_weeklyTargetController.text.trim()) ?? 0;
+    final temporaryAdjustment =
+        double.tryParse(_adjustmentController.text.trim()) ?? 0;
 
     bool keepLinkedTransactions = true;
     if (wasActive && !selectedStatus) {
@@ -389,6 +435,10 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
       period: _selectedPeriod,
       category: _selectedCategory,
       enableRollover: _enableRollover,
+      weeklyTarget: weeklyTarget,
+      temporaryAdjustment: temporaryAdjustment,
+      adjustmentExpiresAt:
+          temporaryAdjustment == 0 ? null : _adjustmentExpiresAt,
       isActive: _isActive,
       spent: (!selectedStatus && !keepLinkedTransactions)
           ? 0
@@ -397,6 +447,79 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
 
     if (!mounted) return;
     context.read<BudgetBloc>().add(UpdateBudget(updated));
+  }
+
+  Widget _buildTemporaryAdjustment() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Temporary adjustment',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Add or subtract spending room for a short-term change.',
+            style: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.62),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _adjustmentController,
+            keyboardType: const TextInputType.numberWithOptions(
+              decimal: true,
+              signed: true,
+            ),
+            decoration: InputDecoration(
+              hintText: 'e.g. 50 or -25',
+              prefixText: '${CurrencyService().symbol} ',
+              border: const OutlineInputBorder(),
+            ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) return null;
+              if (double.tryParse(value) == null) {
+                return 'Enter a valid adjustment';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 8),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Adjustment expires'),
+            subtitle: Text(
+              _adjustmentExpiresAt == null
+                  ? 'Until this budget period ends'
+                  : '${_adjustmentExpiresAt!.day}/${_adjustmentExpiresAt!.month}/${_adjustmentExpiresAt!.year}',
+            ),
+            trailing: const Icon(LucideIcons.calendarClock),
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                firstDate: DateTime.now(),
+                lastDate: widget.budget.endDate,
+                initialDate: _adjustmentExpiresAt ?? widget.budget.endDate,
+              );
+              if (picked != null) {
+                setState(() => _adjustmentExpiresAt = picked);
+              }
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   Future<_BudgetTransactionChoice?> _showTransactionSyncSheet() {

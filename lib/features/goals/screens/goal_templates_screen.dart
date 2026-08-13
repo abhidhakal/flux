@@ -7,7 +7,7 @@ import '../../../core/services/goal_template_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../goals_bloc.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class GoalTemplatesScreen extends StatefulWidget {
   const GoalTemplatesScreen({super.key});
@@ -116,7 +116,7 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('Goal Templates'),
         centerTitle: false,
@@ -150,7 +150,7 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
         color: colorScheme.surface,
         border: Border(
           bottom: BorderSide(
-            color: colorScheme.onSurface.withOpacity(0.05),
+            color: colorScheme.onSurface.withValues(alpha: 0.05),
           ),
         ),
       ),
@@ -165,7 +165,7 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
               hintText: 'Search templates...',
               prefixIcon: const Icon(LucideIcons.search, size: 20),
               filled: true,
-              fillColor: colorScheme.onSurface.withOpacity(0.05),
+              fillColor: colorScheme.onSurface.withValues(alpha: 0.05),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -191,7 +191,7 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
                         _filterTemplates();
                       });
                     },
-                    selectedColor: AppColors.primary.withOpacity(0.2),
+                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
                     checkmarkColor: AppColors.primary,
                     labelStyle: TextStyle(
                       color: isSelected
@@ -217,7 +217,7 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(LucideIcons.searchX,
-                size: 64, color: AppColors.primary.withOpacity(0.3)),
+                size: 64, color: AppColors.primary.withValues(alpha: 0.3)),
             const SizedBox(height: 16),
             const Text('No templates found'),
           ],
@@ -254,10 +254,11 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: colorScheme.onSurface.withOpacity(0.05)),
+          border:
+              Border.all(color: colorScheme.onSurface.withValues(alpha: 0.05)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -294,12 +295,12 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
                     children: [
                       Icon(LucideIcons.timer,
                           size: 14,
-                          color: colorScheme.onSurface.withOpacity(0.4)),
+                          color: colorScheme.onSurface.withValues(alpha: 0.4)),
                       const SizedBox(width: 4),
                       Text(
                         '${template.suggestedDurationMonths}m',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurface.withOpacity(0.4),
+                          color: colorScheme.onSurface.withValues(alpha: 0.4),
                         ),
                       ),
                       const Spacer(),
@@ -392,7 +393,7 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withOpacity(0.1),
+                  color: colorScheme.onSurface.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -413,7 +414,7 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
                       Text(
                         widget.template.description,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface.withOpacity(0.6),
+                          color: colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -422,7 +423,7 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.05),
+                    color: AppColors.primary.withValues(alpha: 0.05),
                     shape: BoxShape.circle,
                   ),
                   child: Text(
@@ -451,13 +452,13 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
                 prefixText: '${widget.currencyService.symbol} ',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide:
-                      BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
+                  borderSide: BorderSide(
+                      color: colorScheme.onSurface.withValues(alpha: 0.1)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide:
-                      BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
+                  borderSide: BorderSide(
+                      color: colorScheme.onSurface.withValues(alpha: 0.1)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -476,7 +477,7 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
             Container(
               height: 100,
               decoration: BoxDecoration(
-                color: colorScheme.onSurface.withOpacity(0.05),
+                color: colorScheme.onSurface.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: ListWheelScrollView.useDelegate(

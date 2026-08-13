@@ -6,7 +6,8 @@ class LegalSectionText extends StatelessWidget {
   final String title;
   final String content;
 
-  const LegalSectionText({super.key, required this.title, required this.content});
+  const LegalSectionText(
+      {super.key, required this.title, required this.content});
 
   @override
   Widget build(BuildContext context) {

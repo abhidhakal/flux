@@ -11,8 +11,7 @@ import '../../analytics/screens/analytics_dashboard_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../navigation_cubit.dart';
-import '../../../core/widgets/app_banner_ad.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -115,17 +114,19 @@ class _MainScreenState extends State<MainScreen> {
                               navTheme.selectedItemColor ?? colorScheme.primary,
                           unselectedItemColor: navTheme.unselectedItemColor ??
                               colorScheme.onSurfaceVariant,
-                          showSelectedLabels: false,
-                          showUnselectedLabels: false,
+                          showSelectedLabels: true,
+                          showUnselectedLabels: true,
                           selectedLabelStyle: navTheme.selectedLabelStyle ??
                               const TextStyle(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 12,
+                                fontSize: 11,
+                                letterSpacing: 0.1,
                               ),
                           unselectedLabelStyle: navTheme.unselectedLabelStyle ??
                               const TextStyle(
                                 fontWeight: FontWeight.w500,
-                                fontSize: 12,
+                                fontSize: 11,
+                                letterSpacing: 0.1,
                               ),
                           elevation: 0,
                           items: [
@@ -149,7 +150,6 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     ),
                   ),
-                  const AppBannerAd(),
                 ],
               ),
             ),
@@ -165,8 +165,8 @@ class _MainScreenState extends State<MainScreen> {
   BottomNavigationBarItem _navItem(IconData icon, String label,
       {required Color selectedColor}) {
     return BottomNavigationBarItem(
-      icon: Icon(icon, size: 26),
-      activeIcon: Icon(icon, size: 29, color: selectedColor),
+      icon: Icon(icon, size: 21),
+      activeIcon: Icon(icon, size: 23, color: selectedColor),
       label: label,
     );
   }

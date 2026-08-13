@@ -8,7 +8,7 @@ import '../../auth/auth_bloc.dart';
 import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/field_label.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class AddBudgetScreen extends StatefulWidget {
   const AddBudgetScreen({super.key});
@@ -21,6 +21,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
+  final _weeklyTargetController = TextEditingController();
 
   BudgetPeriod _selectedPeriod = BudgetPeriod.monthly;
   String _selectedCategory = AppCategories.expenseCategories.first;
@@ -31,6 +32,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   void dispose() {
     _nameController.dispose();
     _amountController.dispose();
+    _weeklyTargetController.dispose();
     super.dispose();
   }
 
@@ -39,18 +41,18 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final saveIconColor = isDark ? Colors.white : colorScheme.onBackground;
+    final saveIconColor = isDark ? Colors.white : colorScheme.onSurface;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('Add Budget'),
         centerTitle: false,
-        backgroundColor: colorScheme.background,
-        foregroundColor: colorScheme.onBackground,
-        iconTheme: IconThemeData(color: colorScheme.onBackground),
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
         titleTextStyle: theme.textTheme.titleLarge?.copyWith(
-          color: colorScheme.onBackground,
+          color: colorScheme.onSurface,
           fontWeight: FontWeight.w600,
         ),
         elevation: 0,
@@ -139,10 +141,34 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                   },
                 ),
                 const SizedBox(height: 20),
+                _buildSectionTitle('Weekly Target', icon: LucideIcons.target),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _weeklyTargetController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Optional spending limit per week',
+                    prefixText: '${CurrencyService().symbol} ',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return null;
+                    final amount = double.tryParse(value);
+                    if (amount == null || amount <= 0) {
+                      return 'Enter a valid weekly target';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
                 _buildSectionTitle('Category', icon: LucideIcons.tag),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: InputDecoration(
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8)),
@@ -212,7 +238,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
       style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.bold,
-        color: Theme.of(context).colorScheme.onBackground,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }
@@ -229,12 +255,15 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.primary.withOpacity(0.1)
+                    ? AppColors.primary.withValues(alpha: 0.1)
                     : Colors.transparent,
                 border: Border.all(
                   color: isSelected
                       ? AppColors.primary
-                      : Theme.of(context).colorScheme.outline.withOpacity(0.4),
+                      : Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withValues(alpha: 0.4),
                   width: isSelected ? 2 : 1,
                 ),
                 borderRadius: BorderRadius.circular(8),
@@ -247,7 +276,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
                   color: isSelected
                       ? AppColors.primary
-                      : Theme.of(context).colorScheme.onBackground,
+                      : Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -261,7 +290,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: SwitchListTile(
@@ -269,16 +298,16 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
           'Enable Rollover',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: colorScheme.onBackground,
+            color: colorScheme.onSurface,
           ),
         ),
         subtitle: Text(
           'Unused budget carries over to next period',
-          style: TextStyle(color: colorScheme.onBackground.withOpacity(0.6)),
+          style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
         ),
         value: _enableRollover,
         onChanged: (value) => setState(() => _enableRollover = value),
-        activeColor: AppColors.primary,
+        activeThumbColor: AppColors.primary,
       ),
     );
   }
@@ -292,6 +321,8 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     final now = DateTime.now();
     final startDate = _getStartDate(now, _selectedPeriod);
     final endDate = _getEndDate(startDate, _selectedPeriod);
+    final weeklyTarget =
+        double.tryParse(_weeklyTargetController.text.trim()) ?? 0;
 
     final budget = Budget(
       id: '',
@@ -304,6 +335,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
       endDate: endDate,
       createdAt: now,
       enableRollover: _enableRollover,
+      weeklyTarget: weeklyTarget,
     );
 
     context.read<BudgetBloc>().add(CreateBudget(budget));

@@ -10,7 +10,7 @@ import '../../../core/utils/date_format_utils.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../auth/auth_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class RecurringTransactionsScreen extends StatefulWidget {
   const RecurringTransactionsScreen({super.key});
@@ -127,6 +127,189 @@ class _RecurringTransactionsScreenState
     }
   }
 
+  Future<void> _skipNextOccurrence(RecurringTransaction recurring) async {
+    try {
+      await _recurringTransactionService.skipNextOccurrence(recurring);
+      if (!mounted) return;
+      _loadRecurringTransactions();
+      AppSnackbar.showSuccess(context, message: 'Next occurrence skipped');
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackbar.showError(context, message: 'Failed to skip occurrence: $e');
+    }
+  }
+
+  Future<void> _endRecurringTransaction(RecurringTransaction recurring) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('End recurring transaction?'),
+        content: Text(
+          'No future entries will be created for "${recurring.title}". Existing transactions will remain.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('End recurrence'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await _recurringTransactionService.endRecurringTransaction(recurring);
+      if (!mounted) return;
+      _loadRecurringTransactions();
+      AppSnackbar.showSuccess(context, message: 'Recurrence ended');
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackbar.showError(context, message: 'Failed to end recurrence: $e');
+    }
+  }
+
+  Future<void> _scheduleReminder(RecurringTransaction recurring) async {
+    try {
+      await _recurringTransactionService.scheduleReminder(recurring);
+      if (!mounted) return;
+      _loadRecurringTransactions();
+      AppSnackbar.showSuccess(context,
+          message: 'Reminder set for the day before');
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackbar.showError(context, message: 'Could not set reminder: $e');
+    }
+  }
+
+  Future<void> _disableReminder(RecurringTransaction recurring) async {
+    try {
+      await _recurringTransactionService.disableReminder(recurring);
+      if (!mounted) return;
+      _loadRecurringTransactions();
+      AppSnackbar.showSuccess(context, message: 'Reminder disabled');
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackbar.showError(context, message: 'Could not disable reminder: $e');
+    }
+  }
+
+  Future<void> _editRecurringTransaction(RecurringTransaction recurring) async {
+    final titleController = TextEditingController(text: recurring.title);
+    final amountController =
+        TextEditingController(text: recurring.amount.toStringAsFixed(2));
+    var frequency = recurring.frequency;
+    var nextRunAt = recurring.nextRunAt;
+
+    final edited = await showDialog<RecurringTransaction>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit recurring payment'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                  textInputAction: TextInputAction.next,
+                ),
+                TextField(
+                  controller: amountController,
+                  decoration: const InputDecoration(labelText: 'Amount'),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<RecurringTransactionFrequency>(
+                  initialValue: frequency,
+                  decoration: const InputDecoration(labelText: 'Frequency'),
+                  items: RecurringTransactionFrequency.values
+                      .map(
+                        (value) => DropdownMenuItem(
+                          value: value,
+                          child: Text(value.label),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) setDialogState(() => frequency = value);
+                  },
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Next run'),
+                  subtitle: Text(formatShortDate(nextRunAt)),
+                  trailing: const Icon(LucideIcons.calendar),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2100),
+                      initialDate: nextRunAt.isBefore(DateTime.now())
+                          ? DateTime.now()
+                          : nextRunAt,
+                    );
+                    if (picked != null) {
+                      setDialogState(() => nextRunAt = DateTime(
+                            picked.year,
+                            picked.month,
+                            picked.day,
+                            nextRunAt.hour,
+                            nextRunAt.minute,
+                          ));
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final amount = double.tryParse(amountController.text.trim());
+                final title = titleController.text.trim();
+                if (title.isEmpty || amount == null || amount <= 0) return;
+                Navigator.pop(
+                  dialogContext,
+                  recurring.copyWith(
+                    title: title,
+                    amount: amount,
+                    frequency: frequency,
+                    nextRunAt: nextRunAt,
+                  ),
+                );
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    titleController.dispose();
+    amountController.dispose();
+    if (edited == null) return;
+
+    try {
+      await _recurringTransactionService.updateRecurringTransaction(edited);
+      if (!mounted) return;
+      _loadRecurringTransactions();
+      AppSnackbar.showSuccess(context, message: 'Recurring payment updated');
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackbar.showError(context, message: 'Failed to edit payment: $e');
+    }
+  }
+
   Future<void> _refreshTransactions() async {
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
@@ -145,7 +328,7 @@ class _RecurringTransactionsScreenState
         title: const Text('Recurring'),
         centerTitle: false,
         backgroundColor: AppTheme.pageBackground(context),
-        foregroundColor: colorScheme.onBackground,
+        foregroundColor: colorScheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
@@ -156,6 +339,27 @@ class _RecurringTransactionsScreenState
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(24),
+                children: [
+                  const SizedBox(height: 120),
+                  const Icon(LucideIcons.cloudOff, size: 42),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Could not load recurring income and expenses',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: _loadRecurringTransactions,
+                    child: const Text('Try again'),
+                  ),
+                ],
+              );
             }
 
             final recurringTransactions = snapshot.data ?? [];
@@ -180,7 +384,7 @@ class _RecurringTransactionsScreenState
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'No recurring transactions',
+                    'No recurring income or expenses',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -188,7 +392,7 @@ class _RecurringTransactionsScreenState
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Create one from the Add Transaction form using the repeat toggle.',
+                    'Create salary, bills, or other scheduled entries from Add Transaction using the repeat toggle.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurface.withValues(alpha: 0.65),
                         ),
@@ -198,18 +402,105 @@ class _RecurringTransactionsScreenState
               );
             }
 
-            return ListView.separated(
+            return ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-              itemBuilder: (context, index) {
-                final recurring = recurringTransactions[index];
-                return _buildRecurringTile(recurring);
-              },
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemCount: recurringTransactions.length,
+              children: [
+                _buildRecurringSummary(recurringTransactions),
+                const SizedBox(height: 12),
+                ...recurringTransactions.map(
+                  (recurring) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildRecurringTile(recurring),
+                  ),
+                ),
+              ],
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildRecurringSummary(
+      List<RecurringTransaction> recurringTransactions) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final active = recurringTransactions
+        .where((item) => item.status == RecurringTransactionStatus.active)
+        .toList();
+    final monthlyIncome = active
+        .where((item) => item.type == TransactionType.income)
+        .fold<double>(0, (total, item) => total + item.monthlyEquivalent);
+    final monthlyExpenses = active
+        .where((item) => item.type == TransactionType.expense)
+        .fold<double>(0, (total, item) => total + item.monthlyEquivalent);
+    final next = active.isEmpty
+        ? null
+        : (active..sort((a, b) => a.nextRunAt.compareTo(b.nextRunAt))).first;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: AppTheme.surfaceDecoration(context, radius: 20, subtle: true),
+      child: Row(
+        children: [
+          Expanded(
+            child: _summaryMetric(
+              'Monthly income',
+              CurrencyService().formatAmount(monthlyIncome),
+              color: AppColors.success,
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 42,
+            color: colorScheme.outline.withValues(alpha: 0.18),
+          ),
+          Expanded(
+            child: _summaryMetric(
+              'Monthly expenses',
+              CurrencyService().formatAmount(monthlyExpenses),
+              color: AppColors.error,
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 42,
+            color: colorScheme.outline.withValues(alpha: 0.18),
+          ),
+          Expanded(
+            child: _summaryMetric(
+              'Next run',
+              next == null ? 'None' : formatShortDate(next.nextRunAt),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryMetric(String label, String value, {Color? color}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.58),
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              color: color ?? colorScheme.onSurface,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -284,6 +575,71 @@ class _RecurringTransactionsScreenState
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+              ),
+              PopupMenuButton<String>(
+                tooltip: 'More actions',
+                onSelected: (value) {
+                  switch (value) {
+                    case 'edit':
+                      _editRecurringTransaction(recurring);
+                    case 'skip':
+                      _skipNextOccurrence(recurring);
+                    case 'remind':
+                      _scheduleReminder(recurring);
+                    case 'disable_remind':
+                      _disableReminder(recurring);
+                    case 'end':
+                      _endRecurringTransaction(recurring);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(LucideIcons.pencil),
+                      title: Text('Edit'),
+                    ),
+                  ),
+                  if (recurring.status != RecurringTransactionStatus.ended)
+                    const PopupMenuItem(
+                      value: 'skip',
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(LucideIcons.skipForward),
+                        title: Text('Skip next'),
+                      ),
+                    ),
+                  if (recurring.status == RecurringTransactionStatus.active &&
+                      !recurring.reminderEnabled)
+                    const PopupMenuItem(
+                      value: 'remind',
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(LucideIcons.bell),
+                        title: Text('Set reminder'),
+                      ),
+                    ),
+                  if (recurring.status == RecurringTransactionStatus.active &&
+                      recurring.reminderEnabled)
+                    const PopupMenuItem(
+                      value: 'disable_remind',
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(LucideIcons.bellOff),
+                        title: Text('Disable reminder'),
+                      ),
+                    ),
+                  if (recurring.status != RecurringTransactionStatus.ended)
+                    const PopupMenuItem(
+                      value: 'end',
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(LucideIcons.square),
+                        title: Text('End recurrence'),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),

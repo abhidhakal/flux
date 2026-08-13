@@ -44,13 +44,13 @@ InputDecoration authInputDecoration(
     prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
     suffixIcon: suffix,
     filled: true,
-    fillColor: cs.surfaceVariant.withOpacity(0.35),
+    fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.35),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
     enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: cs.outline.withOpacity(0.15))),
+        borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.15))),
     focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
@@ -77,7 +77,7 @@ void showAuthLoadingDialog(BuildContext context, String message) {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 10))
           ],

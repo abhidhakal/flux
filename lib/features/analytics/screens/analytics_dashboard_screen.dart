@@ -2,17 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
+import '../../../core/models/financial_snapshot.dart';
 import '../../../core/services/currency_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
+import '../../budget/budget_bloc.dart';
+import '../../goals/goals_bloc.dart';
 import '../analytics_bloc.dart';
 import '../widgets/category_breakdown_chart.dart';
 import '../widgets/trend_analysis_chart.dart';
 import '../widgets/weekly_spending_chart.dart';
+import '../widgets/for_you_actions_card.dart';
 import '../../../core/utils/date_range_filter.dart';
 import '../../../shared/widgets/stat_tile.dart';
 import '../../../shared/widgets/empty_state_view.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class AnalyticsDashboardScreen extends StatefulWidget {
   const AnalyticsDashboardScreen({super.key});
@@ -92,8 +96,15 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
             }
 
             if (transactionState is TransactionLoaded) {
-              final transactions =
-                  _filterTransactions(transactionState.transactions);
+              final allTransactions = transactionState.transactions;
+              final transactions = _filterTransactions(allTransactions);
+              final budgetState = context.watch<BudgetBloc>().state;
+              final goalsState = context.watch<GoalsBloc>().state;
+              final financialSnapshot = FinancialSnapshot.fromData(
+                transactions: allTransactions,
+                budgets: budgetState is BudgetLoaded ? budgetState.budgets : [],
+                goals: goalsState is GoalsLoaded ? goalsState.goals : [],
+              );
 
               return BlocBuilder<AnalyticsBloc, AnalyticsState>(
                 builder: (context, analyticsState) {
@@ -118,6 +129,16 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildHealthScoreSection(analysis),
+                          const SizedBox(height: 24),
+                          ForYouActionsCard(
+                            snapshot: financialSnapshot,
+                            budgets: budgetState is BudgetLoaded
+                                ? budgetState.budgets
+                                : const [],
+                            goals: goalsState is GoalsLoaded
+                                ? goalsState.goals
+                                : const [],
+                          ),
                           const SizedBox(height: 24),
                           _buildQuickStats(transactions),
                           const SizedBox(height: 24),
@@ -162,10 +183,12 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    final cardBorderColor =
-        isDark ? colorScheme.outline.withOpacity(0.45) : color.withOpacity(0.2);
-    final progressTrackColor =
-        isDark ? colorScheme.outline.withOpacity(0.25) : color.withOpacity(0.1);
+    final cardBorderColor = isDark
+        ? colorScheme.outline.withValues(alpha: 0.45)
+        : color.withValues(alpha: 0.2);
+    final progressTrackColor = isDark
+        ? colorScheme.outline.withValues(alpha: 0.25)
+        : color.withValues(alpha: 0.1);
 
     return Container(
       width: double.infinity,
@@ -229,7 +252,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                   'Based on your savings rate, stability, and spending efficiency.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -299,7 +322,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: val / 100,
-            backgroundColor: color.withOpacity(0.1),
+            backgroundColor: color.withValues(alpha: 0.1),
             color: color,
             minHeight: 8,
           ),
@@ -334,8 +357,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                   color: isDark ? AppTheme.mutedSurface(context) : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withOpacity(
-                          isDark ? 0.14 : 0.08,
+                    color: Theme.of(context).colorScheme.outline.withValues(
+                          alpha: isDark ? 0.14 : 0.08,
                         ),
                   ),
                 ),
@@ -362,7 +385,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.5)),
+                              .withValues(alpha: 0.5)),
                     ),
                   ],
                 ),
@@ -402,8 +425,10 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
           Text(
             'Keep up your current habits, and you\'ll have an extra ${CurrencyService().formatAmount(projected)} in 6 months.',
             style: TextStyle(
-                color:
-                    Theme.of(context).colorScheme.onSurface.withOpacity(0.72),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.72),
                 fontSize: 14),
           ),
           const SizedBox(height: 16),
@@ -417,7 +442,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -497,7 +522,10 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
             fontWeight: FontWeight.w600,
             color: selected
                 ? Colors.white
-                : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                : Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.7),
           ),
         ),
       ),
@@ -632,7 +660,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
             if (i > 0)
               Divider(
                 height: 1,
-                color: AppColors.primary.withOpacity(0.10),
+                color: AppColors.primary.withValues(alpha: 0.10),
               ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -677,7 +705,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
         decoration: BoxDecoration(
           color: AppTheme.cardSurface(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colorScheme.outline.withOpacity(0.10)),
+          border:
+              Border.all(color: colorScheme.outline.withValues(alpha: 0.10)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

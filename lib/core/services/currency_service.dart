@@ -105,24 +105,6 @@ class CurrencyService {
     return formatAmount(amount).replaceAll(RegExp(r'\.00$'), '');
   }
 
-  // Format amount without symbol (for input fields)
-  String formatAmountWithoutSymbol(double amount) {
-    int decimalPlaces = 2;
-    if (_currency == 'JPY' || _currency == 'KRW') {
-      decimalPlaces = 0;
-    }
-    return amount.toStringAsFixed(decimalPlaces);
-  }
-
-  // Parse amount from string
-  double parseAmount(String amountString) {
-    // Remove currency symbol and commas
-    String cleanAmount =
-        amountString.replaceAll(_symbol, '').replaceAll(',', '').trim();
-
-    return double.tryParse(cleanAmount) ?? 0.0;
-  }
-
   // Add thousand separators
   String _addThousandSeparators(String number) {
     if (number.length <= 3) return number;
@@ -151,15 +133,5 @@ class CurrencyService {
         'country': entry.value['country']!,
       };
     }).toList();
-  }
-
-  // Get currency info by code
-  Map<String, String>? getCurrencyInfo(String currencyCode) {
-    return _currencyConfig[currencyCode];
-  }
-
-  // Check if currency code is valid
-  bool isValidCurrency(String currencyCode) {
-    return _currencyConfig.containsKey(currencyCode);
   }
 }

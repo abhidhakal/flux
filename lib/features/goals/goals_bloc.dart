@@ -222,7 +222,7 @@ class GoalsBloc extends Bloc<GoalsEvent, GoalsState> {
     emit(GoalsLoading());
 
     try {
-      await _goalService.deleteGoal(event.goalId);
+      await _goalService.deleteGoal(event.goalId, userId: event.userId);
       // Reload goals for provided user
       final goals = await _goalService.getUserGoals(event.userId);
       emit(GoalsLoaded(goals));

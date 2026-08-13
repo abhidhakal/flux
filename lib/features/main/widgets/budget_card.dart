@@ -3,7 +3,7 @@ import '../../../core/constants/app_theme.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../../budget/screens/edit_budget_screen.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class BudgetCard extends StatelessWidget {
   final Budget budget;
@@ -31,7 +31,8 @@ class BudgetCard extends StatelessWidget {
     final cardColor = muted
         ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
         : AppTheme.cardSurface(context);
-    final borderColor = colorScheme.outline.withValues(alpha: muted ? 0.2 : 0.12);
+    final borderColor =
+        colorScheme.outline.withValues(alpha: muted ? 0.2 : 0.12);
 
     return InkWell(
       onTap: () => EditBudgetScreen.showEditBudgetSheet(context, budget),
@@ -200,6 +201,32 @@ class BudgetCard extends StatelessWidget {
                 ],
               ),
               if (!muted && !isOverBudget) _buildPaceLine(context, percentage),
+              if (!muted && budget.hasWeeklyTarget)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Weekly target: ${CurrencyService().formatAmount(budget.weeklyTarget)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
+              if (!muted && budget.hasTemporaryAdjustment)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '${budget.temporaryAdjustment >= 0 ? 'Includes' : 'Subtracts'} ${CurrencyService().formatAmount(budget.temporaryAdjustment.abs())} temporary adjustment',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
               if (isOverBudget && !muted)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),

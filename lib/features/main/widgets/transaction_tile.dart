@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/services/currency_service.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class TransactionTile extends StatelessWidget {
   final Transaction item;
@@ -52,7 +52,7 @@ class TransactionTile extends StatelessWidget {
                 border: Border.all(
                   color: isSelected
                       ? AppColors.primary
-                      : colorScheme.outline.withOpacity(0.10),
+                      : colorScheme.outline.withValues(alpha: 0.10),
                   width: isSelected ? 1.5 : 1,
                 ),
               ),
@@ -87,7 +87,7 @@ class TransactionTile extends StatelessWidget {
                 height: 44,
                 margin: const EdgeInsets.only(right: 14),
                 decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.1),
+                  color: accentColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -117,7 +117,7 @@ class TransactionTile extends StatelessWidget {
                     subtitle,
                     style: TextStyle(
                       fontSize: 12,
-                      color: colorScheme.onSurface.withOpacity(0.55),
+                      color: colorScheme.onSurface.withValues(alpha: 0.55),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -143,7 +143,7 @@ class TransactionTile extends StatelessWidget {
                   _formatTime(date),
                   style: TextStyle(
                     fontSize: 11,
-                    color: colorScheme.onSurface.withOpacity(0.45),
+                    color: colorScheme.onSurface.withValues(alpha: 0.45),
                   ),
                 ),
               ],

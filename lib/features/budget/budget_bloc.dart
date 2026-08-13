@@ -186,16 +186,18 @@ class BudgetBloc extends Bloc<BudgetEvent, BudgetState> {
     DeleteBudget event,
     Emitter<BudgetState> emit,
   ) async {
+    final previousState = state;
+    final userId =
+        previousState is BudgetLoaded && previousState.budgets.isNotEmpty
+            ? previousState.budgets.first.userId
+            : null;
     emit(BudgetLoading());
 
     try {
-      await _budgetService.deleteBudget(event.budgetId);
+      await _budgetService.deleteBudget(event.budgetId, userId: userId);
       emit(BudgetSuccess('Budget deleted successfully!'));
 
-      // Reload budgets after deletion - we need to get userId from current state
-      final currentState = state;
-      if (currentState is BudgetLoaded && currentState.budgets.isNotEmpty) {
-        final userId = currentState.budgets.first.userId;
+      if (userId != null) {
         final budgets = await _budgetService.getUserBudgets(userId);
         emit(BudgetLoaded(budgets));
       }

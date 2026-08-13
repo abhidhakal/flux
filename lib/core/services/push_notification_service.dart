@@ -245,11 +245,6 @@ class PushNotificationService {
     await _notifications.cancelAll();
   }
 
-  // Get pending notifications
-  Future<List<fln.PendingNotificationRequest>> getPendingNotifications() async {
-    return await _notifications.pendingNotificationRequests();
-  }
-
   // Handle notification tap
   void _onNotificationTapped(fln.NotificationResponse response) {
     // Handle notification tap - you can navigate to specific screens
@@ -283,82 +278,5 @@ class PushNotificationService {
       case NotificationPriority.urgent:
         return fln.Priority.max;
     }
-  }
-
-  // Generate unique notification ID
-  int _generateNotificationId() {
-    return DateTime.now().millisecondsSinceEpoch % 2147483647;
-  }
-
-  // Show budget alert notification
-  Future<void> showBudgetAlert({
-    required String budgetName,
-    required double percentageUsed,
-    required double remaining,
-  }) async {
-    final title = percentageUsed >= 100
-        ? 'Budget Exceeded: $budgetName'
-        : 'Budget Alert: $budgetName';
-
-    final body = percentageUsed >= 100
-        ? 'You\'ve exceeded your $budgetName budget. Review your spending habits.'
-        : 'You\'ve used ${percentageUsed.toStringAsFixed(1)}% of your $budgetName budget. Consider reducing spending.';
-
-    await showNotification(
-      id: _generateNotificationId(),
-      title: title,
-      body: body,
-      priority: percentageUsed >= 100
-          ? NotificationPriority.urgent
-          : NotificationPriority.high,
-      payload: 'budget_alert:$budgetName',
-    );
-  }
-
-  // Show goal milestone notification
-  Future<void> showGoalMilestone({
-    required String goalName,
-    required double progress,
-    required String milestone,
-  }) async {
-    final title = 'Goal Milestone: $goalName';
-    final body =
-        'Congratulations! You\'ve reached $milestone of your $goalName goal. Keep up the great work!';
-
-    await showNotification(
-      id: _generateNotificationId(),
-      title: title,
-      body: body,
-      priority: NotificationPriority.high,
-      payload: 'goal_milestone:$goalName',
-    );
-  }
-
-  // Show spending alert notification
-  Future<void> showSpendingAlert({
-    required String message,
-    required int transactionCount,
-  }) async {
-    await showNotification(
-      id: _generateNotificationId(),
-      title: 'Unusual Spending Detected',
-      body: message,
-      priority: NotificationPriority.medium,
-      payload: 'spending_alert:$transactionCount',
-    );
-  }
-
-  // Show financial tip notification
-  Future<void> showFinancialTip({
-    required String title,
-    required String message,
-  }) async {
-    await showNotification(
-      id: _generateNotificationId(),
-      title: title,
-      body: message,
-      priority: NotificationPriority.low,
-      payload: 'financial_tip',
-    );
   }
 }

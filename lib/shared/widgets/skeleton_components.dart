@@ -16,12 +16,12 @@ class SkeletonComponents {
     return Shimmer.fromColors(
       baseColor: baseColor ??
           (isDark
-              ? colorScheme.surfaceVariant.withOpacity(0.3)
-              : AppColors.lightTextTertiary.withOpacity(0.3)),
+              ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+              : AppColors.lightTextTertiary.withValues(alpha: 0.3)),
       highlightColor: highlightColor ??
           (isDark
-              ? colorScheme.surface.withOpacity(0.5)
-              : AppColors.lightTextTertiary.withOpacity(0.1)),
+              ? colorScheme.surface.withValues(alpha: 0.5)
+              : AppColors.lightTextTertiary.withValues(alpha: 0.1)),
       period: const Duration(milliseconds: 1500),
       child: child,
     );
@@ -107,7 +107,7 @@ class SkeletonComponents {
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: colorScheme.outline.withOpacity(0.2),
+          color: colorScheme.outline.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -464,32 +464,6 @@ class SkeletonComponents {
           Center(child: textLine(width: 160, height: 16, context: context)),
           const SizedBox(height: 12),
           Center(child: textLine(width: 100, height: 14, context: context)),
-        ],
-      ),
-    );
-  }
-
-  // Skeleton for chart placeholder with better theming
-  static Widget chartPlaceholder({
-    double height = 200,
-    required BuildContext context,
-  }) {
-    return shimmerWrapper(
-      context: context,
-      child: card(
-        height: height,
-        context: context,
-        children: [
-          textLine(width: 120, height: 18, context: context),
-          const SizedBox(height: 16),
-          Expanded(
-            child: rectangle(
-              width: double.infinity,
-              height: double.infinity,
-              borderRadius: 8,
-              context: context,
-            ),
-          ),
         ],
       ),
     );

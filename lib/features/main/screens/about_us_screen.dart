@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../shared/widgets/app_snackbar.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class AboutUsScreen extends StatefulWidget {
   const AboutUsScreen({super.key});
@@ -74,13 +74,13 @@ class _AboutUsScreenState extends State<AboutUsScreen>
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('About Us'),
         centerTitle: false,
-        backgroundColor: colorScheme.background,
-        foregroundColor: colorScheme.onBackground,
-        iconTheme: IconThemeData(color: colorScheme.onBackground),
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
         titleTextStyle: theme.textTheme.displaySmall?.copyWith(
           fontSize: 24,
           letterSpacing: -1,
@@ -117,7 +117,7 @@ class _AboutUsScreenState extends State<AboutUsScreen>
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: colorScheme.onBackground,
+                          color: colorScheme.onSurface,
                           letterSpacing: -0.5,
                         ),
                       ),
@@ -141,7 +141,7 @@ class _AboutUsScreenState extends State<AboutUsScreen>
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: colorScheme.onBackground,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -149,7 +149,7 @@ class _AboutUsScreenState extends State<AboutUsScreen>
                   'Flux empowers you to make informed financial decisions through intelligent insights, smart goal tracking, and comprehensive analytics. We believe managing money should be simple, intuitive, and effective.',
                   style: TextStyle(
                     fontSize: 16,
-                    color: colorScheme.onSurface.withOpacity(0.8),
+                    color: colorScheme.onSurface.withValues(alpha: 0.8),
                     height: 1.6,
                   ),
                 ),
@@ -162,7 +162,7 @@ class _AboutUsScreenState extends State<AboutUsScreen>
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: colorScheme.onBackground,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -170,7 +170,7 @@ class _AboutUsScreenState extends State<AboutUsScreen>
                   'Developed by Abhinav Dhakal at Klivo Studios. We are dedicated to creating innovative digital solutions that enhance your daily life.',
                   style: TextStyle(
                     fontSize: 16,
-                    color: colorScheme.onSurface.withOpacity(0.8),
+                    color: colorScheme.onSurface.withValues(alpha: 0.8),
                     height: 1.6,
                   ),
                 ),
@@ -207,7 +207,8 @@ class _AboutUsScreenState extends State<AboutUsScreen>
                         'Version 1.0.0',
                         style: TextStyle(
                           fontSize: 14,
-                          color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                          color: colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.7),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -215,7 +216,8 @@ class _AboutUsScreenState extends State<AboutUsScreen>
                         '© 2026 Klivo Studios',
                         style: TextStyle(
                           fontSize: 14,
-                          color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                          color: colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.7),
                         ),
                       ),
                     ],

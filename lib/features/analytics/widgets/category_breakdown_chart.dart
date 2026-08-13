@@ -3,7 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/services/currency_service.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class CategoryBreakdownChart extends StatefulWidget {
   final List<Transaction> transactions;
@@ -66,7 +66,7 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withOpacity(0.6),
+                            .withValues(alpha: 0.6),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -98,7 +98,8 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radius12),
         border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+            color:
+                Theme.of(context).colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Center(
         child: Column(
@@ -107,13 +108,19 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
             Icon(
               LucideIcons.pieChart,
               size: 48,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.3),
             ),
             const SizedBox(height: 8),
             Text(
               'No category data',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.5),
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -278,7 +285,7 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
-                          .withOpacity(0.6),
+                          .withValues(alpha: 0.6),
                     ),
                   ),
                 ],

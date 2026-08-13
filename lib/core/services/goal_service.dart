@@ -3,17 +3,22 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/goal_model.dart';
 import 'user_bootstrap.dart';
+import 'local_data_cache_service.dart';
+import 'sync_status_service.dart';
 
 class GoalService {
+  static const int goalFetchLimit = 100;
   final firestore.FirebaseFirestore _firestore =
       firestore.FirebaseFirestore.instance;
   final Uuid _uuid = const Uuid();
+  final LocalDataCacheService _cache = LocalDataCacheService();
 
   // Create a new goal
   Future<void> createGoal(Goal goal) async {
     try {
       final goalRef = _firestore.collection('goals').doc(goal.id);
-      await goalRef.set(goal.toJson());
+      await SyncStatusService().track(() => goalRef.set(goal.toJson()));
+      await _cache.upsertGoal(goal.userId, goal);
     } catch (e) {
       throw Exception('Failed to create goal: $e');
     }
@@ -23,17 +28,21 @@ class GoalService {
   Future<void> updateGoal(Goal goal) async {
     try {
       final goalRef = _firestore.collection('goals').doc(goal.id);
-      await goalRef.update(goal.toJson());
+      await SyncStatusService().track(() => goalRef.update(goal.toJson()));
+      await _cache.upsertGoal(goal.userId, goal);
     } catch (e) {
       throw Exception('Failed to update goal: $e');
     }
   }
 
   // Delete a goal
-  Future<void> deleteGoal(String goalId) async {
+  Future<void> deleteGoal(String goalId, {String? userId}) async {
     try {
       final goalRef = _firestore.collection('goals').doc(goalId);
-      await goalRef.delete();
+      await SyncStatusService().track(() => goalRef.delete());
+      if (userId != null) {
+        await _cache.removeGoal(userId, goalId);
+      }
     } catch (e) {
       throw Exception('Failed to delete goal: $e');
     }
@@ -49,50 +58,18 @@ class GoalService {
           .collection('goals')
           .where('userId', isEqualTo: userId)
           .orderBy('createdAt', descending: true)
+          .limit(goalFetchLimit)
           .get();
 
-      return querySnapshot.docs
-          .map((doc) => Goal.fromJson(doc.data()))
-          .toList();
+      final goals =
+          querySnapshot.docs.map((doc) => Goal.fromJson(doc.data())).toList();
+      await _cache.saveGoals(userId, goals);
+      return goals;
     } catch (e) {
       debugPrint('❌ GOAL SERVICE: Error getting user goals: $e');
-      throw Exception('Failed to load goals: $e');
-    }
-  }
-
-  // Get active goals for a user
-  Future<List<Goal>> getActiveGoals(String userId) async {
-    try {
-      final querySnapshot = await _firestore
-          .collection('goals')
-          .where('userId', isEqualTo: userId)
-          .where('status', isEqualTo: GoalStatus.active.name)
-          .orderBy('targetDate')
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => Goal.fromJson(doc.data()))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to get active goals: $e');
-    }
-  }
-
-  // Get completed goals for a user
-  Future<List<Goal>> getCompletedGoals(String userId) async {
-    try {
-      final querySnapshot = await _firestore
-          .collection('goals')
-          .where('userId', isEqualTo: userId)
-          .where('status', isEqualTo: GoalStatus.completed.name)
-          .orderBy('completedAt', descending: true)
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => Goal.fromJson(doc.data()))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to get completed goals: $e');
+      final cached = await _cache.loadGoals(userId);
+      debugPrint('ℹ️ GOAL SERVICE: Returning ${cached.length} cached goals');
+      return cached;
     }
   }
 
@@ -116,11 +93,19 @@ class GoalService {
       final completedAt =
           newStatus == GoalStatus.completed ? DateTime.now() : goal.completedAt;
 
-      await goalRef.update({
-        'currentAmount': newAmount,
-        'status': newStatus.name,
-        'completedAt': completedAt?.toIso8601String(),
-      });
+      await SyncStatusService().track(() => goalRef.update({
+            'currentAmount': newAmount,
+            'status': newStatus.name,
+            'completedAt': completedAt?.toIso8601String(),
+          }));
+      await _cache.upsertGoal(
+        goal.userId,
+        goal.copyWith(
+          currentAmount: newAmount,
+          status: newStatus,
+          completedAt: completedAt,
+        ),
+      );
     } catch (e) {
       throw Exception('Failed to update goal progress: $e');
     }
