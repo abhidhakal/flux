@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../../core/constants/app_theme.dart';
 import '../../../core/models/goal_model.dart';
 
 class GoalProgressChart extends StatelessWidget {
@@ -10,11 +9,12 @@ class GoalProgressChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     if (goals.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No goals to display',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: colorScheme.onSurfaceVariant),
         ),
       );
     }
@@ -23,10 +23,10 @@ class GoalProgressChart extends StatelessWidget {
         goals.where((g) => g.status == GoalStatus.active).toList();
 
     if (activeGoals.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No active goals to display',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: colorScheme.onSurfaceVariant),
         ),
       );
     }
@@ -38,14 +38,14 @@ class GoalProgressChart extends StatelessWidget {
         barTouchData: BarTouchData(
           enabled: true,
           touchTooltipData: BarTouchTooltipData(
-            tooltipBorder: BorderSide(
-                color: AppColors.textSecondary.withValues(alpha: 0.3)),
+            tooltipBorder:
+                BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               final goal = activeGoals[groupIndex];
               return BarTooltipItem(
                 '${goal.name}\n${goal.progressPercentage.toStringAsFixed(1)}%',
-                const TextStyle(
-                  color: AppColors.textPrimary,
+                TextStyle(
+                  color: colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
                 ),
               );
@@ -72,8 +72,8 @@ class GoalProgressChart extends StatelessWidget {
                       goal.name.length > 8
                           ? '${goal.name.substring(0, 8)}...'
                           : goal.name,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
                         fontSize: 10,
                       ),
@@ -95,8 +95,8 @@ class GoalProgressChart extends StatelessWidget {
               getTitlesWidget: (double value, TitleMeta meta) {
                 return Text(
                   '${value.toInt()}%',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -107,8 +107,7 @@ class GoalProgressChart extends StatelessWidget {
         ),
         borderData: FlBorderData(
           show: true,
-          border:
-              Border.all(color: AppColors.textSecondary.withValues(alpha: 0.2)),
+          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
         ),
         barGroups: _getBarGroups(activeGoals),
         gridData: FlGridData(
@@ -116,7 +115,7 @@ class GoalProgressChart extends StatelessWidget {
           horizontalInterval: 25,
           getDrawingHorizontalLine: (value) {
             return FlLine(
-              color: AppColors.textSecondary.withValues(alpha: 0.1),
+              color: colorScheme.outline.withValues(alpha: 0.1),
               strokeWidth: 1,
             );
           },

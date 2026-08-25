@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/services.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/services/currency_service.dart';
-import '../../../core/services/transaction_intelligence_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
 import '../../transaction/screens/edit_transaction_screen.dart';
@@ -18,6 +18,7 @@ import 'transaction_tile.dart';
 import '../../../core/utils/date_range_filter.dart';
 import '../../../shared/widgets/app_bottom_sheet.dart';
 import '../../../shared/widgets/empty_state_view.dart';
+import '../../../shared/widgets/premium_page_hero.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 // ─── Filter enums ────────────────────────────────────────────────────────────
@@ -48,8 +49,6 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   String? _selectedBudgetId; // null = all budgets
   DateTimeRange? _customRange;
   String _searchQuery = '';
-  final TransactionIntelligenceService _intelligence =
-      TransactionIntelligenceService();
 
   @override
   void initState() {
@@ -131,368 +130,206 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Scaffold(
-      backgroundColor: AppTheme.pageBackground(context),
-      appBar: _isSelectionMode
-          ? AppBar(
-              backgroundColor: AppTheme.pageBackground(context),
-              foregroundColor: colorScheme.onSurface,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              leading: IconButton(
-                icon: const Icon(LucideIcons.x),
-                onPressed: () => setState(() {
-                  _isSelectionMode = false;
-                  _selectedIds.clear();
-                }),
-              ),
-              title: Text(
-                '${_selectedIds.length} selected',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              actions: [
-                TextButton.icon(
-                  onPressed: _selectedIds.isEmpty ? null : _deleteSelectedItems,
-                  icon: Icon(LucideIcons.trash2,
-                      color: _selectedIds.isEmpty
-                          ? colorScheme.onSurface.withValues(alpha: 0.3)
-                          : AppColors.error),
-                  label: Text(
-                    'Delete',
-                    style: TextStyle(
-                      color: _selectedIds.isEmpty
-                          ? colorScheme.onSurface.withValues(alpha: 0.3)
-                          : AppColors.error,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            )
-          : AppBar(
-              automaticallyImplyLeading: false,
-              title: const Text('Transactions'),
-              centerTitle: false,
-              backgroundColor: AppTheme.pageBackground(context),
-              foregroundColor: colorScheme.onSurface,
-              iconTheme: IconThemeData(color: colorScheme.onSurface),
-              titleTextStyle: theme.textTheme.displaySmall?.copyWith(
-                fontSize: 24,
-                letterSpacing: -1,
-              ),
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              actions: [
-                IconButton(
-                  icon: Icon(LucideIcons.repeat, color: colorScheme.onSurface),
-                  onPressed: () => context.pushSmooth(
-                    const RecurringTransactionsScreen(),
-                  ),
-                  tooltip: 'Recurring Transactions',
-                ),
-                IconButton(
-                  icon: Icon(LucideIcons.plus, color: colorScheme.onSurface),
-                  onPressed: () => context.pushSmooth(
-                    const AddTransactionScreen(),
-                    transitionType: PageTransitionType.slideFromBottom,
-                  ),
-                  tooltip: 'Add Transaction',
-                ),
-              ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: AppTheme.pageSurface(context),
+        body: MultiBlocListener(
+          listeners: [
+            BlocListener<TransactionBloc, TransactionState>(
+              listener: (context, state) {
+                if (state is TransactionLoaded && state.message != null) {
+                  AppSnackbar.showSuccess(context, message: state.message!);
+                }
+                if (state is TransactionError) {
+                  AppSnackbar.showError(context, message: state.message);
+                }
+              },
             ),
-      body: MultiBlocListener(
-        listeners: [
-          BlocListener<TransactionBloc, TransactionState>(
-            listener: (context, state) {
-              if (state is TransactionLoaded && state.message != null) {
-                AppSnackbar.showSuccess(context, message: state.message!);
+          ],
+          child: Builder(builder: (context) {
+            final txState = context.watch<TransactionBloc>().state;
+            final budgetState = context.watch<BudgetBloc>().state;
+
+            if (txState is TransactionLoading) {
+              return _buildLoadingState();
+            }
+
+            final transactions = txState is TransactionLoaded
+                ? txState.transactions
+                : <Transaction>[];
+            final budgets =
+                budgetState is BudgetLoaded ? budgetState.budgets : <Budget>[];
+
+            final filtered = _applyFilters(transactions);
+
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_fadeController.status != AnimationStatus.completed) {
+                _fadeController.forward();
               }
-              if (state is TransactionError) {
-                AppSnackbar.showError(context, message: state.message);
-              }
-            },
+            });
+
+            return RefreshIndicator(
+              onRefresh: _onRefresh,
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildTransactionHero(
+                            transactionCount: filtered.length,
+                          ),
+                          _buildSearchField(),
+                          _buildFilterRow(budgets),
+                        ],
+                      ),
+                    ),
+                    filtered.isEmpty
+                        ? SliverFillRemaining(child: _buildEmptyState())
+                        : SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+                            sliver: _buildTransactionSliver(filtered),
+                          ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionHero({int? transactionCount}) {
+    if (_isSelectionMode) {
+      return PremiumPageHero(
+        title: '${_selectedIds.length} selected',
+        subtitle: 'Choose transactions to remove',
+        actions: [
+          PremiumPageHeroAction(
+            icon: LucideIcons.x,
+            tooltip: 'Exit selection',
+            onPressed: () => setState(() {
+              _isSelectionMode = false;
+              _selectedIds.clear();
+            }),
+          ),
+          const SizedBox(width: 8),
+          PremiumPageHeroAction(
+            icon: LucideIcons.trash2,
+            tooltip: 'Delete selected transactions',
+            onPressed: _selectedIds.isEmpty ? () {} : _deleteSelectedItems,
           ),
         ],
-        child: Builder(builder: (context) {
-          final txState = context.watch<TransactionBloc>().state;
-          final budgetState = context.watch<BudgetBloc>().state;
+      );
+    }
 
-          if (txState is TransactionLoading) {
-            return _buildLoadingState();
-          }
-
-          final transactions = txState is TransactionLoaded
-              ? txState.transactions
-              : <Transaction>[];
-          final budgets =
-              budgetState is BudgetLoaded ? budgetState.budgets : <Budget>[];
-
-          final filtered = _applyFilters(transactions);
-
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_fadeController.status != AnimationStatus.completed) {
-              _fadeController.forward();
-            }
-          });
-
-          return RefreshIndicator(
-            onRefresh: _onRefresh,
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSummaryBar(filtered),
-                        _buildSearchField(),
-                        _buildIntelligenceNotice(transactions),
-                        _buildFilterRow(budgets),
-                      ],
-                    ),
-                  ),
-                  filtered.isEmpty
-                      ? SliverFillRemaining(child: _buildEmptyState())
-                      : SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
-                          sliver: _buildTransactionSliver(filtered),
-                        ),
-                ],
-              ),
-            ),
-          );
-        }),
-      ),
+    final count = transactionCount ?? 0;
+    return PremiumPageHero(
+      title: 'Transactions',
+      subtitle: '$count transaction${count == 1 ? '' : 's'} in view',
+      actions: [
+        PremiumPageHeroAction(
+          icon: LucideIcons.repeat,
+          tooltip: 'Recurring Transactions',
+          onPressed: () => context.pushSmooth(
+            const RecurringTransactionsScreen(),
+          ),
+        ),
+        const SizedBox(width: 8),
+        PremiumPageHeroAction(
+          icon: LucideIcons.plus,
+          tooltip: 'Add Transaction',
+          onPressed: () => context.pushSmooth(
+            const AddTransactionScreen(),
+            transitionType: PageTransitionType.slideFromBottom,
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildSearchField() {
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      child: TextField(
-        onChanged: (value) => setState(() => _searchQuery = value),
-        decoration: InputDecoration(
-          hintText: 'Search merchant, category, or note',
-          prefixIcon: const Icon(LucideIcons.search, size: 19),
-          suffixIcon: _searchQuery.isEmpty
-              ? null
-              : IconButton(
-                  tooltip: 'Clear search',
-                  icon: const Icon(LucideIcons.x, size: 18),
-                  onPressed: () => setState(() => _searchQuery = ''),
-                ),
-          filled: true,
-          fillColor: AppTheme.cardSurface(context),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide:
-                BorderSide(color: colorScheme.outline.withValues(alpha: 0.12)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide:
-                BorderSide(color: colorScheme.outline.withValues(alpha: 0.12)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: colorScheme.primary),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIntelligenceNotice(List<Transaction> transactions) {
-    final recurring = _intelligence.findRecurring(transactions);
-    final duplicates = _intelligence.findDuplicates(transactions);
-    if (recurring.isEmpty && duplicates.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final parts = <String>[];
-    if (recurring.isNotEmpty) {
-      parts.add(
-          '${recurring.length} recurring pattern${recurring.length == 1 ? '' : 's'}');
-    }
-    if (duplicates.isNotEmpty) {
-      parts.add(
-          '${duplicates.length} possible duplicate${duplicates.length == 1 ? '' : 's'}');
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        height: 54,
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.14)),
-        ),
-        child: Row(
-          children: [
-            Icon(LucideIcons.sparkles, size: 17, color: AppColors.primary),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Text(
-                parts.join(' · '),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.07),
+              blurRadius: 18,
+              offset: const Offset(0, 7),
             ),
-            if (recurring.isNotEmpty)
-              TextButton(
-                onPressed: () => context.pushSmooth(
-                  const RecurringTransactionsScreen(),
-                ),
-                child: const Text('Review'),
-              ),
           ],
         ),
-      ),
-    );
-  }
-
-  // ─── Summary bar ─────────────────────────────────────────────────────────
-
-  Widget _buildSummaryBar(List<Transaction> items) {
-    final totalIncome = items.totalIncome();
-    final totalExpense = items.totalExpenses();
-    final net = items.netBalance;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? colorScheme.surface : Colors.black,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Balance',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      letterSpacing: 1.2,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    CurrencyService().formatAmount(net),
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  LucideIcons.scrollText,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-            ],
+        child: TextField(
+          onChanged: (value) => setState(() => _searchQuery = value),
+          textInputAction: TextInputAction.search,
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(height: 32),
-          Row(
-            children: [
-              _modernSummaryItem(
-                label: 'Income',
-                amount: totalIncome,
-                icon: LucideIcons.arrowDownToLine,
-                color: AppColors.success,
-              ),
-              Container(
-                width: 1,
-                height: 40,
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                color: Colors.white.withValues(alpha: 0.1),
-              ),
-              _modernSummaryItem(
-                label: 'Expenses',
-                amount: totalExpense,
-                icon: LucideIcons.arrowUpFromLine,
-                color: AppColors.error,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _modernSummaryItem({
-    required String label,
-    required double amount,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Expanded(
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
+          decoration: InputDecoration(
+            hintText: 'Search transactions',
+            hintStyle: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.46),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
             ),
-            child: Icon(icon, size: 16, color: color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontWeight: FontWeight.w500,
+            prefixIcon: Padding(
+              padding: const EdgeInsets.only(left: 16, right: 10),
+              child: Icon(
+                LucideIcons.search,
+                color: AppColors.primary,
+                size: 19,
+              ),
+            ),
+            prefixIconConstraints: const BoxConstraints(minWidth: 0),
+            suffixIcon: _searchQuery.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: 'Clear search',
+                    icon: Icon(
+                      LucideIcons.x,
+                      size: 17,
+                      color: colorScheme.onSurface.withValues(alpha: 0.55),
+                    ),
+                    onPressed: () => setState(() => _searchQuery = ''),
                   ),
-                ),
-                Text(
-                  CurrencyService().formatAmount(amount),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+            filled: true,
+            fillColor: Colors.transparent,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: BorderSide(
+                color: AppColors.primary.withValues(alpha: 0.35),
+                width: 1.5,
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -929,13 +766,17 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   // ─── Loading / empty / error ──────────────────────────────────────────────
 
   Widget _buildLoadingState() {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
-      itemCount: 8,
-      itemBuilder: (_, i) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: SkeletonComponents.transactionListItem(context: context),
-      ),
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 120),
+      children: [
+        _buildTransactionHero(),
+        for (var i = 0; i < 8; i++)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: SkeletonComponents.transactionListItem(context: context),
+          ),
+      ],
     );
   }
 

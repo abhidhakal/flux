@@ -119,6 +119,7 @@ class NotificationsSuccess extends NotificationsState {
 // BLoC
 class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   final EnhancedNotificationService _notificationService;
+  List<Notification>? _cachedNotifications;
 
   NotificationsBloc({required EnhancedNotificationService notificationService})
       : _notificationService = notificationService,
@@ -136,10 +137,19 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     LoadNotifications event,
     Emitter<NotificationsState> emit,
   ) async {
-    emit(NotificationsLoading());
+    // The app starts loading notifications after authentication. Reuse the
+    // last result immediately when the page is opened again so navigation is
+    // never blocked by a second Firestore round trip.
+    final cached = _cachedNotifications;
+    if (cached != null) {
+      emit(NotificationsLoaded(List.unmodifiable(cached)));
+    } else {
+      emit(NotificationsLoading());
+    }
     try {
       final notifications =
           await _notificationService.getUserNotifications(event.userId);
+      _cachedNotifications = notifications;
       emit(NotificationsLoaded(notifications));
       // Best-effort cleanup so the collection doesn't grow unbounded; not
       // awaited so it doesn't delay showing the already-fetched list.
@@ -156,6 +166,7 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     try {
       final notifications =
           await _notificationService.getUserNotifications(event.userId);
+      _cachedNotifications = notifications;
       emit(NotificationsLoaded(notifications));
     } catch (e) {
       emit(NotificationsError('Failed to refresh notifications: $e'));
@@ -174,6 +185,7 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
               ? n.copyWith(status: NotificationStatus.read)
               : n)
           .toList();
+      _cachedNotifications = updated;
       emit(NotificationsLoaded(updated));
     }
     try {
@@ -192,6 +204,7 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
       final current = (state as NotificationsLoaded).notifications;
       final updated =
           current.where((n) => n.id != event.notificationId).toList();
+      _cachedNotifications = updated;
       emit(NotificationsLoaded(updated));
     }
     try {
@@ -210,6 +223,7 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
       final current = (state as NotificationsLoaded).notifications;
       final updated =
           current.where((n) => n.id != event.notificationId).toList();
+      _cachedNotifications = updated;
       emit(NotificationsLoaded(updated));
     }
     try {
@@ -229,6 +243,7 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
       // Reload to show updated state
       final notifications =
           await _notificationService.getUserNotifications(event.userId);
+      _cachedNotifications = notifications;
       emit(NotificationsLoaded(notifications));
       emit(const NotificationsSuccess('All marked as read'));
     } catch (e) {
@@ -243,6 +258,7 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     try {
       await _notificationService.deleteAllNotifications(event.userId);
 
+      _cachedNotifications = const [];
       emit(const NotificationsLoaded([]));
       emit(const NotificationsSuccess('All notifications cleared'));
     } catch (e) {

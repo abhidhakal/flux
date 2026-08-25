@@ -21,8 +21,11 @@ class AppBottomSheet {
         return Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: colorScheme.surface,
+            color: AppTheme.cardSurface(sheetContext),
             borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
+            border: Border.all(
+              color: colorScheme.outline.withValues(alpha: 0.22),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

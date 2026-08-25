@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/services.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/models/financial_snapshot.dart';
@@ -23,6 +24,7 @@ import '../../../shared/widgets/empty_state_view.dart';
 import '../../../shared/widgets/app_section_header.dart';
 import '../../../shared/widgets/app_card.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/premium_page_hero.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class AnalyticsDashboardScreen extends StatefulWidget {
@@ -65,136 +67,157 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Scaffold(
-      backgroundColor: AppTheme.pageBackground(context),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text('Insights'),
-        centerTitle: false,
-        backgroundColor: AppTheme.pageBackground(context),
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        titleTextStyle: theme.textTheme.displaySmall?.copyWith(
-          fontSize: 24,
-          letterSpacing: -1,
-        ),
-        actions: [
-          _buildPeriodSelector(colorScheme),
-          const SizedBox(width: 16),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
       ),
-      body: MultiBlocListener(
-        listeners: [
-          BlocListener<TransactionBloc, TransactionState>(
-            listener: (context, state) {
-              if (state is TransactionLoaded) {
-                context.read<AnalyticsBloc>().add(
-                      AnalyzeSpendingPatterns(state.transactions),
-                    );
+      child: Scaffold(
+        backgroundColor: AppTheme.pageSurface(context),
+        body: MultiBlocListener(
+          listeners: [
+            BlocListener<TransactionBloc, TransactionState>(
+              listener: (context, state) {
+                if (state is TransactionLoaded) {
+                  context.read<AnalyticsBloc>().add(
+                        AnalyzeSpendingPatterns(state.transactions),
+                      );
+                }
+              },
+            ),
+          ],
+          child: BlocBuilder<TransactionBloc, TransactionState>(
+            builder: (context, transactionState) {
+              if (transactionState is TransactionLoading) {
+                return _buildLoadingState();
               }
+
+              if (transactionState is TransactionLoaded) {
+                final allTransactions = transactionState.transactions;
+                final transactions = _filterTransactions(allTransactions);
+                final budgetState = context.watch<BudgetBloc>().state;
+                final goalsState = context.watch<GoalsBloc>().state;
+                final financialSnapshot = FinancialSnapshot.fromData(
+                  transactions: allTransactions,
+                  budgets:
+                      budgetState is BudgetLoaded ? budgetState.budgets : [],
+                  goals: goalsState is GoalsLoaded ? goalsState.goals : [],
+                );
+
+                return BlocBuilder<AnalyticsBloc, AnalyticsState>(
+                  builder: (context, analyticsState) {
+                    final analysis = analyticsState is SpendingAnalysisLoaded
+                        ? analyticsState.analysis
+                        : null;
+
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                        final user = context.read<AuthBloc>().state;
+                        if (user is AuthAuthenticated) {
+                          context
+                              .read<TransactionBloc>()
+                              .add(LoadTransactions(user.user.id));
+                        }
+                      },
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildInsightsHero(),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 18, 16, 120),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildHealthScoreSection(analysis),
+                                  const SizedBox(height: 24),
+                                  ForYouActionsCard(
+                                    snapshot: financialSnapshot,
+                                    budgets: budgetState is BudgetLoaded
+                                        ? budgetState.budgets
+                                        : const [],
+                                    goals: goalsState is GoalsLoaded
+                                        ? goalsState.goals
+                                        : const [],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildAskFluxAction(
+                                    transactions: transactions,
+                                    budgets: budgetState is BudgetLoaded
+                                        ? budgetState.budgets
+                                        : const [],
+                                    goals: goalsState is GoalsLoaded
+                                        ? goalsState.goals
+                                        : const [],
+                                  ),
+                                  if (_aiResult != null) ...[
+                                    const SizedBox(height: 12),
+                                    _buildAiResultCard(_aiResult!),
+                                  ],
+                                  const SizedBox(height: 24),
+                                  _buildQuickStats(transactions),
+                                  const SizedBox(height: 24),
+                                  _buildEfficiencySection(analysis),
+                                  const SizedBox(height: 24),
+                                  _buildSmartInsightsSection(analyticsState),
+                                  const SizedBox(height: 24),
+                                  _buildSubscriptionsSection(analysis),
+                                  const SizedBox(height: 24),
+                                  _buildTrendSection(transactions),
+                                  const SizedBox(height: 24),
+                                  _buildWealthProjectionSection(analysis),
+                                  const SizedBox(height: 24),
+                                  _buildSectionHeader('Category Breakdown',
+                                      'Where your money goes'),
+                                  const SizedBox(height: 16),
+                                  CategoryBreakdownChart(
+                                      transactions: transactions),
+                                  const SizedBox(height: 24),
+                                  _buildRecommendationsSection(analysis),
+                                  const SizedBox(height: 40),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }
+
+              return _buildEmptyState();
             },
           ),
-        ],
-        child: BlocBuilder<TransactionBloc, TransactionState>(
-          builder: (context, transactionState) {
-            if (transactionState is TransactionLoading) {
-              return _buildLoadingState();
-            }
-
-            if (transactionState is TransactionLoaded) {
-              final allTransactions = transactionState.transactions;
-              final transactions = _filterTransactions(allTransactions);
-              final budgetState = context.watch<BudgetBloc>().state;
-              final goalsState = context.watch<GoalsBloc>().state;
-              final financialSnapshot = FinancialSnapshot.fromData(
-                transactions: allTransactions,
-                budgets: budgetState is BudgetLoaded ? budgetState.budgets : [],
-                goals: goalsState is GoalsLoaded ? goalsState.goals : [],
-              );
-
-              return BlocBuilder<AnalyticsBloc, AnalyticsState>(
-                builder: (context, analyticsState) {
-                  final analysis = analyticsState is SpendingAnalysisLoaded
-                      ? analyticsState.analysis
-                      : null;
-
-                  return RefreshIndicator(
-                    onRefresh: () async {
-                      final user = context.read<AuthBloc>().state;
-                      if (user is AuthAuthenticated) {
-                        context
-                            .read<TransactionBloc>()
-                            .add(LoadTransactions(user.user.id));
-                      }
-                    },
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.only(
-                          left: 20, right: 20, top: 8, bottom: 120),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildHealthScoreSection(analysis),
-                          const SizedBox(height: 24),
-                          ForYouActionsCard(
-                            snapshot: financialSnapshot,
-                            budgets: budgetState is BudgetLoaded
-                                ? budgetState.budgets
-                                : const [],
-                            goals: goalsState is GoalsLoaded
-                                ? goalsState.goals
-                                : const [],
-                          ),
-                          const SizedBox(height: 12),
-                          _buildAskFluxAction(
-                            transactions: transactions,
-                            budgets: budgetState is BudgetLoaded
-                                ? budgetState.budgets
-                                : const [],
-                            goals: goalsState is GoalsLoaded
-                                ? goalsState.goals
-                                : const [],
-                          ),
-                          if (_aiResult != null) ...[
-                            const SizedBox(height: 12),
-                            _buildAiResultCard(_aiResult!),
-                          ],
-                          const SizedBox(height: 24),
-                          _buildQuickStats(transactions),
-                          const SizedBox(height: 24),
-                          _buildEfficiencySection(analysis),
-                          const SizedBox(height: 24),
-                          _buildSmartInsightsSection(analyticsState),
-                          const SizedBox(height: 24),
-                          _buildSubscriptionsSection(analysis),
-                          const SizedBox(height: 24),
-                          _buildTrendSection(transactions),
-                          const SizedBox(height: 24),
-                          _buildWealthProjectionSection(analysis),
-                          const SizedBox(height: 24),
-                          _buildSectionHeader(
-                              'Category Breakdown', 'Where your money goes'),
-                          const SizedBox(height: 16),
-                          CategoryBreakdownChart(transactions: transactions),
-                          const SizedBox(height: 24),
-                          _buildRecommendationsSection(analysis),
-                          const SizedBox(height: 40),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            }
-
-            return _buildEmptyState();
-          },
         ),
       ),
     );
+  }
+
+  Widget _buildInsightsHero() {
+    return PremiumPageHero(
+      title: 'Insights',
+      subtitle: _periodSubtitle(),
+      actions: [
+        _buildPeriodSelector(),
+      ],
+    );
+  }
+
+  String _periodSubtitle() {
+    switch (_timelineFilter) {
+      case TimelineFilter.lastWeek:
+        return 'Your spending from the last week';
+      case TimelineFilter.lastMonth:
+        return 'Your spending from the last month';
+      case TimelineFilter.last3Months:
+        return 'Your spending across three months';
+      case TimelineFilter.custom:
+        return 'Your spending for the selected range';
+    }
   }
 
   Widget _buildAskFluxAction({
@@ -203,7 +226,6 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     required List<Goal> goals,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    final gradientEnd = Color.lerp(colorScheme.primary, Colors.black, 0.18)!;
     void onAsk() {
       _askFlux(
         transactions: transactions,
@@ -218,64 +240,48 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       child: Opacity(
         opacity: _isAiLoading ? 0.72 : 1,
         child: Material(
-          color: Colors.transparent,
-          child: Ink(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [colorScheme.primary, gradientEnd],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: colorScheme.primary.withValues(alpha: 0.22),
-                  blurRadius: 14,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: InkWell(
-              onTap: _isAiLoading ? null : onAsk,
-              borderRadius: BorderRadius.circular(14),
-              child: SizedBox(
-                height: 48,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (_isAiLoading)
-                      const SizedBox.square(
-                        dimension: 17,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    else
-                      const Icon(
-                        LucideIcons.sparkles,
-                        size: 17,
+          color: colorScheme.primary,
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          child: InkWell(
+            onTap: _isAiLoading ? null : onAsk,
+            borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+            child: SizedBox(
+              height: 56,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_isAiLoading)
+                    SizedBox.square(
+                      dimension: 17,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
                         color: Colors.white,
                       ),
-                    const SizedBox(width: 9),
-                    Text(
-                      _isAiLoading ? 'Thinking…' : 'Ask Flux',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    )
+                  else
+                    Icon(
+                      LucideIcons.sparkles,
+                      size: 17,
+                      color: Colors.white,
                     ),
-                    if (!_isAiLoading) ...[
-                      const SizedBox(width: 8),
-                      const Icon(
-                        LucideIcons.arrowUpRight,
-                        size: 16,
-                        color: Colors.white,
-                      ),
-                    ],
+                  const SizedBox(width: 9),
+                  Text(
+                    _isAiLoading ? 'Thinking…' : 'Ask Flux',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (!_isAiLoading) ...[
+                    const SizedBox(width: 8),
+                    Icon(
+                      LucideIcons.arrowUpRight,
+                      size: 16,
+                      color: colorScheme.primary,
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
           ),
@@ -434,31 +440,22 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    final cardBorderColor = isDark
-        ? colorScheme.outline.withValues(alpha: 0.45)
-        : color.withValues(alpha: 0.2);
     final progressTrackColor = isDark
         ? colorScheme.outline.withValues(alpha: 0.25)
         : color.withValues(alpha: 0.1);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: AppTheme.tintedSurfaceDecoration(
-        context,
-        tint: color,
-        radius: 32,
-      ).copyWith(
-        border: Border.all(color: cardBorderColor),
-      ),
+      padding: const EdgeInsets.all(20),
+      decoration: _insightsCardDecoration(),
       child: Row(
         children: [
           Stack(
             alignment: Alignment.center,
             children: [
               SizedBox(
-                height: 80,
-                width: 80,
+                height: 72,
+                width: 72,
                 child: CircularProgressIndicator(
                   value: score / 100,
                   strokeWidth: 8,
@@ -477,7 +474,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
               ),
             ],
           ),
-          const SizedBox(width: 24),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -485,8 +482,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                 const Text(
                   'Financial Health Score',
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -503,6 +500,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                   'Your score combines savings rate, spending efficiency, and recent trend.',
                   style: TextStyle(
                     fontSize: 12,
+                    height: 1.35,
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
@@ -579,7 +577,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(20),
-          decoration: AppTheme.surfaceDecoration(context),
+          decoration: _insightsCardDecoration(),
           child: Column(
             children: [
               _buildEfficiencyRow(
@@ -631,8 +629,6 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   Widget _buildSubscriptionsSection(Map<String, dynamic>? analysis) {
     final subscriptions = analysis?['subscriptions'] as List<dynamic>? ?? [];
     if (subscriptions.isEmpty) return const SizedBox.shrink();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -650,14 +646,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                 width: 160,
                 margin: const EdgeInsets.only(right: 12),
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark ? AppTheme.mutedSurface(context) : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withValues(
-                          alpha: isDark ? 0.14 : 0.08,
-                        ),
-                  ),
+                decoration: AppTheme.surfaceDecoration(
+                  context,
+                  radius: AppTheme.cardRadius,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -700,11 +691,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
 
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: AppTheme.tintedSurfaceDecoration(
-        context,
-        tint: AppColors.primary,
-        radius: 32,
-      ),
+      decoration: _insightsCardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -716,7 +703,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
             style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 18,
-                fontWeight: FontWeight.w600),
+                fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           Text(
@@ -875,6 +862,13 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     );
   }
 
+  BoxDecoration _insightsCardDecoration() {
+    return AppTheme.surfaceDecoration(
+      context,
+      radius: AppTheme.cardRadius,
+    );
+  }
+
   Widget _buildSmartInsightsSection(AnalyticsState state) {
     final colorScheme = Theme.of(context).colorScheme;
     return Column(
@@ -936,18 +930,14 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     Color? iconColor,
   }) {
     return Container(
-      decoration: AppTheme.tintedSurfaceDecoration(
-        context,
-        tint: AppColors.primary,
-        radius: 20,
-      ),
+      decoration: _insightsCardDecoration(),
       child: Column(
         children: [
           for (var i = 0; i < items.length; i++) ...[
             if (i > 0)
               Divider(
                 height: 1,
-                color: AppColors.primary.withValues(alpha: 0.10),
+                color: colorScheme.outline.withValues(alpha: 0.12),
               ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -977,7 +967,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
     );
   }
 
-  Widget _buildPeriodSelector(ColorScheme colorScheme) {
+  Widget _buildPeriodSelector() {
     return PopupMenuButton<TimelineFilter>(
       initialValue: _timelineFilter,
       onSelected: (filter) {
@@ -990,10 +980,11 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: AppTheme.cardSurface(context),
-          borderRadius: BorderRadius.circular(12),
-          border:
-              Border.all(color: colorScheme.outline.withValues(alpha: 0.10)),
+          color: Colors.white.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.16),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1006,8 +997,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                       : _timelineFilter == TimelineFilter.last3Months
                           ? 'Last 3 Months'
                           : 'Custom',
-              style: TextStyle(
-                color: colorScheme.onSurface,
+              style: const TextStyle(
+                color: Colors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -1016,7 +1007,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
             Icon(
               LucideIcons.chevronDown,
               size: 20,
-              color: colorScheme.onSurface,
+              color: Colors.white,
             ),
           ],
         ),
@@ -1043,7 +1034,14 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   }
 
   Widget _buildLoadingState() {
-    return const Center(child: CircularProgressIndicator());
+    return Column(
+      children: [
+        _buildInsightsHero(),
+        Expanded(
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ],
+    );
   }
 
   Widget _buildInsightSkeleton() {
@@ -1063,11 +1061,18 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   }
 
   Widget _buildEmptyState() {
-    return const EmptyStateView(
-      icon: LucideIcons.barChart3,
-      iconColor: AppColors.textTertiary,
-      title: 'No financial data found',
-      subtitle: 'Start adding transactions to see analysis',
+    return Column(
+      children: [
+        _buildInsightsHero(),
+        Expanded(
+          child: EmptyStateView(
+            icon: LucideIcons.barChart3,
+            iconColor: Theme.of(context).colorScheme.onSurfaceVariant,
+            title: 'No financial data found',
+            subtitle: 'Start adding transactions to see analysis',
+          ),
+        ),
+      ],
     );
   }
 }

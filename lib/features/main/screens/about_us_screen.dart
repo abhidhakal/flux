@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_theme.dart';
+import '../../../shared/widgets/premium_page_hero.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -74,160 +76,158 @@ class _AboutUsScreenState extends State<AboutUsScreen>
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('About Us'),
-        centerTitle: false,
-        backgroundColor: colorScheme.surface,
-        foregroundColor: colorScheme.onSurface,
-        iconTheme: IconThemeData(color: colorScheme.onSurface),
-        titleTextStyle: theme.textTheme.displaySmall?.copyWith(
-          fontSize: 24,
-          letterSpacing: -1,
-        ),
-        elevation: 0,
-        scrolledUnderElevation: 0,
-      ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 24),
-                // Logo & Header (Centered)
-                Center(
+      backgroundColor: AppTheme.pageSurface(context),
+      body: Column(
+        children: [
+          const PremiumPageHero(
+            title: 'About Flux',
+            subtitle: 'Built to make money feel clearer',
+            showBackButton: true,
+          ),
+          Expanded(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Image.asset(
-                          'assets/images/flux_logo.png',
-                          width: 80,
-                          height: 80,
-                          fit: BoxFit.cover,
+                      const SizedBox(height: 24),
+                      // Logo & Header (Centered)
+                      Center(
+                        child: Column(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Image.asset(
+                                'assets/images/flux_logo.png',
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Flux',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Your AI-Powered Finance Companion',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 48),
+
+                      // About Section
                       Text(
-                        'Flux',
+                        'About',
                         style: TextStyle(
-                          fontSize: 28,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: colorScheme.onSurface,
-                          letterSpacing: -0.5,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                       Text(
-                        'Your AI-Powered Finance Companion',
+                        'Flux empowers you to make informed financial decisions through intelligent insights, smart goal tracking, and comprehensive analytics. We believe managing money should be simple, intuitive, and effective.',
                         style: TextStyle(
                           fontSize: 16,
-                          color: colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w500,
+                          color: colorScheme.onSurface.withValues(alpha: 0.8),
+                          height: 1.6,
                         ),
                       ),
+
+                      const SizedBox(height: 40),
+
+                      // Team Section
+                      Text(
+                        'Team',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Developed by Abhinav Dhakal at Klivo Studios. We are dedicated to creating innovative digital solutions that enhance your daily life.',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: colorScheme.onSurface.withValues(alpha: 0.8),
+                          height: 1.6,
+                        ),
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // Links
+                      _buildMinimalLink(
+                        icon: LucideIcons.languages,
+                        title: 'Website',
+                        url: 'klivostudios.com',
+                        onTap: () => _launchUrl('https://klivostudios.com'),
+                      ),
+                      _buildMinimalLink(
+                        icon: LucideIcons.user,
+                        title: 'Portfolio',
+                        url: 'abhinavdhakal.me',
+                        onTap: () => _launchUrl('https://abhinavdhakal.me'),
+                      ),
+                      _buildMinimalLink(
+                        icon: LucideIcons.mail,
+                        title: 'Contact Us',
+                        url: 'hi@klivostudios.com',
+                        onTap: () => _launchUrl('mailto:hi@klivostudios.com'),
+                      ),
+
+                      const SizedBox(height: 60),
+
+                      // Version & Footer
+                      Center(
+                        child: Column(
+                          children: [
+                            Text(
+                              'Version 1.0.0',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: colorScheme.onSurfaceVariant
+                                    .withValues(alpha: 0.7),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '© 2026 Klivo Studios',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: colorScheme.onSurfaceVariant
+                                    .withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
-                const SizedBox(height: 48),
-
-                // About Section
-                Text(
-                  'About',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Flux empowers you to make informed financial decisions through intelligent insights, smart goal tracking, and comprehensive analytics. We believe managing money should be simple, intuitive, and effective.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: colorScheme.onSurface.withValues(alpha: 0.8),
-                    height: 1.6,
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                // Team Section
-                Text(
-                  'Team',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Developed by Abhinav Dhakal at Klivo Studios. We are dedicated to creating innovative digital solutions that enhance your daily life.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: colorScheme.onSurface.withValues(alpha: 0.8),
-                    height: 1.6,
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                // Links
-                _buildMinimalLink(
-                  icon: LucideIcons.languages,
-                  title: 'Website',
-                  url: 'klivostudios.com',
-                  onTap: () => _launchUrl('https://klivostudios.com'),
-                ),
-                _buildMinimalLink(
-                  icon: LucideIcons.user,
-                  title: 'Portfolio',
-                  url: 'abhinavdhakal.me',
-                  onTap: () => _launchUrl('https://abhinavdhakal.me'),
-                ),
-                _buildMinimalLink(
-                  icon: LucideIcons.mail,
-                  title: 'Contact Us',
-                  url: 'hi@klivostudios.com',
-                  onTap: () => _launchUrl('mailto:hi@klivostudios.com'),
-                ),
-
-                const SizedBox(height: 60),
-
-                // Version & Footer
-                Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        'Version 1.0.0',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.7),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '© 2026 Klivo Studios',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 40),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

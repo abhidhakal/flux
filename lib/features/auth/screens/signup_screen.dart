@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/google_logo.dart';
+import '../../../shared/widgets/app_form_fields.dart';
 import '../../../core/constants/app_theme.dart';
 import '../widgets/auth_form_helpers.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -142,12 +143,12 @@ class _SignUpScreenState extends State<SignUpScreen>
                         children: [
                           authLabel(context, 'Full Name'),
                           const SizedBox(height: 6),
-                          TextFormField(
+                          AppTextField(
                             controller: _nameController,
                             textCapitalization: TextCapitalization.words,
                             textInputAction: TextInputAction.next,
-                            decoration: authInputDecoration(context,
-                                hint: 'John Doe', icon: LucideIcons.user),
+                            hintText: 'John Doe',
+                            prefixIcon: const Icon(LucideIcons.user),
                             validator: (v) {
                               if (v == null || v.isEmpty) {
                                 return 'Please enter your name';
@@ -158,37 +159,34 @@ class _SignUpScreenState extends State<SignUpScreen>
                           const SizedBox(height: 20),
                           authLabel(context, 'Email'),
                           const SizedBox(height: 6),
-                          TextFormField(
+                          AppTextField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
-                            decoration: authInputDecoration(context,
-                                hint: 'name@example.com',
-                                icon: LucideIcons.mail),
+                            hintText: 'name@example.com',
+                            prefixIcon: const Icon(LucideIcons.mail),
                             validator: AuthValidators.email,
                           ),
                           const SizedBox(height: 20),
                           authLabel(context, 'Password'),
                           const SizedBox(height: 6),
-                          TextFormField(
+                          AppTextField(
                             controller: _passwordController,
                             obscureText: !_isPasswordVisible,
                             textInputAction: TextInputAction.next,
-                            decoration: authInputDecoration(
-                              context,
-                              hint:
-                                  '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022',
-                              icon: LucideIcons.lock,
-                              suffix: IconButton(
-                                icon: Icon(
-                                  _isPasswordVisible
-                                      ? LucideIcons.eyeOff
-                                      : LucideIcons.eye,
-                                  size: 20,
-                                  color: cs.onSurfaceVariant,
-                                ),
-                                onPressed: () => setState(() =>
-                                    _isPasswordVisible = !_isPasswordVisible),
+                            hintText:
+                                '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022',
+                            prefixIcon: const Icon(LucideIcons.lock),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isPasswordVisible
+                                    ? LucideIcons.eyeOff
+                                    : LucideIcons.eye,
+                                size: 20,
+                                color: cs.onSurfaceVariant,
+                              ),
+                              onPressed: () => setState(
+                                () => _isPasswordVisible = !_isPasswordVisible,
                               ),
                             ),
                             validator: AuthValidators.password,
@@ -196,27 +194,25 @@ class _SignUpScreenState extends State<SignUpScreen>
                           const SizedBox(height: 20),
                           authLabel(context, 'Confirm Password'),
                           const SizedBox(height: 6),
-                          TextFormField(
+                          AppTextField(
                             controller: _confirmPasswordController,
                             obscureText: !_isConfirmPasswordVisible,
                             textInputAction: TextInputAction.done,
                             onFieldSubmitted: (_) => _handleSignUp(),
-                            decoration: authInputDecoration(
-                              context,
-                              hint:
-                                  '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022',
-                              icon: LucideIcons.lock,
-                              suffix: IconButton(
-                                icon: Icon(
-                                  _isConfirmPasswordVisible
-                                      ? LucideIcons.eyeOff
-                                      : LucideIcons.eye,
-                                  size: 20,
-                                  color: cs.onSurfaceVariant,
-                                ),
-                                onPressed: () => setState(() =>
-                                    _isConfirmPasswordVisible =
-                                        !_isConfirmPasswordVisible),
+                            hintText:
+                                '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022',
+                            prefixIcon: const Icon(LucideIcons.lock),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isConfirmPasswordVisible
+                                    ? LucideIcons.eyeOff
+                                    : LucideIcons.eye,
+                                size: 20,
+                                color: cs.onSurfaceVariant,
+                              ),
+                              onPressed: () => setState(
+                                () => _isConfirmPasswordVisible =
+                                    !_isConfirmPasswordVisible,
                               ),
                             ),
                             validator: (v) {

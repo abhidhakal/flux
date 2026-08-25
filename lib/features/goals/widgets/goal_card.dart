@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/app_form_fields.dart';
 import '../../../shared/widgets/app_icon_badge.dart';
 import '../../../shared/widgets/app_status_pill.dart';
 import '../../../shared/widgets/app_card.dart';
@@ -200,7 +201,7 @@ class GoalCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: colorScheme.primary.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
                 ),
                 child: Text(
                   '${goal.daysRemaining}d left',
@@ -230,7 +231,7 @@ class GoalCard extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 12),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
             ),
           ),
         ),
@@ -248,7 +249,7 @@ class GoalCard extends StatelessWidget {
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
                 ),
                 elevation: 0,
               ),
@@ -265,7 +266,7 @@ class GoalCard extends StatelessWidget {
                 Theme.of(context).colorScheme.surfaceContainerHighest,
             padding: const EdgeInsets.all(12),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
             ),
           ),
           icon: const Icon(LucideIcons.moreHorizontal),
@@ -334,24 +335,17 @@ class GoalCard extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
-              TextField(
+              AppNumberField(
                 controller: amountController,
                 focusNode: focusNode,
                 autofocus: true,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                 ),
-                decoration: InputDecoration(
-                  hintText: '0.00',
-                  prefixText: CurrencyService().symbol,
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                ),
+                hintText: '0.00',
+                prefixText: CurrencyService().symbol,
               ),
               const SizedBox(height: 32),
               ElevatedButton(

@@ -6,6 +6,8 @@ import '../../../core/services/currency_service.dart';
 import '../../../core/services/goal_template_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/app_form_fields.dart';
+import '../../../shared/widgets/premium_page_hero.dart';
 import '../goals_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -111,26 +113,15 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('Goal Templates'),
-        centerTitle: false,
-        backgroundColor: isDark ? Colors.black : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        titleTextStyle: theme.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: isDark ? Colors.white : Colors.black,
-        ),
-      ),
+      backgroundColor: AppTheme.pageSurface(context),
       body: Column(
         children: [
+          const PremiumPageHero(
+            title: 'Goal Templates',
+            subtitle: 'Start with a plan that fits your priorities',
+            showBackButton: true,
+          ),
           _buildSearchAndFilter(context),
           Expanded(
             child: _isLoading
@@ -145,33 +136,22 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
   Widget _buildSearchAndFilter(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: colorScheme.onSurface.withValues(alpha: 0.05),
-          ),
-        ),
+      margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        radius: AppTheme.cardRadius,
+        subtle: true,
       ),
       child: Column(
         children: [
-          TextField(
+          AppTextField(
             onChanged: (value) {
               _searchQuery = value;
               _filterTemplates();
             },
-            decoration: InputDecoration(
-              hintText: 'Search templates...',
-              prefixIcon: const Icon(LucideIcons.search, size: 20),
-              filled: true,
-              fillColor: colorScheme.onSurface.withValues(alpha: 0.05),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            ),
+            hintText: 'Search templates...',
+            prefixIcon: const Icon(LucideIcons.search, size: 20),
           ),
           const SizedBox(height: 12),
           SingleChildScrollView(
@@ -251,18 +231,9 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
     return GestureDetector(
       onTap: () => _showTemplateDetails(template),
       child: Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          border:
-              Border.all(color: colorScheme.onSurface.withValues(alpha: 0.05)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+        decoration: AppTheme.surfaceDecoration(
+          context,
+          radius: AppTheme.cardRadius,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,9 +255,9 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
                 children: [
                   Text(
                     template.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -299,17 +270,18 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
                       const SizedBox(width: 4),
                       Text(
                         '${template.suggestedDurationMonths}m',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurface.withValues(alpha: 0.4),
-                        ),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color:
+                                  colorScheme.onSurface.withValues(alpha: 0.4),
+                            ),
                       ),
                       const Spacer(),
                       Text(
                         _currencyService.formatAmount(template.suggestedAmount),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
                     ],
                   ),
@@ -441,31 +413,13 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            TextField(
+            AppNumberField(
               controller: _amountController,
-              keyboardType: TextInputType.number,
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.primary,
               ),
-              decoration: InputDecoration(
-                prefixText: '${widget.currencyService.symbol} ',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                      color: colorScheme.onSurface.withValues(alpha: 0.1)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                      color: colorScheme.onSurface.withValues(alpha: 0.1)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide:
-                      const BorderSide(color: AppColors.primary, width: 2),
-                ),
-              ),
+              prefixText: '${widget.currencyService.symbol} ',
             ),
             const SizedBox(height: 24),
             Text(
@@ -516,7 +470,7 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
               child: ElevatedButton(
                 onPressed: _isCreating ? null : _createGoal,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),

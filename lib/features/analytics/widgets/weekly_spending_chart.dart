@@ -15,25 +15,24 @@ class WeeklySpendingChart extends StatelessWidget {
     if (transactions.isEmpty) {
       return Container(
         height: 200,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppTheme.radius12),
-          border: Border.all(color: AppColors.border),
+        decoration: AppTheme.surfaceDecoration(
+          context,
+          radius: AppTheme.cardRadius,
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 LucideIcons.calendarDays,
                 size: 48,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               SizedBox(height: AppTheme.spacing8),
               Text(
                 'No weekly data available',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
@@ -42,7 +41,7 @@ class WeeklySpendingChart extends StatelessWidget {
               Text(
                 'Add some transactions to see weekly spending patterns',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
                 ),
               ),
@@ -58,12 +57,9 @@ class WeeklySpendingChart extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radius24),
-        border: Border.all(
-            color:
-                Theme.of(context).colorScheme.outline.withValues(alpha: 0.1)),
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        radius: AppTheme.cardRadius,
       ),
       child: Column(
         children: [

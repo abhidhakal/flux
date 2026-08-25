@@ -94,12 +94,9 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
   Widget _buildEmptyState() {
     return Container(
       height: 200,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radius12),
-        border: Border.all(
-            color:
-                Theme.of(context).colorScheme.outline.withValues(alpha: 0.1)),
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        radius: AppTheme.cardRadius,
       ),
       child: Center(
         child: Column(
@@ -176,12 +173,12 @@ class _CategoryBreakdownChartState extends State<CategoryBreakdownChart> {
 
   static const List<Color> _categoryColors = [
     AppColors.primary,
-    Color(0xFF333333),
-    Color(0xFF555555),
-    Color(0xFF777777),
-    Color(0xFF999999),
-    Color(0xFFBBBBBB),
-    Color(0xFFD6D6D6),
+    Color(0xFF19A7A0), // Teal
+    Color(0xFF7C5CFC), // Violet
+    Color(0xFFF59E0B), // Amber
+    Color(0xFFE76F51), // Coral
+    Color(0xFF16A34A), // Green
+    Color(0xFF3B82F6), // Sky blue
   ];
 
   List<PieChartSectionData> _getPieSections(

@@ -22,7 +22,7 @@ extension GoalTypeIcon on GoalType {
       case GoalType.education:
         return LucideIcons.school;
       case GoalType.other:
-        return LucideIcons.flag;
+        return LucideIcons.goal;
     }
   }
 }

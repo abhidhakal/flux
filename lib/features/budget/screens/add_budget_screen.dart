@@ -9,6 +9,7 @@ import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/premium_upgrade_prompt.dart';
 import '../../../shared/widgets/field_label.dart';
+import '../../../shared/widgets/app_form_fields.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class AddBudgetScreen extends StatefulWidget {
@@ -108,13 +109,9 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
               children: [
                 _buildSectionTitle('Budget Name', icon: LucideIcons.type),
                 const SizedBox(height: 8),
-                TextFormField(
+                AppTextField(
                   controller: _nameController,
-                  decoration: InputDecoration(
-                    hintText: 'e.g., Monthly Food Budget',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
+                  hintText: 'e.g., Monthly Food Budget',
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter a budget name';
@@ -125,15 +122,11 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                 const SizedBox(height: 20),
                 _buildSectionTitle('Amount', icon: LucideIcons.dollarSign),
                 const SizedBox(height: 8),
-                TextFormField(
+                AppNumberField(
                   controller: _amountController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    hintText: 'Enter amount',
-                    prefixText: '${CurrencyService().symbol} ',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
+                  hintText: 'Enter amount',
+                  prefixText: '${CurrencyService().symbol} ',
+                  decimal: true,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter an amount';
@@ -148,18 +141,10 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                 const SizedBox(height: 20),
                 _buildSectionTitle('Weekly Target', icon: LucideIcons.target),
                 const SizedBox(height: 8),
-                TextFormField(
+                AppNumberField(
                   controller: _weeklyTargetController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Optional spending limit per week',
-                    prefixText: '${CurrencyService().symbol} ',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+                  hintText: 'Optional spending limit per week',
+                  prefixText: '${CurrencyService().symbol} ',
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) return null;
                     final amount = double.tryParse(value);
@@ -172,12 +157,8 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                 const SizedBox(height: 20),
                 _buildSectionTitle('Category', icon: LucideIcons.tag),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedCategory,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
+                AppDropdownField<String>(
+                  value: _selectedCategory,
                   items: AppCategories.expenseCategories.map((category) {
                     return DropdownMenuItem(
                       value: category,
@@ -210,7 +191,8 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                     backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.formFieldRadius)),
                   ),
                   child: _isLoading
                       ? const SizedBox(
@@ -271,7 +253,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                           .withValues(alpha: 0.4),
                   width: isSelected ? 2 : 1,
                 ),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
               ),
               child: Text(
                 period.name[0].toUpperCase() + period.name.substring(1),
@@ -296,7 +278,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
       ),
       child: SwitchListTile(
         title: Text(

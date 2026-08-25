@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_theme.dart';
 import 'dart:io';
@@ -87,18 +88,25 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.pageBackground(context),
-      body: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          if (state is AuthAuthenticated) {
-            return FadeTransition(
-              opacity: _fadeAnimation,
-              child: _buildProfileContent(context, state.user),
-            );
-          }
-          return _buildProfileSkeleton();
-        },
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: AppTheme.pageSurface(context),
+        body: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            if (state is AuthAuthenticated) {
+              return FadeTransition(
+                opacity: _fadeAnimation,
+                child: _buildProfileContent(context, state.user),
+              );
+            }
+            return _buildProfileSkeleton();
+          },
+        ),
       ),
     );
   }
@@ -115,7 +123,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
       slivers: [
-        // Modern Header
         SliverToBoxAdapter(
           child: _buildModernHeader(
             user,
@@ -128,7 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         // Stats Row
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             child: BlocBuilder<GoalsBloc, GoalsState>(
               builder: (context, goalsState) {
                 return _buildStatsRow(
@@ -139,7 +146,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
         // Settings Sections
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
               _buildSectionHeader('General', colorScheme),
@@ -248,33 +255,24 @@ class _ProfileScreenState extends State<ProfileScreen>
       UserProgressSnapshot progressSnapshot,
       {required bool isPremium}) {
     return Container(
-      margin: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 10,
-        left: 20,
-        right: 20,
-        bottom: 20,
+      margin: EdgeInsets.zero,
+      padding: EdgeInsets.fromLTRB(
+        20,
+        MediaQuery.of(context).padding.top + 16,
+        20,
+        40,
       ),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colorScheme.primary.withValues(alpha: 0.12),
-            AppTheme.cardSurface(context),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: colorScheme.outline.withValues(
-              alpha: theme.brightness == Brightness.dark ? 0.34 : 0.10),
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-                alpha: theme.brightness == Brightness.dark ? 0.18 : 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: Color(0x260079DC),
+            blurRadius: 24,
+            offset: Offset(0, 10),
           ),
         ],
       ),
@@ -305,7 +303,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: AppTheme.cardSurface(context),
+                            color: Colors.white,
                             width: 2,
                           ),
                         ),
@@ -326,16 +324,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                       child: Container(
                         padding: const EdgeInsets.all(7),
                         decoration: BoxDecoration(
-                          color: colorScheme.primary,
+                          color: Colors.white,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: AppTheme.cardSurface(context),
+                            color: AppColors.primary,
                             width: 3,
                           ),
                         ),
                         child: Icon(
                           LucideIcons.camera,
-                          color: colorScheme.onPrimary,
+                          color: AppColors.primary,
                           size: 13,
                         ),
                       ),
@@ -352,14 +350,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                       user.displayName ?? 'User',
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: colorScheme.onSurface,
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       user.email,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                        color: Colors.white.withValues(alpha: 0.72),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -374,6 +372,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           label: isPremium ? 'Pro' : 'Free',
                           colorScheme: colorScheme,
                           emphasized: isPremium,
+                          onHero: true,
                           accentColor: isPremium
                               ? const Color(0xFFD6A84F)
                               : colorScheme.onSurfaceVariant,
@@ -392,6 +391,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ),
                           colorScheme: colorScheme,
                           emphasized: true,
+                          onHero: true,
+                          accentColor: Colors.white,
                         ),
                       ],
                     ),
@@ -412,20 +413,25 @@ class _ProfileScreenState extends State<ProfileScreen>
     bool emphasized = false,
     Color? accentColor,
     VoidCallback? onTap,
+    bool onHero = false,
   }) {
     final pillColor = accentColor ?? colorScheme.primary;
 
     final pill = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: emphasized
-            ? pillColor.withValues(alpha: 0.14)
-            : AppTheme.mutedSurface(context),
+        color: onHero
+            ? Colors.white.withValues(alpha: emphasized ? 0.18 : 0.14)
+            : emphasized
+                ? pillColor.withValues(alpha: 0.14)
+                : AppTheme.mutedSurface(context),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: emphasized
-              ? pillColor.withValues(alpha: 0.28)
-              : colorScheme.outline.withValues(alpha: 0.08),
+          color: onHero
+              ? Colors.white.withValues(alpha: 0.18)
+              : emphasized
+                  ? pillColor.withValues(alpha: 0.28)
+                  : colorScheme.outline.withValues(alpha: 0.08),
         ),
       ),
       child: Row(
@@ -434,7 +440,9 @@ class _ProfileScreenState extends State<ProfileScreen>
           Icon(
             icon,
             size: 15,
-            color: emphasized ? pillColor : colorScheme.onSurfaceVariant,
+            color: onHero
+                ? (emphasized ? pillColor : Colors.white)
+                : (emphasized ? pillColor : colorScheme.onSurfaceVariant),
           ),
           const SizedBox(width: 8),
           Text(
@@ -442,7 +450,9 @@ class _ProfileScreenState extends State<ProfileScreen>
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: emphasized ? pillColor : colorScheme.onSurface,
+              color: onHero
+                  ? (emphasized ? pillColor : Colors.white)
+                  : (emphasized ? pillColor : colorScheme.onSurface),
             ),
           ),
         ],
@@ -547,37 +557,40 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildSettingsTile(_SettingsItem item, ColorScheme colorScheme) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: colorScheme.primary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: colorScheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(item.icon, color: colorScheme.primary, size: 20),
         ),
-        child: Icon(item.icon, color: colorScheme.primary, size: 20),
-      ),
-      title: Text(
-        item.title,
-        style: TextStyle(
-          fontWeight: FontWeight.w500,
-          color: colorScheme.onSurface,
+        title: Text(
+          item.title,
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            color: colorScheme.onSurface,
+          ),
         ),
+        subtitle: item.subtitle != null
+            ? Text(
+                item.subtitle!,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              )
+            : null,
+        trailing: Icon(
+          LucideIcons.chevronRight,
+          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+        ),
+        onTap: item.onTap,
       ),
-      subtitle: item.subtitle != null
-          ? Text(
-              item.subtitle!,
-              style: TextStyle(
-                fontSize: 12,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            )
-          : null,
-      trailing: Icon(
-        LucideIcons.chevronRight,
-        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-      ),
-      onTap: item.onTap,
     );
   }
 
@@ -600,6 +613,44 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   // --- Dialogs and Pickers ---
 
+  Widget _buildSheetHeader({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required ColorScheme colorScheme,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: colorScheme.primary.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(icon, color: colorScheme.primary, size: 21),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 19, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 3),
+              Text(subtitle,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.3)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   void _showCurrencyPicker() {
     final colorScheme = Theme.of(context).colorScheme;
     AppBottomSheet.show(
@@ -612,14 +663,12 @@ class _ProfileScreenState extends State<ProfileScreen>
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(20),
-              child: Text(
-                'Select Currency',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+              child: _buildSheetHeader(
+                icon: LucideIcons.coins,
+                title: 'Select Currency',
+                subtitle: 'Choose the currency used across Flux',
+                colorScheme: colorScheme,
               ),
             ),
             Expanded(
@@ -631,6 +680,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                     final country = countries[index];
                     final isSelected = country['country'] == _selectedCountry;
                     return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      tileColor: isSelected
+                          ? colorScheme.primary.withValues(alpha: 0.06)
+                          : null,
                       leading: _buildFlag(country['country']!),
                       title: Text(country['country']!),
                       subtitle: Text(country['code']!),
@@ -703,13 +760,11 @@ class _ProfileScreenState extends State<ProfileScreen>
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Appearance',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
+                _buildSheetHeader(
+                  icon: LucideIcons.palette,
+                  title: 'Appearance',
+                  subtitle: 'Choose how Flux looks on your device',
+                  colorScheme: colorScheme,
                 ),
                 const SizedBox(height: 24),
                 _buildThemeOption(
@@ -744,13 +799,14 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildThemeOption(String title, IconData icon, bool isSelected,
       VoidCallback onTap, ColorScheme colorScheme) {
     return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
         side: BorderSide(
           color: isSelected
               ? colorScheme.primary
               : colorScheme.outline.withValues(alpha: 0.2),
-          width: isSelected ? 2 : 1,
+          width: isSelected ? 1.5 : 1,
         ),
       ),
       tileColor: isSelected
@@ -867,11 +923,12 @@ class _ProfileScreenState extends State<ProfileScreen>
       builder: (context) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Change Profile Picture',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface)),
+          _buildSheetHeader(
+            icon: LucideIcons.camera,
+            title: 'Change Profile Picture',
+            subtitle: 'Choose a new photo for your account',
+            colorScheme: colorScheme,
+          ),
           const SizedBox(height: 20),
           ListTile(
               leading: Icon(LucideIcons.camera, color: colorScheme.primary),

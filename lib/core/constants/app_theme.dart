@@ -13,6 +13,12 @@ class AppColors {
   static const Color secondaryLight = Color(0xFF888888);
   static const Color secondaryDark = Color(0xFF333333);
 
+  // Tertiary colors - Premium navy for supporting actions and emphasis
+  static const Color tertiary = Color(0xFF122235);
+  static const Color tertiaryLight = Color(0xFF243B53);
+  static const Color tertiaryDark = Color(0xFF0B1623);
+  static const Color tertiaryContainer = Color(0xFFE8EEF5);
+
   // Accent colors - Coral
   static const Color accent = Color(0xFFE76F51);
   static const Color accentLight = Color(0xFFF28B73);
@@ -49,15 +55,15 @@ class AppColors {
   static const Color lightTextMuted = Color(0xFF999999);
 
   // Dark Theme Colors
-  static const Color darkBackground = Color(0xFF000000);
-  static const Color darkSurface = Color(0xFF0C0C0C);
-  static const Color darkCard = Color(0xFF121212);
-  static const Color darkDivider = Color(0xFF202020);
-  static const Color darkBorder = Colors.transparent;
+  static const Color darkBackground = Color(0xFF0B1220);
+  static const Color darkSurface = Color(0xFF101A2A);
+  static const Color darkCard = Color(0xFF162235);
+  static const Color darkDivider = Color(0xFF26384D);
+  static const Color darkBorder = Color(0xFF30455D);
   static const Color darkTextPrimary = Color(0xFFF5F5F5);
   static const Color darkTextSecondary = Color(0xFFB3B3B3);
   static const Color darkTextTertiary = Color(0xFF808080);
-  static const Color darkTextInverse = Color(0xFF000000);
+  static const Color darkTextInverse = Color(0xFFFFFFFF);
   static const Color darkTextMuted = Color(0xFF808080);
   static const Color darkElevatedSurface = Color(0xFF181818);
   static const Color darkNavSurface = Color(0xFF080808);
@@ -132,6 +138,9 @@ class AppColors {
 class AppTheme {
   // Typography
   static const String fontFamily = 'Satoshi';
+
+  // Shared form-control geometry
+  static const double formFieldRadius = 16;
 
   // Light Text Theme
   static const TextTheme lightTextTheme = TextTheme(
@@ -334,6 +343,14 @@ class AppTheme {
         : AppColors.lightBackground;
   }
 
+  /// The primary page surface used by the redesigned feature screens.
+  /// Light mode stays white; dark mode uses the deep navy app background.
+  static Color pageSurface(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? AppColors.darkBackground
+        : Colors.white;
+  }
+
   static Color cardSurface(BuildContext context) {
     final theme = Theme.of(context);
     return theme.brightness == Brightness.dark
@@ -371,6 +388,9 @@ class AppTheme {
     return BoxDecoration(
       color: subtle ? mutedSurface(context) : cardSurface(context),
       borderRadius: BorderRadius.circular(radius),
+      border: theme.brightness == Brightness.dark
+          ? Border.all(color: AppColors.darkBorder.withValues(alpha: 0.55))
+          : null,
       boxShadow: [
         BoxShadow(
           color: Colors.black.withValues(
@@ -393,6 +413,9 @@ class AppTheme {
       // progress, and the deliberately emphasized dashboard hero card.
       color: cardSurface(context),
       borderRadius: BorderRadius.circular(radius),
+      border: theme.brightness == Brightness.dark
+          ? Border.all(color: AppColors.darkBorder.withValues(alpha: 0.55))
+          : null,
       boxShadow: [
         BoxShadow(
           color: Colors.black.withValues(
@@ -457,6 +480,8 @@ class AppTheme {
         primaryContainer: AppColors.primaryUltraLight,
         secondary: AppColors.secondary,
         secondaryContainer: AppColors.secondaryLight,
+        tertiary: AppColors.tertiary,
+        tertiaryContainer: AppColors.tertiaryContainer,
         surface: AppColors.lightSurface,
         error: AppColors.error,
         errorContainer: AppColors.errorUltraLight,
@@ -646,6 +671,8 @@ class AppTheme {
         primaryContainer: AppColors.darkElevatedSurface,
         secondary: AppColors.secondary,
         secondaryContainer: AppColors.secondaryDark,
+        tertiary: AppColors.tertiaryLight,
+        tertiaryContainer: AppColors.tertiaryDark,
         surface: AppColors.darkSurface,
         error: AppColors.error,
         errorContainer: AppColors.errorDark,

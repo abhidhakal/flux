@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/services.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/budget_model.dart';
 import '../../../core/services/currency_service.dart';
@@ -10,8 +11,8 @@ import '../../auth/auth_bloc.dart';
 import '../../budget/budget_bloc.dart';
 import '../../budget/screens/add_budget_screen.dart';
 import '../../../shared/widgets/app_snackbar.dart';
-import '../../../shared/widgets/stat_tile.dart';
 import '../../../shared/widgets/empty_state_view.dart';
+import '../../../shared/widgets/premium_page_hero.dart';
 import 'budget_card.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -34,137 +35,153 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Scaffold(
-      backgroundColor: AppTheme.pageBackground(context),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text('Budgets'),
-        centerTitle: false,
-        backgroundColor: AppTheme.pageBackground(context),
-        foregroundColor: colorScheme.onSurface,
-        iconTheme: IconThemeData(color: colorScheme.onSurface),
-        titleTextStyle: theme.textTheme.displaySmall?.copyWith(
-          fontSize: 24,
-          letterSpacing: -1,
-        ),
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(LucideIcons.refreshCw,
-                color: colorScheme.onSurface, size: 20),
-            tooltip: 'Recalculate budget totals from transactions',
-            onPressed: () {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: AppTheme.pageSurface(context),
+        body: BlocListener<BudgetBloc, BudgetState>(
+          listener: (context, state) {
+            if (state is BudgetSuccess) {
+              AppSnackbar.showSuccess(context, message: state.message);
+              // Reload budgets after successful operation
               final user = context.read<AuthBloc>().state;
               if (user is AuthAuthenticated) {
-                context
-                    .read<BudgetBloc>()
-                    .add(RecalculateBudgetSpent(user.user.id));
+                context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
               }
-            },
-          ),
-          IconButton(
-            icon: Icon(LucideIcons.plus, color: colorScheme.onSurface),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => MultiBlocProvider(
-                        providers: [
-                          BlocProvider.value(value: context.read<BudgetBloc>()),
-                          BlocProvider.value(value: context.read<AuthBloc>()),
-                        ],
-                        child: const AddBudgetScreen(),
-                      )),
+            }
+
+            if (state is BudgetError) {
+              AppSnackbar.showError(context, message: state.message);
+            }
+          },
+          child: RefreshIndicator(
+            onRefresh: _onRefresh,
+            child: BlocBuilder<BudgetBloc, BudgetState>(
+              builder: (context, state) {
+                if (state is BudgetLoading) {
+                  return _buildBudgetsSkeleton();
+                }
+
+                if (state is BudgetLoaded) {
+                  if (state.budgets.isEmpty) {
+                    return _buildEmptyState();
+                  }
+                  return _buildBudgetsList(state.budgets);
+                }
+
+                if (state is BudgetError) {
+                  return _buildErrorState(state.message);
+                }
+
+                return _buildEmptyState();
+              },
             ),
           ),
-        ],
+        ),
       ),
-      body: BlocListener<BudgetBloc, BudgetState>(
-        listener: (context, state) {
-          if (state is BudgetSuccess) {
-            AppSnackbar.showSuccess(context, message: state.message);
-            // Reload budgets after successful operation
-            final user = context.read<AuthBloc>().state;
-            if (user is AuthAuthenticated) {
-              context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
-            }
-          }
+    );
+  }
 
-          if (state is BudgetError) {
-            AppSnackbar.showError(context, message: state.message);
-          }
-        },
-        child: RefreshIndicator(
-          onRefresh: _onRefresh,
-          child: BlocBuilder<BudgetBloc, BudgetState>(
-            builder: (context, state) {
-              if (state is BudgetLoading) {
-                return _buildBudgetsSkeleton();
-              }
+  Widget _buildBudgetHero({int? activeCount}) {
+    return PremiumPageHero(
+      title: 'Budgets',
+      subtitle: activeCount == null
+          ? 'Plan your spending with intention'
+          : '$activeCount active ${activeCount == 1 ? 'budget' : 'budgets'}',
+      actions: [
+        PremiumPageHeroAction(
+          icon: LucideIcons.refreshCw,
+          tooltip: 'Recalculate budget totals from transactions',
+          onPressed: _recalculateBudgetTotals,
+        ),
+        const SizedBox(width: 8),
+        PremiumPageHeroAction(
+          icon: LucideIcons.plus,
+          tooltip: 'Add budget',
+          onPressed: _openAddBudget,
+        ),
+      ],
+    );
+  }
 
-              if (state is BudgetLoaded) {
-                if (state.budgets.isEmpty) {
-                  return _buildEmptyState();
-                }
-                return _buildBudgetsList(state.budgets);
-              }
+  void _recalculateBudgetTotals() {
+    final user = context.read<AuthBloc>().state;
+    if (user is AuthAuthenticated) {
+      context.read<BudgetBloc>().add(RecalculateBudgetSpent(user.user.id));
+    }
+  }
 
-              if (state is BudgetError) {
-                return _buildErrorState(state.message);
-              }
-
-              return _buildEmptyState();
-            },
-          ),
+  void _openAddBudget() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: context.read<BudgetBloc>()),
+            BlocProvider.value(value: context.read<AuthBloc>()),
+          ],
+          child: const AddBudgetScreen(),
         ),
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    return EmptyStateView(
-      icon: LucideIcons.wallet,
-      iconColor: AppColors.primary,
-      title: 'No Budgets Yet',
-      titleFontSize: 24,
-      subtitle: 'Create your first budget to start tracking your spending',
-      actionLabel: 'Create Budget',
-      actionIcon: LucideIcons.plus,
-      spacingBeforeAction: 24,
-      actionStyle: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.textInverse,
-      ),
-      onAction: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (_) => MultiBlocProvider(
-                  providers: [
-                    BlocProvider.value(value: context.read<BudgetBloc>()),
-                    BlocProvider.value(value: context.read<AuthBloc>()),
-                  ],
-                  child: const AddBudgetScreen(),
-                )),
-      ),
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 120),
+      children: [
+        _buildBudgetHero(),
+        SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.52,
+          child: EmptyStateView(
+            icon: LucideIcons.coins,
+            iconColor: AppColors.primary,
+            title: 'No Budgets Yet',
+            titleFontSize: 24,
+            subtitle:
+                'Create your first budget to start tracking your spending',
+            actionLabel: 'Create Budget',
+            actionIcon: LucideIcons.plus,
+            spacingBeforeAction: 24,
+            actionStyle: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textInverse,
+            ),
+            onAction: _openAddBudget,
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildErrorState(String message) {
-    return EmptyStateView(
-      icon: LucideIcons.alertCircle,
-      iconColor: AppColors.error,
-      title: 'Error Loading Budgets',
-      subtitle: message,
-      actionLabel: 'Retry',
-      onAction: () {
-        final user = context.read<AuthBloc>().state;
-        if (user is AuthAuthenticated) {
-          context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
-        }
-      },
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 120),
+      children: [
+        _buildBudgetHero(),
+        SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.52,
+          child: EmptyStateView(
+            icon: LucideIcons.alertCircle,
+            iconColor: AppColors.error,
+            title: 'Error Loading Budgets',
+            subtitle: message,
+            actionLabel: 'Retry',
+            onAction: () {
+              final user = context.read<AuthBloc>().state;
+              if (user is AuthAuthenticated) {
+                context.read<BudgetBloc>().add(LoadBudgets(user.user.id));
+              }
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -179,44 +196,56 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
-      padding: const EdgeInsets.only(bottom: 120, left: 16, right: 16, top: 16),
+      padding: const EdgeInsets.only(bottom: 120),
       children: [
-        _buildOverviewCards(
-          stats: stats,
-          activeCount: activeBudgets.length,
-          inactiveCount: inactiveBudgets.length,
+        _buildBudgetHero(activeCount: activeBudgets.length),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+          child: _buildOverviewCards(
+            stats: stats,
+            activeCount: activeBudgets.length,
+            inactiveCount: inactiveBudgets.length,
+          ),
         ),
-        _buildForecastCard(activeBudgets),
-        _buildAdaptivePlanCard(activeBudgets),
-        _buildSectionHeading(
-          title: 'Active Budgets',
-          subtitle: '',
-          count: activeBudgets.length,
-        ),
-        if (activeBudgets.isEmpty)
-          _buildNoActiveBudgetsCard(inactiveCount: inactiveBudgets.length),
-        ...activeBudgets.map((budget) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: BudgetCard(
-                budget: budget,
-                onDelete: () => _showDeleteBudgetDialog(budget),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            children: [
+              _buildForecastCard(activeBudgets),
+              _buildAdaptivePlanCard(activeBudgets),
+              _buildSectionHeading(
+                title: 'Active Budgets',
+                subtitle: '',
+                count: activeBudgets.length,
               ),
-            )),
-        if (inactiveBudgets.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _buildInactiveSectionHeader(inactiveBudgets.length),
-          if (_showInactiveBudgets) ...[
-            const SizedBox(height: 12),
-            ...inactiveBudgets.map((budget) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: BudgetCard(
-                    budget: budget,
-                    muted: true,
-                    onDelete: () => _showDeleteBudgetDialog(budget),
-                  ),
-                )),
-          ],
-        ],
+              if (activeBudgets.isEmpty)
+                _buildNoActiveBudgetsCard(
+                    inactiveCount: inactiveBudgets.length),
+              ...activeBudgets.map((budget) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: BudgetCard(
+                      budget: budget,
+                      onDelete: () => _showDeleteBudgetDialog(budget),
+                    ),
+                  )),
+              if (inactiveBudgets.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _buildInactiveSectionHeader(inactiveBudgets.length),
+                if (_showInactiveBudgets) ...[
+                  const SizedBox(height: 12),
+                  ...inactiveBudgets.map((budget) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: BudgetCard(
+                          budget: budget,
+                          muted: true,
+                          onDelete: () => _showDeleteBudgetDialog(budget),
+                        ),
+                      )),
+                ],
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -257,7 +286,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 Text(title,
                     style: TextStyle(
                         color: colorScheme.onSurface,
-                        fontWeight: FontWeight.w800)),
+                        fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
                 Text(detail,
                     style: TextStyle(
@@ -309,7 +338,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 child: Text(
                   'Adaptive spending plan',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                 ),
               ),
@@ -364,7 +393,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     final colorScheme = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.only(top: 20, bottom: 12),
+      padding: const EdgeInsets.only(top: 28, bottom: 14),
       child: Row(
         children: [
           Expanded(
@@ -373,31 +402,34 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               children: [
                 Text(
                   title,
-                  style: AppTheme.sectionTitleStyle(context)
-                      .copyWith(fontSize: 20),
-                ),
-                if (subtitle.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurface.withValues(alpha: 0.65),
-                    ),
+                  style: AppTheme.sectionTitleStyle(context).copyWith(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
                   ),
-                ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle.isEmpty ? 'Keep every plan within reach' : subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurface.withValues(alpha: 0.55),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               count.toString(),
               style: const TextStyle(
-                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
                 color: AppColors.primary,
               ),
             ),
@@ -420,40 +452,108 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           activeCount: activeCount,
           inactiveCount: inactiveCount,
         ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: StatTile(
-                label: 'Budgeted',
-                value: CurrencyService().formatAmount(stats.totalBudgetAmount),
-                icon: LucideIcons.landmark,
-                accentColor: AppColors.primary,
-                direction: Axis.horizontal,
-                bordered: true,
-                radius: AppTheme.controlRadius,
-                padding: const EdgeInsets.all(14),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: StatTile(
-                label: 'Over Budget',
-                value: '${stats.overBudgetCount}',
-                icon: LucideIcons.alertTriangle,
-                accentColor: stats.overBudgetCount > 0
-                    ? AppColors.error
-                    : AppColors.success,
-                direction: Axis.horizontal,
-                bordered: true,
-                radius: AppTheme.controlRadius,
-                padding: const EdgeInsets.all(14),
-              ),
-            ),
-          ],
-        ),
         const SizedBox(height: 12),
+        _buildBudgetMetrics(stats),
       ],
+    );
+  }
+
+  Widget _buildBudgetMetrics(_BudgetStats stats) {
+    final statusColor =
+        stats.overBudgetCount > 0 ? AppColors.error : AppColors.success;
+
+    return Row(
+      children: [
+        Expanded(
+          child: _buildBudgetMetric(
+            icon: LucideIcons.coins,
+            label: 'Total planned',
+            value: CurrencyService().formatAmount(stats.totalBudgetAmount),
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildBudgetMetric(
+            icon: stats.overBudgetCount > 0
+                ? LucideIcons.alertTriangle
+                : LucideIcons.circleCheck,
+            label: stats.overBudgetCount > 0 ? 'Needs attention' : 'On track',
+            value: stats.overBudgetCount > 0
+                ? '${stats.overBudgetCount} over budget'
+                : 'All budgets healthy',
+            color: statusColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBudgetMetric({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      constraints: const BoxConstraints(minHeight: 82),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.045),
+            blurRadius: 18,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(icon, color: color, size: 19),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colorScheme.onSurface.withValues(alpha: 0.56),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -474,69 +574,138 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       utilizationColor = AppColors.success;
     }
 
+    final utilization = (stats.utilizationPercentage / 100).clamp(0.0, 1.0);
+    final totalOver = stats.totalRemainingAmount < 0;
+
     return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: AppTheme.surfaceDecoration(context),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Text(
-                'Budget Health',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w700,
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(
+                  LucideIcons.chartNoAxesCombined,
+                  color: AppColors.primary,
+                  size: 19,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Budget health',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Across your active plans',
+                      style: TextStyle(
+                        color: colorScheme.onSurface.withValues(alpha: 0.55),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               _heroTag(
                 label: '$activeCount active',
                 color: AppColors.primary,
-                textColor: colorScheme.onSurface,
+                textColor: AppColors.primary,
               ),
-              if (inactiveCount > 0) ...[
-                const SizedBox(width: 8),
-                _heroTag(
-                  label: '$inactiveCount inactive',
-                  color: AppColors.warning,
-                  textColor: colorScheme.onSurface,
-                ),
-              ],
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            '${stats.utilizationPercentage.toStringAsFixed(1)}%',
-            style: theme.textTheme.headlineLarge?.copyWith(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Spend visibility across your active budgets.',
-            style: AppTheme.sectionSubtitleStyle(context),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            height: 8,
-            decoration: BoxDecoration(
-              color: colorScheme.outline.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(99),
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: (stats.utilizationPercentage / 100).clamp(0.0, 1.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: utilizationColor,
-                  borderRadius: BorderRadius.circular(99),
+          const SizedBox(height: 22),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 82,
+                height: 82,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 82,
+                      height: 82,
+                      child: CircularProgressIndicator(
+                        value: utilization,
+                        strokeWidth: 8,
+                        strokeCap: StrokeCap.round,
+                        backgroundColor:
+                            AppColors.primary.withValues(alpha: 0.1),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          utilizationColor,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${stats.utilizationPercentage.toStringAsFixed(0)}%',
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      totalOver
+                          ? 'Spending is above plan'
+                          : 'Spending is on track',
+                      style: TextStyle(
+                        color: totalOver ? AppColors.error : AppColors.success,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '${CurrencyService().formatAmount(stats.totalSpentAmount)} spent of ${CurrencyService().formatAmount(stats.totalBudgetAmount)} planned',
+                      style: TextStyle(
+                        color: colorScheme.onSurface.withValues(alpha: 0.62),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -546,13 +715,28 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 textColor: colorScheme.onSurface,
               ),
               _heroMeta(
-                label: 'Remaining',
-                value:
-                    CurrencyService().formatAmount(stats.totalRemainingAmount),
-                textColor: colorScheme.onSurface,
+                label: stats.totalRemainingAmount < 0 ? 'Over budget' : 'Left',
+                value: CurrencyService().formatAmount(
+                  stats.totalRemainingAmount,
+                ),
+                textColor: stats.totalRemainingAmount < 0
+                    ? AppColors.error
+                    : colorScheme.onSurface,
+                alignEnd: true,
               ),
             ],
           ),
+          if (inactiveCount > 0) ...[
+            const SizedBox(height: 12),
+            Text(
+              '$inactiveCount inactive ${inactiveCount == 1 ? 'budget' : 'budgets'} not included',
+              style: TextStyle(
+                color: colorScheme.onSurface.withValues(alpha: 0.48),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -584,9 +768,11 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     required String label,
     required String value,
     required Color textColor,
+    bool alignEnd = false,
   }) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment:
+          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         Text(
           label,
@@ -806,120 +992,129 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   Widget _buildBudgetsSkeleton() {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(bottom: 120),
       children: [
-        // Overview cards skeleton
-        SkeletonComponents.card(
-          height: 100,
-          children: [
-            Row(
-              children: [
-                SkeletonComponents.circle(size: 48, context: context),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        _buildBudgetHero(),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Overview cards skeleton
+              SkeletonComponents.card(
+                height: 100,
+                children: [
+                  Row(
                     children: [
-                      SkeletonComponents.textLine(width: 100, height: 14),
-                      const SizedBox(height: 4),
-                      SkeletonComponents.textLine(width: 80, height: 20),
-                      const SizedBox(height: 2),
-                      SkeletonComponents.textLine(width: 60, height: 12),
+                      SkeletonComponents.circle(size: 48, context: context),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SkeletonComponents.textLine(width: 100, height: 14),
+                            const SizedBox(height: 4),
+                            SkeletonComponents.textLine(width: 80, height: 20),
+                            const SizedBox(height: 2),
+                            SkeletonComponents.textLine(width: 60, height: 12),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                ),
-              ],
-            ),
-          ],
-          context: context,
-        ),
-        const SizedBox(height: 12),
+                ],
+                context: context,
+              ),
+              const SizedBox(height: 12),
 
-        // Progress card skeleton
-        SkeletonComponents.card(
-          height: 140,
-          children: [
-            Row(
-              children: [
-                SkeletonComponents.circle(size: 48, context: context),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              // Progress card skeleton
+              SkeletonComponents.card(
+                height: 140,
+                children: [
+                  Row(
                     children: [
-                      SkeletonComponents.textLine(width: 120, height: 14),
-                      const SizedBox(height: 4),
-                      SkeletonComponents.textLine(width: 60, height: 20),
+                      SkeletonComponents.circle(size: 48, context: context),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SkeletonComponents.textLine(width: 120, height: 14),
+                            const SizedBox(height: 4),
+                            SkeletonComponents.textLine(width: 60, height: 20),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SkeletonComponents.textLine(width: double.infinity, height: 8),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SkeletonComponents.textLine(width: 40, height: 12),
-                    SkeletonComponents.textLine(width: 60, height: 14),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    SkeletonComponents.textLine(width: 50, height: 12),
-                    SkeletonComponents.textLine(width: 70, height: 14),
-                  ],
-                ),
-              ],
-            ),
-          ],
-          context: context,
-        ),
-        const SizedBox(height: 12),
-
-        // Total spending card skeleton
-        SkeletonComponents.card(
-          height: 100,
-          children: [
-            Row(
-              children: [
-                SkeletonComponents.circle(size: 48, context: context),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 16),
+                  SkeletonComponents.textLine(
+                      width: double.infinity, height: 8),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      SkeletonComponents.textLine(width: 100, height: 14),
-                      const SizedBox(height: 4),
-                      SkeletonComponents.textLine(width: 80, height: 20),
-                      const SizedBox(height: 2),
-                      SkeletonComponents.textLine(width: 60, height: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SkeletonComponents.textLine(width: 40, height: 12),
+                          SkeletonComponents.textLine(width: 60, height: 14),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          SkeletonComponents.textLine(width: 50, height: 12),
+                          SkeletonComponents.textLine(width: 70, height: 14),
+                        ],
+                      ),
                     ],
                   ),
-                ),
-              ],
-            ),
-          ],
-          context: context,
+                ],
+                context: context,
+              ),
+              const SizedBox(height: 12),
+
+              // Total spending card skeleton
+              SkeletonComponents.card(
+                height: 100,
+                children: [
+                  Row(
+                    children: [
+                      SkeletonComponents.circle(size: 48, context: context),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SkeletonComponents.textLine(width: 100, height: 14),
+                            const SizedBox(height: 4),
+                            SkeletonComponents.textLine(width: 80, height: 20),
+                            const SizedBox(height: 2),
+                            SkeletonComponents.textLine(width: 60, height: 12),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                context: context,
+              ),
+              const SizedBox(height: 16),
+
+              // Heading skeleton
+              SkeletonComponents.textLine(width: 120, height: 20),
+              const SizedBox(height: 16),
+
+              // Budget cards skeleton
+              ...List.generate(
+                  3,
+                  (index) => Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: SkeletonComponents.budgetCard(context: context),
+                      )),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
-
-        // Heading skeleton
-        SkeletonComponents.textLine(width: 120, height: 20),
-        const SizedBox(height: 16),
-
-        // Budget cards skeleton
-        ...List.generate(
-            3,
-            (index) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: SkeletonComponents.budgetCard(context: context),
-                )),
       ],
     );
   }

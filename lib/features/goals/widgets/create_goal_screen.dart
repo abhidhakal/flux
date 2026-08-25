@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/premium_upgrade_prompt.dart';
 import '../../../core/services/currency_service.dart';
 import '../../../shared/widgets/field_label.dart';
+import '../../../shared/widgets/app_form_fields.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class CreateGoalScreen extends StatefulWidget {
@@ -169,13 +170,11 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildSectionTitle('Goal Name', icon: LucideIcons.flag),
+                    _buildSectionTitle('Goal Name', icon: LucideIcons.goal),
                     const SizedBox(height: 8),
-                    TextFormField(
+                    AppTextField(
                       controller: _nameController,
-                      decoration: _inputDecoration(
-                        hintText: 'e.g., Emergency Fund',
-                      ),
+                      hintText: 'e.g., Emergency Fund',
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Please enter a goal name';
@@ -190,14 +189,10 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
                     _buildSectionTitle('Target Amount',
                         icon: LucideIcons.wallet),
                     const SizedBox(height: 8),
-                    TextFormField(
+                    AppNumberField(
                       controller: _targetAmountController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      decoration: _inputDecoration(
-                        hintText: 'Enter target amount',
-                        prefixText: '${CurrencyService().symbol} ',
-                      ),
+                      hintText: 'Enter target amount',
+                      prefixText: '${CurrencyService().symbol} ',
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Please enter target amount';
@@ -231,12 +226,10 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
                     _buildSectionTitle('Description',
                         icon: LucideIcons.fileText),
                     const SizedBox(height: 8),
-                    TextFormField(
+                    AppTextField(
                       controller: _descriptionController,
                       maxLines: 2,
-                      decoration: _inputDecoration(
-                        hintText: 'Add details (optional)',
-                      ),
+                      hintText: 'Add details (optional)',
                     ),
 
                     const SizedBox(height: 20),
@@ -279,56 +272,16 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
     );
   }
 
-  InputDecoration _inputDecoration({
-    required String hintText,
-    String? prefixText,
-  }) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return InputDecoration(
-      hintText: hintText,
-      prefixText: prefixText,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(
-          color: colorScheme.outline.withValues(alpha: 0.4),
-          width: 1,
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: colorScheme.error, width: 1),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: colorScheme.error, width: 2),
-      ),
-      hintStyle: theme.textTheme.bodyLarge?.copyWith(
-        color: colorScheme.onSurface.withValues(alpha: 0.45),
-      ),
-      prefixStyle: theme.textTheme.bodyLarge?.copyWith(
-        color: colorScheme.onSurface,
-        fontWeight: FontWeight.w500,
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    );
-  }
-
   Widget _buildDateSelector(ColorScheme colorScheme) {
     final daysRemaining = _selectedDate.difference(DateTime.now()).inDays;
 
     return InkWell(
       onTap: _selectDate,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
           border: Border.all(color: colorScheme.outline.withValues(alpha: 0.4)),
         ),
         child: Row(
@@ -337,7 +290,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
               ),
               child: const Icon(LucideIcons.calendar,
                   size: 18, color: AppColors.primary),
@@ -399,7 +352,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
               color: isSelected
                   ? AppColors.primary.withValues(alpha: 0.1)
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
               border: Border.all(
                 color: isSelected
                     ? AppColors.primary
@@ -474,7 +427,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
       ),
       child: Column(
         children: [
@@ -543,7 +496,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.1)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
           border: Border.all(
             color: isSelected
                 ? AppColors.primary
@@ -576,7 +529,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
           ),
         ),
         child: _isLoading

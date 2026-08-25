@@ -18,27 +18,24 @@ class TrendAnalysisChart extends StatelessWidget {
     if (transactions.isEmpty) {
       return Container(
         height: 200,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppTheme.radius12),
-          border: Border.all(
-              color:
-                  Theme.of(context).colorScheme.outline.withValues(alpha: 0.1)),
+        decoration: AppTheme.surfaceDecoration(
+          context,
+          radius: AppTheme.cardRadius,
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 LucideIcons.barChart3,
                 size: 48,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               SizedBox(height: AppTheme.spacing8),
               Text(
                 'No trend data available',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
@@ -47,7 +44,7 @@ class TrendAnalysisChart extends StatelessWidget {
               Text(
                 'Add some records to see income vs expense trends',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
                 ),
               ),
@@ -63,12 +60,9 @@ class TrendAnalysisChart extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radius12),
-        border: Border.all(
-            color:
-                Theme.of(context).colorScheme.outline.withValues(alpha: 0.1)),
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        radius: AppTheme.cardRadius,
       ),
       child: Column(
         children: [
@@ -129,7 +123,9 @@ class TrendAnalysisChart extends StatelessWidget {
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(
-                                    color: AppColors.textSecondary,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                     fontWeight: FontWeight.w600,
                                     fontSize:
                                         9, // Reduced font size for consistency
@@ -155,7 +151,9 @@ class TrendAnalysisChart extends StatelessWidget {
                             CurrencyService().formatAmountCompact(value),
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: AppColors.textSecondary,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
                                       fontWeight: FontWeight.w600,
                                       fontSize:
                                           9, // Reduced font size to prevent overflow

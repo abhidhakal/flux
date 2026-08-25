@@ -9,6 +9,7 @@ import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/app_bottom_sheet.dart';
 import '../../../shared/widgets/field_label.dart';
+import '../../../shared/widgets/app_form_fields.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class EditBudgetScreen {
@@ -154,13 +155,9 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
             children: [
               _buildSectionTitle('Budget Name', icon: LucideIcons.type),
               const SizedBox(height: 8),
-              TextFormField(
+              AppTextField(
                 controller: _nameController,
-                decoration: InputDecoration(
-                  hintText: 'e.g., Monthly Food Budget',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
+                hintText: 'e.g., Monthly Food Budget',
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter a budget name';
@@ -171,15 +168,10 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
               const SizedBox(height: 20),
               _buildSectionTitle('Amount', icon: LucideIcons.dollarSign),
               const SizedBox(height: 8),
-              TextFormField(
+              AppNumberField(
                 controller: _amountController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: 'Enter amount',
-                  prefixText: '${CurrencyService().symbol} ',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
+                hintText: 'Enter amount',
+                prefixText: '${CurrencyService().symbol} ',
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter an amount';
@@ -194,18 +186,10 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
               const SizedBox(height: 20),
               _buildSectionTitle('Weekly Target', icon: LucideIcons.target),
               const SizedBox(height: 8),
-              TextFormField(
+              AppNumberField(
                 controller: _weeklyTargetController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Optional spending limit per week',
-                  prefixText: '${CurrencyService().symbol} ',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
+                hintText: 'Optional spending limit per week',
+                prefixText: '${CurrencyService().symbol} ',
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) return null;
                   final amount = double.tryParse(value);
@@ -218,12 +202,8 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
               const SizedBox(height: 20),
               _buildSectionTitle('Category', icon: LucideIcons.tag),
               const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedCategory,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
+              AppDropdownField<String>(
+                value: _selectedCategory,
                 items: AppCategories.expenseCategories.map((category) {
                   return DropdownMenuItem(
                     value: category,
@@ -270,7 +250,8 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.formFieldRadius)),
                 ),
                 child: _isLoading
                     ? const SizedBox(
@@ -336,7 +317,7 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                           .withValues(alpha: 0.4),
                   width: isSelected ? 2 : 1,
                 ),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
               ),
               child: Text(
                 period.name[0].toUpperCase() + period.name.substring(1),
@@ -366,7 +347,7 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
       ),
       child: SwitchListTile(
         title: Text(
@@ -455,7 +436,7 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,17 +457,11 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
             ),
           ),
           const SizedBox(height: 10),
-          TextFormField(
+          AppNumberField(
             controller: _adjustmentController,
-            keyboardType: const TextInputType.numberWithOptions(
-              decimal: true,
-              signed: true,
-            ),
-            decoration: InputDecoration(
-              hintText: 'e.g. 50 or -25',
-              prefixText: '${CurrencyService().symbol} ',
-              border: const OutlineInputBorder(),
-            ),
+            hintText: 'e.g. 50 or -25',
+            prefixText: '${CurrencyService().symbol} ',
+            signed: true,
             validator: (value) {
               if (value == null || value.trim().isEmpty) return null;
               if (double.tryParse(value) == null) {

@@ -34,7 +34,7 @@ class ForYouActionsCard extends StatelessWidget {
 
     return AppCard(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      subtle: true,
+      radius: 24,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -43,7 +43,7 @@ class ForYouActionsCard extends StatelessWidget {
               Text(
                 insights.isEmpty ? 'You are on track' : 'For you',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
               ),
               const Spacer(),
@@ -126,7 +126,7 @@ class _InsightRow extends StatelessWidget {
                 Text(
                   insight.title,
                   style: TextStyle(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     fontSize: featured ? 14 : 13,
                   ),
                 ),

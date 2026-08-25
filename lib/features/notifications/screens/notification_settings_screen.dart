@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/premium_page_hero.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/constants/app_theme.dart';
@@ -123,33 +124,33 @@ class _NotificationSettingsScreenState
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('Notifications'),
-        backgroundColor: colorScheme.surface,
-        foregroundColor: colorScheme.onSurface,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        titleTextStyle: theme.textTheme.displaySmall?.copyWith(
-          fontSize: 24,
-          letterSpacing: -1,
-        ),
+      backgroundColor: AppTheme.pageSurface(context),
+      body: Column(
+        children: [
+          const PremiumPageHero(
+            title: 'Notifications',
+            subtitle: 'Choose which alerts Flux can send',
+            showBackButton: true,
+          ),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildPushNotificationCard(colorScheme),
+                        const SizedBox(height: 16),
+                        _buildAutomaticAlertsCard(colorScheme),
+                        const SizedBox(height: 16),
+                        _buildScheduledNotificationsCard(colorScheme),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildPushNotificationCard(colorScheme),
-                  const SizedBox(height: 16),
-                  _buildAutomaticAlertsCard(colorScheme),
-                  const SizedBox(height: 16),
-                  _buildScheduledNotificationsCard(colorScheme),
-                ],
-              ),
-            ),
     );
   }
 
@@ -253,7 +254,7 @@ class _NotificationSettingsScreenState
           _buildAlertToggle(
             'Budget Alerts',
             'When you reach 80%, 90%, or exceed your budget',
-            LucideIcons.wallet,
+            LucideIcons.coins,
             _budgetAlerts,
             (value) {
               setState(() => _budgetAlerts = value);
@@ -265,7 +266,7 @@ class _NotificationSettingsScreenState
           _buildAlertToggle(
             'Goal Milestones',
             'When you reach 25%, 50%, 90%, or complete a goal',
-            LucideIcons.flag,
+            LucideIcons.goal,
             _goalMilestones,
             (value) {
               setState(() => _goalMilestones = value);

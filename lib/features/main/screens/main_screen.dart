@@ -62,7 +62,7 @@ class _MainScreenState extends State<MainScreen> {
             }
           },
           child: Scaffold(
-            backgroundColor: AppTheme.pageBackground(context),
+            backgroundColor: AppTheme.pageSurface(context),
             extendBody: true,
             body: Column(
               children: [
@@ -135,7 +135,7 @@ class _MainScreenState extends State<MainScreen> {
                             _navItem(LucideIcons.home, 'Home',
                                 selectedColor: navTheme.selectedItemColor ??
                                     colorScheme.primary),
-                            _navItem(LucideIcons.wallet, 'Budgets',
+                            _navItem(LucideIcons.coins, 'Budgets',
                                 selectedColor: navTheme.selectedItemColor ??
                                     colorScheme.primary),
                             _navItem(LucideIcons.scrollText, 'Transactions',
@@ -167,8 +167,18 @@ class _MainScreenState extends State<MainScreen> {
   BottomNavigationBarItem _navItem(IconData icon, String label,
       {required Color selectedColor}) {
     return BottomNavigationBarItem(
-      icon: Icon(icon, size: 21),
-      activeIcon: Icon(icon, size: 23, color: selectedColor),
+      icon: Padding(
+        padding: const EdgeInsets.only(top: 2, bottom: 4),
+        child: Icon(icon, size: 21),
+      ),
+      activeIcon: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+        decoration: BoxDecoration(
+          color: selectedColor.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Icon(icon, size: 21, color: selectedColor),
+      ),
       label: label,
     );
   }

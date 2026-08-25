@@ -21,6 +21,8 @@ import '../../../shared/widgets/page_transitions.dart';
 import '../../../shared/widgets/app_bottom_sheet.dart';
 import '../../../shared/widgets/empty_state_view.dart';
 import '../../../shared/widgets/stat_tile.dart';
+import '../../../shared/widgets/premium_page_hero.dart';
+import '../../../shared/widgets/app_section_header.dart';
 import '../../../core/services/feature_flag_service.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -65,93 +67,114 @@ class _GoalsScreenState extends State<GoalsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Scaffold(
-      backgroundColor: AppTheme.pageBackground(context),
-      appBar: AppBar(
-        title: const Text('Financial Goals'),
-        centerTitle: false,
-        backgroundColor: AppTheme.pageBackground(context),
-        foregroundColor: colorScheme.onSurface,
-        iconTheme: IconThemeData(color: colorScheme.onSurface),
-        titleTextStyle: theme.textTheme.displaySmall?.copyWith(
-          fontSize: 24,
-          letterSpacing: -1,
-          color: colorScheme.onSurface,
-        ),
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: colorScheme.onSurface.withValues(alpha: 0.5),
-          tabs: const [
-            Tab(text: 'Goals'),
-            Tab(text: 'Completed'),
-            Tab(text: 'Insights'),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(LucideIcons.plus, color: colorScheme.onSurface),
-            onPressed: () => _showAddGoalOptions(context),
+      backgroundColor: AppTheme.pageSurface(context),
+      body: Column(
+        children: [
+          PremiumPageHero(
+            title: 'Goals',
+            subtitle: 'Stay focused on what matters most',
+            showBackButton: true,
+            actions: [
+              PremiumPageHeroAction(
+                icon: LucideIcons.plus,
+                tooltip: 'Add goal',
+                onPressed: () => _showAddGoalOptions(context),
+              ),
+            ],
+          ),
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            padding: const EdgeInsets.all(4),
+            decoration: AppTheme.surfaceDecoration(
+              context,
+              radius: AppTheme.cardRadius,
+              subtle: true,
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicatorPadding: EdgeInsets.zero,
+              dividerColor: Colors.transparent,
+              labelColor: Colors.white,
+              labelStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+              unselectedLabelColor: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.5),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+              tabs: const [
+                Tab(text: 'Goals'),
+                Tab(text: 'Completed'),
+                Tab(text: 'Insights'),
+              ],
+            ),
+          ),
+          Expanded(
+            child: BlocListener<AuthBloc, AuthState>(
+              listener: (context, authState) {
+                if (authState is AuthAuthenticated) {
+                  _loadGoalsIfNeeded(context);
+                }
+              },
+              child: BlocConsumer<GoalsBloc, GoalsState>(
+                // Only rebuild on data states, not on success/transient states
+                buildWhen: (previous, current) {
+                  return current is GoalsLoaded ||
+                      current is GoalsLoading ||
+                      current is GoalsInitial ||
+                      current is GoalsError;
+                },
+                listener: (context, state) {
+                  // Show snackbar on success/error
+                  if (state is GoalsSuccess) {
+                    AppSnackbar.showSuccess(context, message: state.message);
+                  } else if (state is GoalsError) {
+                    AppSnackbar.showError(context, message: state.message);
+                  }
+                },
+                builder: (context, state) {
+                  if (state is GoalsInitial) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _loadGoalsIfNeeded(context);
+                    });
+                    return _buildGoalsSkeleton();
+                  }
+
+                  if (state is GoalsLoading) {
+                    return _buildGoalsSkeleton();
+                  }
+
+                  List<Goal> goals = [];
+                  if (state is GoalsLoaded) {
+                    goals = state.goals;
+                    WidgetService.refreshWidgets(context);
+                  }
+
+                  if (goals.isNotEmpty) {
+                    return _buildTabBarView(goals);
+                  }
+
+                  if (state is GoalsError) {
+                    return _buildErrorState(state.message);
+                  }
+
+                  return _buildEmptyState();
+                },
+              ),
+            ),
           ),
         ],
-      ),
-      body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, authState) {
-          if (authState is AuthAuthenticated) {
-            _loadGoalsIfNeeded(context);
-          }
-        },
-        child: BlocConsumer<GoalsBloc, GoalsState>(
-          // Only rebuild on data states, not on success/transient states
-          buildWhen: (previous, current) {
-            return current is GoalsLoaded ||
-                current is GoalsLoading ||
-                current is GoalsInitial ||
-                current is GoalsError;
-          },
-          listener: (context, state) {
-            // Show snackbar on success/error
-            if (state is GoalsSuccess) {
-              AppSnackbar.showSuccess(context, message: state.message);
-            } else if (state is GoalsError) {
-              AppSnackbar.showError(context, message: state.message);
-            }
-          },
-          builder: (context, state) {
-            if (state is GoalsInitial) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _loadGoalsIfNeeded(context);
-              });
-              return _buildGoalsSkeleton();
-            }
-
-            if (state is GoalsLoading) {
-              return _buildGoalsSkeleton();
-            }
-
-            List<Goal> goals = [];
-            if (state is GoalsLoaded) {
-              goals = state.goals;
-              WidgetService.refreshWidgets(context);
-            }
-
-            if (goals.isNotEmpty) {
-              return _buildTabBarView(goals);
-            }
-
-            if (state is GoalsError) {
-              return _buildErrorState(state.message);
-            }
-
-            return _buildEmptyState();
-          },
-        ),
       ),
     );
   }
@@ -282,33 +305,38 @@ class _GoalsScreenState extends State<GoalsScreen>
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(4),
                 decoration: AppTheme.surfaceDecoration(context,
                     radius: AppTheme.cardRadius, subtle: true),
-                child: Column(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(child: _buildFilterChip('All', colorScheme)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                            child: _buildFilterChip('Active', colorScheme)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                            child: _buildFilterChip('Paused', colorScheme)),
-                      ],
-                    ),
-                    if (filteredGoals.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      _buildGoalsOverview(filteredGoals, colorScheme),
-                    ],
+                    _buildFilterChip('All', colorScheme),
+                    const SizedBox(width: 4),
+                    _buildFilterChip('Active', colorScheme),
+                    const SizedBox(width: 4),
+                    _buildFilterChip('Paused', colorScheme),
                   ],
                 ),
               ),
             ),
           ),
+          if (filteredGoals.isNotEmpty) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: _buildGoalsOverview(filteredGoals, colorScheme),
+              ),
+            ),
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
+                child: AppSectionHeader(title: 'Your goals'),
+              ),
+            ),
+          ],
           // Goals List
           if (filteredGoals.isEmpty)
             SliverFillRemaining(
@@ -316,7 +344,7 @@ class _GoalsScreenState extends State<GoalsScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(LucideIcons.flag,
+                    Icon(LucideIcons.goal,
                         size: 64, color: colorScheme.onSurfaceVariant),
                     const SizedBox(height: 16),
                     Text(
@@ -332,7 +360,7 @@ class _GoalsScreenState extends State<GoalsScreen>
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) => GoalCard(
@@ -374,15 +402,18 @@ class _GoalsScreenState extends State<GoalsScreen>
         });
       },
       selectedColor: colorScheme.primary,
+      showCheckmark: false,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       labelStyle: TextStyle(
         color:
             isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
       ),
       backgroundColor: AppTheme.cardSurface(context),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      side: BorderSide(
-          color: colorScheme.outline.withValues(alpha: isSelected ? 0 : 0.08)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      side: BorderSide.none,
     );
   }
 
@@ -397,8 +428,11 @@ class _GoalsScreenState extends State<GoalsScreen>
         plans.fold<double>(0, (total, plan) => total + plan.monthlyAmount);
 
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: AppTheme.surfaceDecoration(context, radius: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        radius: AppTheme.cardRadius,
+      ),
       child: Column(
         children: [
           Row(
@@ -480,11 +514,11 @@ class _GoalsScreenState extends State<GoalsScreen>
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(16),
                     child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration:
-                          AppTheme.surfaceDecoration(context, radius: 20),
+                      padding: const EdgeInsets.all(16),
+                      decoration: AppTheme.surfaceDecoration(context,
+                          radius: AppTheme.cardRadius),
                       child: Row(
                         children: [
                           Container(
@@ -520,7 +554,7 @@ class _GoalsScreenState extends State<GoalsScreen>
                   ),
                 ),
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) => GoalCard(
@@ -568,19 +602,17 @@ class _GoalsScreenState extends State<GoalsScreen>
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Statistics',
-                style:
-                    AppTheme.sectionTitleStyle(context).copyWith(fontSize: 18)),
+            const AppSectionHeader(title: 'Statistics'),
             const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
                     child: _statCard('Active', activeGoals.length.toString(),
-                        LucideIcons.flag, AppColors.primary)),
+                        LucideIcons.goal, AppColors.primary)),
                 const SizedBox(width: 12),
                 Expanded(
                     child: _statCard(
@@ -613,9 +645,7 @@ class _GoalsScreenState extends State<GoalsScreen>
               ],
             ),
             const SizedBox(height: 24),
-            Text('Progress Chart',
-                style:
-                    AppTheme.sectionTitleStyle(context).copyWith(fontSize: 18)),
+            const AppSectionHeader(title: 'Progress Chart'),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
@@ -637,7 +667,7 @@ class _GoalsScreenState extends State<GoalsScreen>
       value: value,
       icon: icon,
       accentColor: color,
-      radius: 20,
+      radius: AppTheme.cardRadius,
       valueFirst: true,
       centered: true,
       valueFontSize: 24,
@@ -663,7 +693,7 @@ class _GoalsScreenState extends State<GoalsScreen>
   Widget _buildEmptyState() {
     final colorScheme = Theme.of(context).colorScheme;
     return EmptyStateView(
-      icon: LucideIcons.flag,
+      icon: LucideIcons.goal,
       iconColor: colorScheme.primary,
       title: 'No Goals Yet',
       titleFontSize: 24,

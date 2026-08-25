@@ -24,16 +24,20 @@ class NotificationService {
   // Get user notifications
   Future<List<Notification>> getUserNotifications(String userId) async {
     try {
+      // Keep this query to a single equality filter. Ordering by createdAt
+      // requires a composite Firestore index and made the notifications page
+      // wait/fail on projects where that index was not deployed.
       final querySnapshot = await _firestore
           .collection('notifications')
           .where('userId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
           .limit(notificationFetchLimit)
           .get();
 
-      return querySnapshot.docs
+      final notifications = querySnapshot.docs
           .map((doc) => Notification.fromJson(doc.data()))
           .toList();
+      notifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return notifications;
     } catch (e) {
       debugPrint(
           '❌ NOTIFICATION SERVICE: Error getting user notifications: $e');
@@ -110,11 +114,12 @@ class NotificationService {
       final querySnapshot = await _firestore
           .collection('notifications')
           .where('userId', isEqualTo: userId)
-          .where('status', isNotEqualTo: NotificationStatus.unread.name)
           .get();
 
       final stale = querySnapshot.docs.where((doc) {
-        final createdAt = doc.data()['createdAt'] as String?;
+        final data = doc.data();
+        if (data['status'] == NotificationStatus.unread.name) return false;
+        final createdAt = data['createdAt'] as String?;
         return createdAt != null && createdAt.compareTo(cutoff) < 0;
       });
 

@@ -4,6 +4,7 @@ import '../../../core/constants/app_theme.dart';
 import '../../../core/models/user_model.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/app_form_fields.dart';
 import '../../auth/auth_bloc.dart';
 import '../../../shared/widgets/app_bottom_sheet.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -48,10 +49,42 @@ void showEditProfileDialog(BuildContext context, User user) {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Edit Profile',
-                      style: theme.textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 32),
+                  Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(
+                          LucideIcons.userRoundPen,
+                          color: AppColors.primary,
+                          size: 21,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Edit Profile',
+                                style: theme.textTheme.titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 3),
+                            Text(
+                              'Update your account details securely',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 28),
 
                   // ── Display Name ────────────────────────────
                   Text('Display Name',
@@ -62,11 +95,11 @@ void showEditProfileDialog(BuildContext context, User user) {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: TextFormField(
+                        child: AppTextField(
                           key: nameKey,
                           controller: nameController,
                           textCapitalization: TextCapitalization.words,
-                          decoration: _inputDeco(cs, hint: 'Your name'),
+                          hintText: 'Your name',
                           validator: (v) => v == null || v.trim().isEmpty
                               ? 'Enter a name'
                               : null,
@@ -131,12 +164,11 @@ void showEditProfileDialog(BuildContext context, User user) {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: TextFormField(
+                          child: AppTextField(
                             key: emailKey,
                             controller: emailController,
                             keyboardType: TextInputType.emailAddress,
-                            decoration:
-                                _inputDeco(cs, hint: 'New email address'),
+                            hintText: 'New email address',
                             validator: (v) {
                               if (v == null || v.trim().isEmpty) {
                                 return 'Enter an email';
@@ -228,7 +260,8 @@ void showEditProfileDialog(BuildContext context, User user) {
                               color: AppColors.primary.withValues(alpha: 0.5)),
                           padding: const EdgeInsets.symmetric(vertical: 13),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14)),
+                              borderRadius: BorderRadius.circular(
+                                  AppTheme.formFieldRadius)),
                         ),
                         icon: savingPw
                             ? const SizedBox(
@@ -263,31 +296,30 @@ void showEditProfileDialog(BuildContext context, User user) {
                       key: pwKey,
                       child: Column(
                         children: [
-                          TextFormField(
+                          AppTextField(
                             controller: currentPwController,
                             obscureText: !showCurrentPw,
-                            decoration: _inputDeco(cs,
-                                hint: 'Current password',
-                                suffix: _eyeToggle(
-                                    showCurrentPw,
-                                    cs,
-                                    () => setState(
-                                        () => showCurrentPw = !showCurrentPw))),
+                            hintText: 'Current password',
+                            suffixIcon: _eyeToggle(
+                              showCurrentPw,
+                              cs,
+                              () => setState(
+                                  () => showCurrentPw = !showCurrentPw),
+                            ),
                             validator: (v) => v == null || v.isEmpty
                                 ? 'Enter current password'
                                 : null,
                           ),
                           const SizedBox(height: 12),
-                          TextFormField(
+                          AppTextField(
                             controller: newPwController,
                             obscureText: !showNewPw,
-                            decoration: _inputDeco(cs,
-                                hint: 'New password',
-                                suffix: _eyeToggle(
-                                    showNewPw,
-                                    cs,
-                                    () => setState(
-                                        () => showNewPw = !showNewPw))),
+                            hintText: 'New password',
+                            suffixIcon: _eyeToggle(
+                              showNewPw,
+                              cs,
+                              () => setState(() => showNewPw = !showNewPw),
+                            ),
                             validator: (v) {
                               if (v == null || v.isEmpty) {
                                 return 'Enter new password';
@@ -299,16 +331,16 @@ void showEditProfileDialog(BuildContext context, User user) {
                             },
                           ),
                           const SizedBox(height: 12),
-                          TextFormField(
+                          AppTextField(
                             controller: confirmPwController,
                             obscureText: !showConfirmPw,
-                            decoration: _inputDeco(cs,
-                                hint: 'Confirm new password',
-                                suffix: _eyeToggle(
-                                    showConfirmPw,
-                                    cs,
-                                    () => setState(
-                                        () => showConfirmPw = !showConfirmPw))),
+                            hintText: 'Confirm new password',
+                            suffixIcon: _eyeToggle(
+                              showConfirmPw,
+                              cs,
+                              () => setState(
+                                  () => showConfirmPw = !showConfirmPw),
+                            ),
                             validator: (v) => v != newPwController.text
                                 ? 'Passwords do not match'
                                 : null,
@@ -351,7 +383,8 @@ void showEditProfileDialog(BuildContext context, User user) {
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14)),
+                                    borderRadius: BorderRadius.circular(
+                                        AppTheme.formFieldRadius)),
                               ),
                               child: savingPw
                                   ? const SizedBox(
@@ -384,31 +417,6 @@ void showEditProfileDialog(BuildContext context, User user) {
   });
 }
 
-InputDecoration _inputDeco(ColorScheme cs,
-    {required String hint, Widget? suffix}) {
-  return InputDecoration(
-    hintText: hint,
-    suffixIcon: suffix,
-    filled: true,
-    fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.35),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-    border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-    enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.15))),
-    focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
-    errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: cs.error)),
-    focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: cs.error, width: 1.5)),
-  );
-}
-
 Widget _saveButton(
     {required bool loading,
     required VoidCallback onTap,
@@ -420,7 +428,9 @@ Widget _saveButton(
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
+        ),
       ),
       child: loading
           ? const SizedBox(

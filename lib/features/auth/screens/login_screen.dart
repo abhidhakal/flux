@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/google_logo.dart';
+import '../../../shared/widgets/app_form_fields.dart';
 import '../../../core/constants/app_theme.dart';
 import '../widgets/auth_form_helpers.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -145,37 +146,34 @@ class _LoginScreenState extends State<LoginScreen>
                         children: [
                           authLabel(context, 'Email'),
                           const SizedBox(height: 6),
-                          TextFormField(
+                          AppTextField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
-                            decoration: authInputDecoration(context,
-                                hint: 'name@example.com',
-                                icon: LucideIcons.mail),
+                            hintText: 'name@example.com',
+                            prefixIcon: const Icon(LucideIcons.mail),
                             validator: AuthValidators.email,
                           ),
                           const SizedBox(height: 20),
                           authLabel(context, 'Password'),
                           const SizedBox(height: 6),
-                          TextFormField(
+                          AppTextField(
                             controller: _passwordController,
                             obscureText: !_isPasswordVisible,
                             textInputAction: TextInputAction.done,
                             onFieldSubmitted: (_) => _handleLogin(),
-                            decoration: authInputDecoration(
-                              context,
-                              hint: '••••••••',
-                              icon: LucideIcons.lock,
-                              suffix: IconButton(
-                                icon: Icon(
-                                  _isPasswordVisible
-                                      ? LucideIcons.eyeOff
-                                      : LucideIcons.eye,
-                                  size: 20,
-                                  color: cs.onSurfaceVariant,
-                                ),
-                                onPressed: () => setState(() =>
-                                    _isPasswordVisible = !_isPasswordVisible),
+                            hintText: '••••••••',
+                            prefixIcon: const Icon(LucideIcons.lock),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isPasswordVisible
+                                    ? LucideIcons.eyeOff
+                                    : LucideIcons.eye,
+                                size: 20,
+                                color: cs.onSurfaceVariant,
+                              ),
+                              onPressed: () => setState(
+                                () => _isPasswordVisible = !_isPasswordVisible,
                               ),
                             ),
                             validator: AuthValidators.password,
@@ -295,11 +293,11 @@ class _LoginScreenState extends State<LoginScreen>
             Text("Enter your email and we'll send a reset link.",
                 style: theme.textTheme.bodyMedium),
             const SizedBox(height: 16),
-            TextField(
+            AppTextField(
               controller: ctrl,
               keyboardType: TextInputType.emailAddress,
-              decoration: authInputDecoration(context,
-                  hint: 'name@example.com', icon: LucideIcons.mail),
+              hintText: 'name@example.com',
+              prefixIcon: const Icon(LucideIcons.mail),
             ),
           ],
         ),
@@ -310,7 +308,7 @@ class _LoginScreenState extends State<LoginScreen>
             onPressed: () => Navigator.pop(dCtx),
             child: Text('Cancel',
                 style: TextStyle(
-                    color: AppColors.lightTextTertiary,
+                    color: Theme.of(dCtx).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(

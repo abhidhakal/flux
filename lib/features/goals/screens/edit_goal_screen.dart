@@ -6,6 +6,7 @@ import '../../../core/models/goal_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../goals_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
+import '../../../shared/widgets/app_form_fields.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class EditGoalScreen extends StatefulWidget {
@@ -171,14 +172,11 @@ class _EditGoalScreenState extends State<EditGoalScreen>
                         children: [
                           // Goal Name
                           _buildSectionLabel('Goal Name',
-                              icon: LucideIcons.flag),
+                              icon: LucideIcons.goal),
                           const SizedBox(height: 8),
-                          TextFormField(
+                          AppTextField(
                             controller: _nameController,
-                            style: TextStyle(color: colorScheme.onSurface),
-                            decoration: _inputDecoration(
-                              hintText: 'e.g., Emergency Fund',
-                            ),
+                            hintText: 'e.g., Emergency Fund',
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Please enter a goal name';
@@ -194,18 +192,14 @@ class _EditGoalScreenState extends State<EditGoalScreen>
                           _buildSectionLabel('Target Amount',
                               icon: LucideIcons.dollarSign),
                           const SizedBox(height: 8),
-                          TextFormField(
+                          AppNumberField(
                             controller: _targetAmountController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
+                            hintText: '10,000',
+                            prefixText: '${CurrencyService().symbol} ',
                             style: TextStyle(
                               color: colorScheme.onSurface,
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
-                            ),
-                            decoration: _inputDecoration(
-                              hintText: '10,000',
-                              prefixText: CurrencyService().symbol,
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
@@ -241,13 +235,10 @@ class _EditGoalScreenState extends State<EditGoalScreen>
                           _buildSectionLabel('Description (Optional)',
                               icon: LucideIcons.fileText),
                           const SizedBox(height: 8),
-                          TextFormField(
+                          AppTextField(
                             controller: _descriptionController,
                             maxLines: 3,
-                            style: TextStyle(color: colorScheme.onSurface),
-                            decoration: _inputDecoration(
-                              hintText: 'Why is this goal important to you?',
-                            ),
+                            hintText: 'Why is this goal important to you?',
                           ),
 
                           const SizedBox(height: 24),
@@ -319,7 +310,8 @@ class _EditGoalScreenState extends State<EditGoalScreen>
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.formFieldRadius),
                     ),
                     child: Icon(
                       _getGoalTypeIcon(_selectedType),
@@ -462,55 +454,17 @@ class _EditGoalScreenState extends State<EditGoalScreen>
     );
   }
 
-  InputDecoration _inputDecoration({
-    required String hintText,
-    String? prefixText,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.4)),
-      prefixText: prefixText,
-      prefixStyle: TextStyle(
-        color: colorScheme.onSurface,
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-      ),
-      filled: true,
-      fillColor: colorScheme.surface,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide:
-            BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide:
-            BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: colorScheme.error),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-    );
-  }
-
   Widget _buildDateSelector(ColorScheme colorScheme) {
     final daysRemaining = _selectedDate.difference(DateTime.now()).inDays;
 
     return InkWell(
       onTap: _selectDate,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
           border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
         ),
         child: Row(
@@ -659,7 +613,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
         border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -729,7 +683,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.1)
               : colorScheme.surface,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
           border: Border.all(
             color: isSelected
                 ? AppColors.primary
@@ -760,7 +714,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
           ),
           elevation: 0,
         ),
@@ -799,7 +753,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
           ),
         ),
         child: Text(

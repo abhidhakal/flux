@@ -9,6 +9,7 @@ import '../notifications_bloc.dart';
 import '../widgets/notification_card.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/empty_state_view.dart';
+import '../../../shared/widgets/premium_page_hero.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -20,10 +21,14 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   List<app_notification.Notification> _lastLoadedNotifications = const [];
+  bool _loadRequested = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadNotificationsIfNeeded(context);
+    });
   }
 
   void _loadNotificationsIfNeeded(BuildContext context) {
@@ -31,120 +36,118 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final user = context.read<AuthBloc>().state;
 
     if (user is AuthAuthenticated &&
+        !_loadRequested &&
         notificationsState is! NotificationsLoaded &&
         notificationsState is! NotificationsLoading) {
+      _loadRequested = true;
       context.read<NotificationsBloc>().add(LoadNotifications(user.user.id));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('Notifications'),
-        centerTitle: false,
-        backgroundColor: colorScheme.surface,
-        foregroundColor: colorScheme.onSurface,
-        iconTheme: IconThemeData(color: colorScheme.onSurface),
-        titleTextStyle: theme.textTheme.displaySmall?.copyWith(
-          fontSize: 24,
-          letterSpacing: -1,
-        ),
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        actions: [
-          BlocBuilder<NotificationsBloc, NotificationsState>(
-            builder: (context, state) {
-              final notifications = _notificationsFromState(state);
-              if (notifications.isNotEmpty) {
-                final hasUnread = notifications.any((n) => n.isUnread);
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (hasUnread)
-                      IconButton(
-                        icon: Icon(LucideIcons.checkCheck,
-                            color: Theme.of(context).colorScheme.onSurface),
-                        tooltip: 'Mark All as Read',
-                        onPressed: () {
-                          final user = context.read<AuthBloc>().state;
-                          if (user is AuthAuthenticated) {
-                            context
-                                .read<NotificationsBloc>()
-                                .add(MarkAllAsRead(user.user.id));
-                          }
-                        },
-                      ),
-                    IconButton(
-                      icon: Icon(LucideIcons.moreVertical,
-                          color: Theme.of(context).colorScheme.onSurface),
-                      onPressed: () => _showNotificationOptions(context),
-                    ),
-                  ],
-                );
-              }
-              return const SizedBox.shrink();
-            },
+      backgroundColor: AppTheme.pageSurface(context),
+      body: Column(
+        children: [
+          _buildNotificationsHero(),
+          Expanded(
+            child: BlocListener<AuthBloc, AuthState>(
+              listener: (context, authState) {
+                if (authState is AuthAuthenticated) {
+                  _loadNotificationsIfNeeded(context);
+                }
+              },
+              child: BlocListener<NotificationsBloc, NotificationsState>(
+                listener: (context, state) {
+                  if (state is NotificationsSuccess) {
+                    AppSnackbar.showSuccess(context, message: state.message);
+                  }
+
+                  if (state is NotificationsError) {
+                    AppSnackbar.showError(context, message: state.message);
+                  }
+                },
+                child: BlocBuilder<NotificationsBloc, NotificationsState>(
+                  builder: (context, state) {
+                    if (state is NotificationsInitial) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (state is NotificationsLoading &&
+                        _lastLoadedNotifications.isNotEmpty) {
+                      return _buildNotificationsList(_lastLoadedNotifications);
+                    }
+
+                    if (state is NotificationsLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (state is NotificationsLoaded) {
+                      _lastLoadedNotifications = state.notifications;
+                      if (state.notifications.isEmpty) {
+                        return _buildEmptyState();
+                      }
+
+                      return _buildNotificationsList(state.notifications);
+                    }
+
+                    if (state is NotificationsSuccess) {
+                      if (_lastLoadedNotifications.isEmpty) {
+                        return _buildEmptyState();
+                      }
+                      return _buildNotificationsList(_lastLoadedNotifications);
+                    }
+
+                    if (state is NotificationsError) {
+                      return _buildErrorState(state.message);
+                    }
+
+                    return _buildEmptyState();
+                  },
+                ),
+              ),
+            ),
           ),
         ],
       ),
-      body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, authState) {
-          if (authState is AuthAuthenticated) {
-            _loadNotificationsIfNeeded(context);
-          }
-        },
-        child: BlocListener<NotificationsBloc, NotificationsState>(
-          listener: (context, state) {
-            if (state is NotificationsSuccess) {
-              AppSnackbar.showSuccess(context, message: state.message);
-            }
+    );
+  }
 
-            if (state is NotificationsError) {
-              AppSnackbar.showError(context, message: state.message);
-            }
-          },
-          child: BlocBuilder<NotificationsBloc, NotificationsState>(
-            builder: (context, state) {
-              if (state is NotificationsInitial) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _loadNotificationsIfNeeded(context);
-                });
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (state is NotificationsLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (state is NotificationsLoaded) {
-                _lastLoadedNotifications = state.notifications;
-                if (state.notifications.isEmpty) {
-                  return _buildEmptyState();
-                }
-
-                return _buildNotificationsList(state.notifications);
-              }
-
-              if (state is NotificationsSuccess) {
-                if (_lastLoadedNotifications.isEmpty) {
-                  return _buildEmptyState();
-                }
-                return _buildNotificationsList(_lastLoadedNotifications);
-              }
-
-              if (state is NotificationsError) {
-                return _buildErrorState(state.message);
-              }
-
-              return _buildEmptyState();
-            },
-          ),
-        ),
-      ),
+  Widget _buildNotificationsHero() {
+    return BlocBuilder<NotificationsBloc, NotificationsState>(
+      builder: (context, state) {
+        final notifications = _notificationsFromState(state);
+        final unreadCount = notifications.where((n) => n.isUnread).length;
+        return PremiumPageHero(
+          title: 'Notifications',
+          showBackButton: true,
+          subtitle: unreadCount == 0
+              ? 'You’re all caught up'
+              : '$unreadCount unread notification${unreadCount == 1 ? '' : 's'}',
+          actions: [
+            if (unreadCount > 0)
+              PremiumPageHeroAction(
+                icon: LucideIcons.checkCheck,
+                tooltip: 'Mark all as read',
+                onPressed: () {
+                  final user = context.read<AuthBloc>().state;
+                  if (user is AuthAuthenticated) {
+                    context
+                        .read<NotificationsBloc>()
+                        .add(MarkAllAsRead(user.user.id));
+                  }
+                },
+              ),
+            if (unreadCount > 0) const SizedBox(width: 8),
+            PremiumPageHeroAction(
+              icon: LucideIcons.ellipsis,
+              tooltip: 'Notification options',
+              onPressed: () => _showNotificationOptions(context),
+            ),
+          ],
+        );
+      },
     );
   }
 

@@ -16,6 +16,7 @@ import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/premium_upgrade_prompt.dart';
 import '../../../shared/widgets/field_label.dart';
+import '../../../shared/widgets/app_form_fields.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -296,7 +297,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
             width: 2,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -324,13 +325,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   }
 
   Widget _buildTitleField() {
-    return TextFormField(
+    return AppTextField(
       controller: _titleController,
       onChanged: (_) => _updateCategorySuggestion(),
-      decoration: InputDecoration(
-        hintText: 'Enter transaction title',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      ),
+      hintText: 'Enter transaction title',
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Please enter a title';
@@ -341,13 +339,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   }
 
   Widget _buildDescriptionField() {
-    return TextFormField(
+    return AppTextField(
       controller: _descriptionController,
       onChanged: (_) => _updateCategorySuggestion(),
-      decoration: InputDecoration(
-        hintText: 'Enter description (optional)',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      ),
+      hintText: 'Enter description (optional)',
       maxLines: 2,
     );
   }
@@ -381,28 +376,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   }
 
   Widget _buildAmountField() {
-    return TextFormField(
+    return AppNumberField(
       controller: _amountController,
-      keyboardType: TextInputType.number,
-      decoration: InputDecoration(
-        hintText: 'Enter amount',
-        prefixIcon: Padding(
-          padding: const EdgeInsets.only(left: 14, right: 4),
-          child: Align(
-            widthFactor: 1,
-            child: Text(
-              CurrencyService().symbol,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-          ),
-        ),
-        prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      ),
+      hintText: 'Enter amount',
+      prefixText: '${CurrencyService().symbol} ',
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Please enter an amount';
@@ -424,11 +401,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DropdownButtonFormField<String>(
-          initialValue: _selectedCategory,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          ),
+        AppDropdownField<String>(
+          value: _selectedCategory,
           items: categories.map((category) {
             return DropdownMenuItem(
               value: category,
@@ -495,7 +469,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           border: Border.all(
               color:
                   Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
         ),
         child: Row(
           children: [
@@ -523,7 +497,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
+        ),
       ),
       child: _isLoading
           ? const SizedBox(
@@ -564,7 +540,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppColors.error.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
               border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
             ),
             child: Row(
@@ -592,22 +568,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
             ),
           )
         else
-          DropdownButtonFormField<Budget?>(
-            initialValue: _selectedBudget,
-            isExpanded: true,
-            decoration: InputDecoration(
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              hintText: 'Select a budget (Optional)',
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              suffixIcon: _selectedBudget != null
-                  ? IconButton(
-                      icon: const Icon(LucideIcons.x, size: 18),
-                      onPressed: () => setState(() => _selectedBudget = null),
-                    )
-                  : null,
-            ),
+          AppDropdownField<Budget?>(
+            value: _selectedBudget,
+            hintText: 'Select a budget (Optional)',
+            suffixIcon: _selectedBudget != null
+                ? IconButton(
+                    icon: const Icon(LucideIcons.x, size: 18),
+                    onPressed: () => setState(() => _selectedBudget = null),
+                  )
+                : null,
             items: [
               const DropdownMenuItem<Budget?>(
                 value: null,
@@ -679,7 +648,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
             ),
             child: Row(
               children: [
@@ -724,7 +693,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
       ),
       child: SwitchListTile(
         title: Text(
@@ -752,7 +721,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
       ),
       child: Column(
         children: [
@@ -777,14 +746,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           if (_isRecurring)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: DropdownButtonFormField<RecurringTransactionFrequency>(
-                initialValue: _recurringFrequency,
-                decoration: InputDecoration(
-                  labelText: 'Frequency',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
+              child: AppDropdownField<RecurringTransactionFrequency>(
+                value: _recurringFrequency,
+                hintText: 'Frequency',
                 items: RecurringTransactionFrequency.values.map((frequency) {
                   return DropdownMenuItem(
                     value: frequency,

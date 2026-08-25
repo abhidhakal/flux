@@ -11,6 +11,7 @@ import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/app_card.dart';
 import '../../../shared/widgets/app_icon_badge.dart';
 import '../../../shared/widgets/app_status_pill.dart';
+import '../../../shared/widgets/app_form_fields.dart';
 import '../../auth/auth_bloc.dart';
 import '../../transaction/transaction_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -218,21 +219,19 @@ class _RecurringTransactionsScreenState
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
+                AppTextField(
                   controller: titleController,
-                  decoration: const InputDecoration(labelText: 'Title'),
+                  labelText: 'Title',
                   textInputAction: TextInputAction.next,
                 ),
-                TextField(
+                AppNumberField(
                   controller: amountController,
-                  decoration: const InputDecoration(labelText: 'Amount'),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  hintText: 'Amount',
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<RecurringTransactionFrequency>(
-                  initialValue: frequency,
-                  decoration: const InputDecoration(labelText: 'Frequency'),
+                AppDropdownField<RecurringTransactionFrequency>(
+                  value: frequency,
+                  hintText: 'Frequency',
                   items: RecurringTransactionFrequency.values
                       .map(
                         (value) => DropdownMenuItem(

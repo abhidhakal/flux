@@ -12,6 +12,7 @@ import '../../budget/budget_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/app_bottom_sheet.dart';
 import '../../../shared/widgets/field_label.dart';
+import '../../../shared/widgets/app_form_fields.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class EditTransactionScreen {
@@ -202,14 +203,9 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                 // Title
                 _buildSectionTitle('Title', icon: LucideIcons.type),
                 const SizedBox(height: 8),
-                TextFormField(
+                AppTextField(
                   controller: _titleController,
-                  decoration: InputDecoration(
-                    hintText: 'Enter transaction title',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+                  hintText: 'Enter transaction title',
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter a title';
@@ -222,14 +218,9 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                 // Description
                 _buildSectionTitle('Description', icon: LucideIcons.fileText),
                 const SizedBox(height: 8),
-                TextFormField(
+                AppTextField(
                   controller: _descriptionController,
-                  decoration: InputDecoration(
-                    hintText: 'Enter description (optional)',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+                  hintText: 'Enter description (optional)',
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
@@ -237,31 +228,10 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                 // Amount
                 _buildSectionTitle('Amount', icon: LucideIcons.dollarSign),
                 const SizedBox(height: 8),
-                TextFormField(
+                AppNumberField(
                   controller: _amountController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    hintText: 'Enter amount',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    prefixIcon: Padding(
-                      padding: const EdgeInsets.only(left: 14, right: 4),
-                      child: Align(
-                        widthFactor: 1,
-                        child: Text(
-                          CurrencyService().symbol,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ),
-                    prefixIconConstraints:
-                        const BoxConstraints(minWidth: 0, minHeight: 0),
-                  ),
+                  hintText: 'Enter amount',
+                  prefixText: '${CurrencyService().symbol} ',
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter an amount';
@@ -278,13 +248,8 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                 // Category
                 _buildSectionTitle('Category', icon: LucideIcons.tag),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedCategory,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+                AppDropdownField<String>(
+                  value: _selectedCategory,
                   items: (_selectedType == TransactionType.income
                           ? _incomeCategories
                           : _expenseCategories)
@@ -310,7 +275,8 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       border: Border.all(color: colorScheme.outline),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.formFieldRadius),
                     ),
                     child: Row(
                       children: [
@@ -341,7 +307,8 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                       backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.formFieldRadius),
                       ),
                     ),
                     child: _isLoading
@@ -410,7 +377,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
             color: isSelected ? color : Theme.of(context).colorScheme.onSurface,
             width: isSelected ? 2 : 1,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -459,7 +426,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
       elevation: 2,
       color: colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
         side: BorderSide(
           color: colorScheme.outline,
           width: 1,
@@ -484,7 +451,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: colorScheme.errorContainer.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
                   border: Border.all(
                       color: colorScheme.error.withValues(alpha: 0.3)),
                 ),
@@ -502,14 +469,9 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                 ),
               )
             else
-              DropdownButtonFormField<Budget>(
-                initialValue: _selectedBudget,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  hintText: 'Select a budget',
-                ),
+              AppDropdownField<Budget>(
+                value: _selectedBudget,
+                hintText: 'Select a budget',
                 items: _availableBudgets.map((budget) {
                   final remainingAmount = budget.remaining;
                   final isOverBudget = remainingAmount < 0;
@@ -562,7 +524,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.formFieldRadius),
                 ),
                 child: Row(
                   children: [

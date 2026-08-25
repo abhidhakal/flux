@@ -29,7 +29,7 @@ class NotificationCard extends StatelessWidget {
         padding: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
           color: AppColors.error,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
         ),
         child: const Icon(
           LucideIcons.trash2,
@@ -38,9 +38,9 @@ class NotificationCard extends StatelessWidget {
       ),
       child: Card(
         elevation: 0,
-        color: Theme.of(context).colorScheme.surface,
+        color: AppTheme.cardSurface(context),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
           side: BorderSide(
             color: Theme.of(context).colorScheme.outline,
             width: 1,
@@ -48,13 +48,13 @@ class NotificationCard extends StatelessWidget {
         ),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.cardRadius),
               border: notification.isUnread
-                  ? Border.all(color: AppColors.primary, width: 2)
+                  ? Border.all(color: AppColors.primary, width: 1.5)
                   : null,
             ),
             child: Column(
@@ -149,7 +149,7 @@ class NotificationCard extends StatelessWidget {
 
     switch (notification.type) {
       case app_notification.NotificationType.budgetAlert:
-        icon = LucideIcons.wallet;
+        icon = LucideIcons.coins;
         color = AppColors.error;
         break;
       case app_notification.NotificationType.spendingReminder:
@@ -161,7 +161,7 @@ class NotificationCard extends StatelessWidget {
         color = AppColors.primary;
         break;
       case app_notification.NotificationType.goalMilestone:
-        icon = LucideIcons.flag;
+        icon = LucideIcons.goal;
         color = AppColors.success;
         break;
       case app_notification.NotificationType.billReminder:
