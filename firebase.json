@@ -1,8 +1,1 @@
-{
-  "functions": {
-    "source": "functions"
-  },
-  "firestore": {
-    "rules": "firestore.rules"
-  }
-}
+{"functions":{"source":"functions"},"firestore":{"rules":"firestore.rules"},"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"flux-budget-tracking","configurations":{"web":"1:907032241510:web:843639c5dd1803643954a7"}}}}}}

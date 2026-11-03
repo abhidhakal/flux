@@ -92,9 +92,7 @@ class _MainScreenState extends State<MainScreen> {
                         color: AppTheme.navigationBarSurface(context),
                         borderRadius: BorderRadius.circular(30),
                         border: Border.all(
-                          color: theme.brightness == Brightness.dark
-                              ? Colors.white.withValues(alpha: 0.12)
-                              : Colors.black.withValues(alpha: 0.08),
+                          color: AppTheme.navigationBarBorder(context),
                         ),
                         boxShadow: [
                           BoxShadow(

@@ -65,8 +65,11 @@ class AppColors {
   static const Color darkTextTertiary = Color(0xFF808080);
   static const Color darkTextInverse = Color(0xFFFFFFFF);
   static const Color darkTextMuted = Color(0xFF808080);
-  static const Color darkElevatedSurface = Color(0xFF181818);
-  static const Color darkNavSurface = Color(0xFF080808);
+  // Navy-toned elevated surface used by muted cards and dark containers.
+  static const Color darkElevatedSurface = Color(0xFF182A40);
+  // Floating navigation surface. Keep it aligned with the redesigned navy
+  // card palette instead of the legacy near-black navigation bar.
+  static const Color darkNavSurface = darkCard;
 
   // Legacy colors (for backward compatibility)
   static const Color background = lightBackground;
@@ -369,7 +372,14 @@ class AppTheme {
     final theme = Theme.of(context);
     return theme.brightness == Brightness.dark
         ? AppColors.darkNavSurface
-        : AppColors.lightSurface;
+        : AppColors.lightBackground;
+  }
+
+  static Color navigationBarBorder(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.brightness == Brightness.dark
+        ? AppColors.darkBorder.withValues(alpha: 0.65)
+        : AppColors.lightDivider;
   }
 
   static Color navigationBarShadow(BuildContext context) {
@@ -612,7 +622,7 @@ class AppTheme {
         ),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: AppColors.lightSurface,
+        backgroundColor: AppColors.lightBackground,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.lightTextSecondary,
         type: BottomNavigationBarType.fixed,

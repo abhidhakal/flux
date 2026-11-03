@@ -120,12 +120,14 @@ class BackgroundTaskService {
   String _dailyHealthCheckName(String userId) => 'daily_health_check_$userId';
 
   Future<void> initialize() async {
+    if (kIsWeb) return; // workmanager not supported on web
     await Workmanager().initialize(
       callbackDispatcher,
     );
   }
 
   Future<void> registerDailyHealthCheck(String userId) async {
+    if (kIsWeb) return;
     await Workmanager().registerPeriodicTask(
       _dailyHealthCheckName(userId),
       'dailyNotificationHealthCheck',
@@ -139,6 +141,7 @@ class BackgroundTaskService {
   }
 
   Future<void> cancelTasks(String userId) async {
+    if (kIsWeb) return;
     await Workmanager().cancelByUniqueName(_dailyHealthCheckName(userId));
   }
 }

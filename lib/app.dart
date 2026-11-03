@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:home_widget/home_widget.dart';
@@ -153,6 +154,7 @@ class _AppViewState extends State<AppView> {
   }
 
   void _setupHomeWidget() {
+    if (kIsWeb) return; // HomeWidget not supported on web
     HomeWidget.setAppGroupId('group.com.klivostudios.flux');
     HomeWidget.initiallyLaunchedFromHomeWidget().then(_handleWidgetLaunch);
     _widgetClickSubscription =

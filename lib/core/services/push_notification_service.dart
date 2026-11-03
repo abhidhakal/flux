@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart'
     as fln;
@@ -21,6 +22,7 @@ class PushNotificationService {
   // Initialize the notification service
   Future<void> initialize() async {
     if (_isInitialized) return;
+    if (kIsWeb) { _isInitialized = true; return; } // Not supported on web
 
     // Initialize timezone with device location
     tz.initializeTimeZones();
@@ -59,6 +61,7 @@ class PushNotificationService {
 
   // Request notification permissions
   Future<bool> requestPermissions() async {
+    if (kIsWeb) return false; // Not supported on web
     if (!_isInitialized) await initialize();
 
     final status = await Permission.notification.request();
@@ -88,6 +91,7 @@ class PushNotificationService {
 
   // Check if notifications are enabled
   Future<bool> areNotificationsEnabled() async {
+    if (kIsWeb) return false; // Not supported on web
     final status = await Permission.notification.status;
     return status.isGranted;
   }
