@@ -9,23 +9,36 @@ import 'app.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Background Tasks (skipped on web)
-  await BackgroundTaskService().initialize();
-
   // Initialize Firebase with platform-specific options (required for web)
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+  }
 
   // Enable offline persistence for Firestore (not supported on web)
   if (!kIsWeb) {
-    FirebaseFirestore.instance.settings = const Settings(
-      persistenceEnabled: true,
-      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-    );
+    try {
+      FirebaseFirestore.instance.settings = const Settings(
+        persistenceEnabled: true,
+        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+      );
+    } catch (e) {
+      debugPrint('Firestore settings error: $e');
+    }
   }
 
+  // Launch the Flutter app UI immediately
   runApp(const MyApp());
+
+  // Initialize Background Tasks asynchronously without blocking the UI/splash screen
+  if (!kIsWeb) {
+    BackgroundTaskService().initialize().catchError((error) {
+      debugPrint('Background task service initialization error: $error');
+    });
+  }
 }
 
 class MyApp extends StatelessWidget {
