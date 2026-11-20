@@ -102,3 +102,147 @@ void showAuthLoadingDialog(BuildContext context, String message) {
     ),
   );
 }
+
+/// Shared layout for login/signup: back button, brand mark, heading, form,
+/// and a footer link to the other auth screen.
+class AuthScaffold extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final Widget child;
+  final String footerText;
+  final String footerAction;
+  final VoidCallback onFooterTap;
+
+  const AuthScaffold({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.child,
+    required this.footerText,
+    required this.footerAction,
+    required this.onFooterTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Scaffold(
+      backgroundColor: cs.surface,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  if (Navigator.canPop(context))
+                    IconButton.filledTonal(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back_rounded, size: 20),
+                      style: IconButton.styleFrom(
+                        backgroundColor:
+                            cs.surfaceContainerHighest.withValues(alpha: 0.6),
+                        foregroundColor: cs.onSurface,
+                      ),
+                    ),
+                  const Spacer(),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(9),
+                    child: Image.asset('assets/images/flux_logo.png',
+                        width: 30, height: 30),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 36),
+              Text(
+                title,
+                style: theme.textTheme.headlineLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -1,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 32),
+              child,
+              const SizedBox(height: 28),
+              Center(
+                child: TextButton(
+                  onPressed: onFooterTap,
+                  child: Text.rich(
+                    TextSpan(
+                      text: '$footerText  ',
+                      style: TextStyle(
+                          color: cs.onSurfaceVariant,
+                          fontWeight: FontWeight.w500),
+                      children: [
+                        TextSpan(
+                          text: footerAction,
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    style: const TextStyle(fontSize: 15),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "or" divider between the email form and Google.
+Widget authOrDivider(BuildContext context) {
+  final cs = Theme.of(context).colorScheme;
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 22),
+    child: Row(
+      children: [
+        Expanded(child: Divider(color: cs.outline.withValues(alpha: 0.2))),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text('or',
+              style: TextStyle(
+                  color: cs.onSurfaceVariant, fontWeight: FontWeight.w500)),
+        ),
+        Expanded(child: Divider(color: cs.outline.withValues(alpha: 0.2))),
+      ],
+    ),
+  );
+}
+
+ButtonStyle authPrimaryButtonStyle() => ElevatedButton.styleFrom(
+      backgroundColor: AppColors.primary,
+      foregroundColor: Colors.white,
+      disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
+      minimumSize: const Size.fromHeight(56),
+      shape: const StadiumBorder(),
+      elevation: 0,
+      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+    );
+
+ButtonStyle authGoogleButtonStyle(BuildContext context) =>
+    OutlinedButton.styleFrom(
+      minimumSize: const Size.fromHeight(56),
+      shape: const StadiumBorder(),
+      foregroundColor: Theme.of(context).colorScheme.onSurface,
+      side: BorderSide(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
+      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+    );

@@ -11,8 +11,10 @@ void main() async {
 
   // Initialize Firebase with platform-specific options (required for web)
   try {
+    // Native platforms read google-services.json / GoogleService-Info.plist;
+    // firebase_options.dart only has web configured.
     await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
+      options: kIsWeb ? DefaultFirebaseOptions.currentPlatform : null,
     );
   } catch (e) {
     debugPrint('Firebase initialization error: $e');

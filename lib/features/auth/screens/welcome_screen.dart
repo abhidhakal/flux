@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/google_logo.dart';
 import '../auth_bloc.dart';
+import '../widgets/flux_preview.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
 
@@ -15,16 +17,8 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _logoScale;
-  late final Animation<double> _contentFade;
-  late final Animation<Offset> _contentSlide;
-  late final Animation<Offset> _buttonsSlide;
-
-  void _handleGoogleSignIn() {
-    context.read<AuthBloc>().add(GoogleSignInRequested());
-  }
 
   @override
   void initState() {
@@ -44,36 +38,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    );
-
-    _logoScale = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
-    );
-
-    _contentFade = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.3, 0.7, curve: Curves.easeOut),
-    );
-
-    _contentSlide = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.3, 0.7, curve: Curves.easeOut),
-    ));
-
-    _buttonsSlide = Tween<Offset>(
-      begin: const Offset(0, 1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.55, 1.0, curve: Curves.easeOutCubic),
-    ));
-
-    _controller.forward();
+      duration: const Duration(milliseconds: 1400),
+    )..forward();
   }
 
   @override
@@ -82,305 +48,237 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     super.dispose();
   }
 
+  Animation<double> _interval(double a, double b) => CurvedAnimation(
+        parent: _controller,
+        curve: Interval(a, b, curve: Curves.easeOutCubic),
+      );
+
+  Widget _reveal(double start, Widget child) {
+    final a = _interval(start, start + 0.4);
+    return FadeTransition(
+      opacity: a,
+      child: SlideTransition(
+        position: Tween(begin: const Offset(0, 0.25), end: Offset.zero)
+            .animate(a),
+        child: child,
+      ),
+    );
+  }
+
+  void _push(Widget screen) =>
+      Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+    const bg = AppColors.tertiaryDark;
+    final muted = Colors.white.withValues(alpha: 0.64);
 
-    return Scaffold(
-      body: BlocListener<AuthBloc, AuthState>(
-        // AuthLoading needs no handling here — StartupScreen already swaps
-        // to its own full-screen splash for that state (and unmounts this
-        // screen while doing so). Only errors matter to this listener.
-        listener: (context, state) {
-          if (state is AuthError) {
-            AppSnackbar.showError(context, message: state.message);
-          }
-        },
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Background gradient
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.primary,
-                    AppColors.primaryDark,
-                    Color(0xFF003D80),
-                  ],
-                  stops: [0.0, 0.55, 1.0],
-                ),
-              ),
-            ),
-
-            // Doodle overlay
-            Opacity(
-              opacity: 0.08,
-              child: Image.asset(
-                'assets/images/flux_doodle.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-
-            // Subtle top-right circle accent
-            Positioned(
-              top: -size.width * 0.3,
-              right: -size.width * 0.2,
-              child: Container(
-                width: size.width * 0.8,
-                height: size.width * 0.8,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.05),
-                ),
-              ),
-            ),
-
-            // Bottom-left circle accent
-            Positioned(
-              bottom: -size.width * 0.25,
-              left: -size.width * 0.15,
-              child: Container(
-                width: size.width * 0.65,
-                height: size.width * 0.65,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.05),
-                ),
-              ),
-            ),
-
-            // Main content
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
-                child: Column(
-                  children: [
-                    const Spacer(flex: 2),
-
-                    // Logo + App name
-                    ScaleTransition(
-                      scale: _logoScale,
-                      child: Column(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(28),
-                            child: Image.asset(
-                              'assets/images/flux_logo.png',
-                              width: 95,
-                              height: 95,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          const Text(
-                            'Flux',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 42,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 3,
-                              height: 1,
-                            ),
-                          ),
-                        ],
-                      ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: bg,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: bg,
+        body: BlocListener<AuthBloc, AuthState>(
+          // AuthLoading needs no handling here — StartupScreen already swaps
+          // to its own full-screen splash for that state.
+          listener: (context, state) {
+            if (state is AuthError) {
+              AppSnackbar.showError(context, message: state.message);
+            }
+          },
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Soft brand glow behind the preview cards.
+              const Positioned(
+                top: -120,
+                left: -80,
+                right: -80,
+                height: 520,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      colors: [Color(0x550079DC), Color(0x000079DC)],
                     ),
-
-                    const SizedBox(height: 24),
-
-                    // Tagline
-                    SlideTransition(
-                      position: _contentSlide,
-                      child: FadeTransition(
-                        opacity: _contentFade,
+                  ),
+                ),
+              ),
+              SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, c) => SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: c.maxHeight),
+                      child: IntrinsicHeight(
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text(
-                              'Your finances,\nunder control.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.92),
-                                fontSize: 22,
-                                fontWeight: FontWeight.w600,
-                                height: 1.35,
+                            const Spacer(),
+                            const SizedBox(height: 32),
+                            FluxPreview(t: _interval(0.1, 1)),
+                            const SizedBox(height: 40),
+                            const Spacer(),
+                            _reveal(
+                              0.3,
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.asset(
+                                    'assets/images/flux_logo.png',
+                                    width: 44,
+                                    height: 44,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            _reveal(
+                              0.35,
+                              const Text(
+                                'Know where\nevery dollar goes.',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 36,
+                                  height: 1.08,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -1.2,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Text(
-                              'Track spending, plan budgets, and\nachieve your financial goals.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.62),
-                                fontSize: 15,
-                                height: 1.5,
+                            _reveal(
+                              0.42,
+                              Text(
+                                'Track spending, set budgets that hold, and watch your goals get closer.',
+                                style: TextStyle(
+                                  color: muted,
+                                  fontSize: 16,
+                                  height: 1.45,
+                                ),
                               ),
                             ),
+                            const SizedBox(height: 32),
+                            _reveal(
+                              0.5,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _PillButton(
+                                    onPressed: () => context
+                                        .read<AuthBloc>()
+                                        .add(GoogleSignInRequested()),
+                                    background: Colors.white,
+                                    foreground: AppColors.tertiaryDark,
+                                    icon: const GoogleLogo(size: 20),
+                                    label: 'Continue with Google',
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _PillButton(
+                                    onPressed: () =>
+                                        _push(const LoginScreen()),
+                                    background:
+                                        Colors.white.withValues(alpha: 0.08),
+                                    foreground: Colors.white,
+                                    border:
+                                        Colors.white.withValues(alpha: 0.14),
+                                    label: 'Sign in with email',
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextButton(
+                                    onPressed: () =>
+                                        _push(const SignUpScreen()),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 14),
+                                    ),
+                                    child: Text.rich(
+                                      TextSpan(
+                                        text: 'New to Flux?  ',
+                                        style: TextStyle(
+                                            color: muted,
+                                            fontWeight: FontWeight.w500),
+                                        children: const [
+                                          TextSpan(
+                                            text: 'Create an account',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      style: const TextStyle(fontSize: 15),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
                           ],
                         ),
                       ),
                     ),
-
-                    const Spacer(flex: 3),
-
-                    // Buttons
-                    SlideTransition(
-                      position: _buttonsSlide,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Google — primary CTA, fires sign-in directly.
-                          _GoogleButton(
-                            primary: true,
-                            onPressed: _handleGoogleSignIn,
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 32,
-                                height: 1,
-                                color: Colors.white.withValues(alpha: 0.25),
-                              ),
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 12),
-                                child: Text(
-                                  'or continue with email',
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.5),
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                width: 32,
-                                height: 1,
-                                color: Colors.white.withValues(alpha: 0.25),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Sign In — demoted to outlined secondary action.
-                          OutlinedButton(
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const LoginScreen()),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              side: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.6),
-                                width: 1.5,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: const Text(
-                              'Sign In',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Create Account — inline sentence link instead of
-                          // a bare floating button.
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'New here? ',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.7),
-                                  fontSize: 14,
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const SignUpScreen()),
-                                ),
-                                child: const Text(
-                                  'Create Account',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _GoogleButton extends StatelessWidget {
-  final VoidCallback? onPressed;
-  final bool primary;
-  const _GoogleButton({required this.onPressed, this.primary = false});
+class _PillButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final Color background;
+  final Color foreground;
+  final Color? border;
+  final Widget? icon;
+  final String label;
+
+  const _PillButton({
+    required this.onPressed,
+    required this.background,
+    required this.foreground,
+    required this.label,
+    this.border,
+    this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final textColor =
-        primary ? AppColors.primary : Colors.white.withValues(alpha: 0.9);
-
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: primary ? Colors.white : Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: primary
-              ? null
-              : Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  width: 1.5,
+    return Material(
+      color: background,
+      shape: StadiumBorder(
+        side: border == null ? BorderSide.none : BorderSide(color: border!),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        child: SizedBox(
+          height: 56,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[icon!, const SizedBox(width: 10)],
+              Text(
+                label,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
                 ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            GoogleLogo(size: primary ? 20 : 18),
-            const SizedBox(width: 10),
-            Text(
-              'Continue with Google',
-              style: TextStyle(
-                color: textColor,
-                fontSize: primary ? 17 : 16,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.3,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
