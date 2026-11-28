@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/fw_bg"
+    android:orientation="vertical"
+    android:padding="16dp">
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+<TextView
+    android:id="@+id/l"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:textSize="12sp"
+    android:textColor="@color/fw_ink2"
+    android:maxLines="1"
+    android:ellipsize="end"
+    android:includeFontPadding="false"
+    android:fontFamily="sans-serif-medium"
+    android:text="Upcoming"
+    android:layout_weight="1" />
+<TextView
+    android:id="@+id/week"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="12sp"
+    android:textColor="@color/fw_ink2"
+    android:maxLines="1"
+    android:ellipsize="end"
+    android:includeFontPadding="false"
+    android:fontFamily="sans-serif-medium" 
+    android:text="Next 7 days" />
+</LinearLayout>
+<TextView
+    android:id="@+id/empty"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:textSize="13sp"
+    android:textColor="@color/fw_ink2"
+    android:maxLines="2"
+    android:ellipsize="end"
+    android:includeFontPadding="false"
+    android:fontFamily="sans-serif-medium"
+    android:text="No recurring payments yet. Tap to add one."
+    android:layout_marginTop="12dp" />
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:id="@+id/b0"
+    android:layout_marginTop="8dp">
+<ImageView
+    android:id="@+id/b0_icon"
+    android:layout_width="34dp"
+    android:layout_height="34dp"
+    android:layout_marginEnd="0dp"
+    android:padding="8dp"
+    android:background="@drawable/fw_tile_bg2"
+    android:tint="@color/fw_ink"
+    android:scaleType="fitCenter" />
+<LinearLayout
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:layout_weight="1"
+    android:layout_marginStart="10dp">
+<TextView
+    android:id="@+id/b0_name"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="14sp"
+    android:textColor="@color/fw_ink"
+    android:maxLines="1"
+    android:ellipsize="end"
+    android:includeFontPadding="false"
+    android:fontFamily="sans-serif-black" />
+<TextView
+    android:id="@+id/b0_when"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="12sp"
+    android:textColor="@color/fw_ink2"
+    android:maxLines="1"
+    android:ellipsize="end"
+    android:includeFontPadding="false"
+    android:fontFamily="sans-serif-medium" />
+</LinearLayout>
+<TextView
+    android:id="@+id/b0_amount"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="14sp"
+    android:textColor="@color/fw_ink"
+    android:maxLines="1"
+    android:ellipsize="end"
+    android:includeFontPadding="false"
+    android:fontFamily="sans-serif-black" />
+</LinearLayout>
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:id="@+id/b1"
+    android:layout_marginTop="8dp">
+<ImageView
+    android:id="@+id/b1_icon"
+    android:layout_width="34dp"
+    android:layout_height="34dp"
+    android:layout_marginEnd="0dp"
+    android:padding="8dp"
+    android:background="@drawable/fw_tile_bg2"
+    android:tint="@color/fw_ink"
+    android:scaleType="fitCenter" />
+<LinearLayout
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:layout_weight="1"
+    android:layout_marginStart="10dp">
+<TextView
+    android:id="@+id/b1_name"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="14sp"
+    android:textColor="@color/fw_ink"
+    android:maxLines="1"
+    android:ellipsize="end"
+    android:includeFontPadding="false"
+    android:fontFamily="sans-serif-black" />
+<TextView
+    android:id="@+id/b1_when"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="12sp"
+    android:textColor="@color/fw_ink2"
+    android:maxLines="1"
+    android:ellipsize="end"
+    android:includeFontPadding="false"
+    android:fontFamily="sans-serif-medium" />
+</LinearLayout>
+<TextView
+    android:id="@+id/b1_amount"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="14sp"
+    android:textColor="@color/fw_ink"
+    android:maxLines="1"
+    android:ellipsize="end"
+    android:includeFontPadding="false"
+    android:fontFamily="sans-serif-black" />
+</LinearLayout>
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:id="@+id/b2"
+    android:layout_marginTop="8dp">
+<ImageView
+    android:id="@+id/b2_icon"
+    android:layout_width="34dp"
+    android:layout_height="34dp"
+    android:layout_marginEnd="0dp"
+    android:padding="8dp"
+    android:background="@drawable/fw_tile_bg2"
+    android:tint="@color/fw_ink"
+    android:scaleType="fitCenter" />
+<LinearLayout
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:layout_weight="1"
+    android:layout_marginStart="10dp">
+<TextView
+    android:id="@+id/b2_name"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="14sp"
+    android:textColor="@color/fw_ink"
+    android:maxLines="1"
+    android:ellipsize="end"
+    android:includeFontPadding="false"
+    android:fontFamily="sans-serif-black" />
+<TextView
+    android:id="@+id/b2_when"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="12sp"
+    android:textColor="@color/fw_ink2"
+    android:maxLines="1"
+    android:ellipsize="end"
+    android:includeFontPadding="false"
+    android:fontFamily="sans-serif-medium" />
+</LinearLayout>
+<TextView
+    android:id="@+id/b2_amount"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="14sp"
+    android:textColor="@color/fw_ink"
+    android:maxLines="1"
+    android:ellipsize="end"
+    android:includeFontPadding="false"
+    android:fontFamily="sans-serif-black" />
+</LinearLayout>
+</LinearLayout>

@@ -186,6 +186,11 @@ class TransactionService {
     }
   }
 
+  /// Last list saved on this device, for showing instantly while the
+  /// network fetch runs. Empty on first launch.
+  Future<List<Transaction>> getCachedTransactions(String userId) =>
+      _cache.loadTransactions(userId);
+
   // Check if user has transactions for today
   Future<bool> hasTransactionsToday(String userId) async {
     try {

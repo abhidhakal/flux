@@ -1,6 +1,7 @@
 import '../models/budget_model.dart';
 import '../models/financial_snapshot.dart';
 import '../models/goal_model.dart';
+import 'currency_service.dart';
 import 'planning_insights_service.dart';
 
 class FinancialInsight {
@@ -47,7 +48,7 @@ class FinancialInsightsService {
         title: 'Protect your ${forecast.budget.name} budget',
         basedOn: 'Based on your projected spending pace',
         message:
-            'At your current pace, it may exceed its limit by ${forecast.projectedOverage.toStringAsFixed(0)}. Acting early gives you more room to adjust.',
+            'At your current pace, it may exceed its limit by ${CurrencyService().formatAmountCompact(forecast.projectedOverage)}. Acting early gives you more room to adjust.',
         tone: InsightTone.attention,
         actionLabel: 'Review budget',
         action: FinancialInsightAction.budgets,

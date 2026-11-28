@@ -125,7 +125,10 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     LoadTransactions event,
     Emitter<TransactionState> emit,
   ) async {
-    emit(TransactionLoading());
+    // Show what's cached right away, then refresh from the network.
+    final cached =
+        await _transactionService.getCachedTransactions(event.userId);
+    emit(cached.isEmpty ? TransactionLoading() : TransactionLoaded(cached));
 
     try {
       await _recurringTransactionService.processDueTransactions(event.userId);

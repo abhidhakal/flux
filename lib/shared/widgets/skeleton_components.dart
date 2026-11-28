@@ -98,6 +98,22 @@ class SkeletonComponents {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    // An empty card is a plain surface box, invisible on the page
+    // background, so it shimmers as a solid placeholder block instead.
+    if (children == null) {
+      return shimmerWrapper(
+        context: context,
+        child: Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(borderRadius),
+          ),
+        ),
+      );
+    }
+
     return Container(
       width: width,
       height: height,
@@ -107,15 +123,13 @@ class SkeletonComponents {
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(borderRadius),
       ),
-      child: children != null
-          ? SingleChildScrollView(
-              physics: const NeverScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: children,
-              ),
-            )
-          : null,
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: children,
+        ),
+      ),
     );
   }
 

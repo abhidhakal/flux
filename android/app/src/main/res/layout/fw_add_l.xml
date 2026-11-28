@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/fw_bg"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="20dp"
+    android:paddingEnd="12dp"
+    android:paddingVertical="12dp">
+    <TextView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Add a transaction…"
+        android:textSize="15sp"
+        android:textColor="@color/fw_ink2"
+        android:fontFamily="sans-serif-medium"
+        android:maxLines="1"
+        android:ellipsize="end" />
+    <ImageView
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:padding="15dp"
+        android:background="@drawable/fw_tile_primary"
+        android:tint="@color/fw_bg"
+        android:src="@drawable/fw_ic_plus"
+        android:importantForAccessibility="no" />
+</LinearLayout>

@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CurrencyService {
@@ -46,7 +49,7 @@ class CurrencyService {
   Future<void> _loadSavedCurrency() async {
     if (_prefs != null) {
       final savedCurrency = _prefs!.getString('selected_currency') ?? 'USD';
-      setCurrency(savedCurrency);
+      await setCurrency(savedCurrency, syncToAccount: false);
     }
   }
 
@@ -56,17 +59,40 @@ class CurrencyService {
   String get country => _country;
   int get decimalPlaces => _currency == 'JPY' || _currency == 'KRW' ? 0 : 2;
 
-  // Set currency
-  Future<void> setCurrency(String currencyCode) async {
-    if (_currencyConfig.containsKey(currencyCode)) {
-      _currency = currencyCode;
-      _symbol = _currencyConfig[currencyCode]!['symbol']!;
-      _country = _currencyConfig[currencyCode]!['country']!;
+  // Set currency. Saved on the device and, when signed in, on the user's
+  // account (users/{uid}.preferences.currency) so it survives reinstalls and
+  // new devices.
+  Future<void> setCurrency(String currencyCode, {bool syncToAccount = true}) async {
+    if (!_currencyConfig.containsKey(currencyCode)) return;
+    _currency = currencyCode;
+    _symbol = _currencyConfig[currencyCode]!['symbol']!;
+    _country = _currencyConfig[currencyCode]!['country']!;
 
-      // Save to SharedPreferences
-      if (_prefs != null) {
-        await _prefs!.setString('selected_currency', currencyCode);
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs!.setString('selected_currency', currencyCode);
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (syncToAccount && uid != null) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .update({'preferences.currency': currencyCode});
+      } catch (e) {
+        debugPrint('Could not save currency to account: $e');
       }
+    }
+  }
+
+  /// Called on sign-in with the account's preferences. The account wins;
+  /// if the account has none yet, the device's choice is uploaded once.
+  Future<void> applyAccountCurrency(Map<String, dynamic> preferences) async {
+    await ensureInitialized();
+    final saved = preferences['currency'] as String?;
+    if (saved != null && _currencyConfig.containsKey(saved)) {
+      if (saved != _currency) await setCurrency(saved, syncToAccount: false);
+    } else if (_prefs?.getString('selected_currency') != null) {
+      await setCurrency(_currency);
     }
   }
 

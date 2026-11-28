@@ -1,11 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="widget_balance_label">Balance</string>
-    <string name="widget_action_label">Add Transaction</string>
-    <string name="widget_quick_capture_label">Quick Capture</string>
-    <string name="widget_goal_label">Goal Progress</string>
-    <string name="widget_cd_balance">Total balance: %s</string>
-    <string name="widget_cd_income">Total income: %s</string>
-    <string name="widget_cd_expenses">Total expenses: %s</string>
-    <string name="widget_cd_goal_progress">%1$s percent complete for %2$s</string>
+    <string name="fw_safe_label">Safe to spend</string>
+    <string name="fw_safe_desc">What you can spend today and stay on budget</string>
+    <string name="fw_quick_label">Quick add</string>
+    <string name="fw_quick_desc">Log an expense or income in one tap</string>
+    <string name="fw_goal_label">Goal jar</string>
+    <string name="fw_goal_desc">Your top savings goal filling up</string>
+    <string name="fw_glance_label">Month at a glance</string>
+    <string name="fw_glance_desc">Balance, money in and money out</string>
+    <string name="fw_pulse_label">Spending pulse</string>
+    <string name="fw_pulse_desc">Daily spending this week</string>
+    <string name="fw_rings_label">Budget rings</string>
+    <string name="fw_rings_desc">Your three busiest budgets</string>
+    <string name="fw_bills_label">Upcoming bills</string>
+    <string name="fw_bills_desc">Next recurring payments due</string>
+    <string name="fw_heat_label">Month heatmap</string>
+    <string name="fw_heat_desc">Spending for each day this month</string>
+    <string name="fw_streak_label">No-spend streak</string>
+    <string name="fw_streak_desc">Days in a row without spending</string>
+    <string name="fw_top_label">Top category</string>
+    <string name="fw_top_desc">Where most of your money went</string>
+    <string name="fw_add_label">Add transaction</string>
+    <string name="fw_add_desc">One tap to log. Resize for a button or a bar.</string>
 </resources>

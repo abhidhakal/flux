@@ -32,6 +32,7 @@ import 'features/notifications/notifications_bloc.dart';
 import 'features/main/navigation_cubit.dart';
 import 'features/theme/theme_bloc.dart';
 import 'features/transaction/screens/add_transaction_screen.dart';
+import 'features/transaction/screens/recurring_transactions_screen.dart';
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -185,7 +186,10 @@ class _AppViewState extends State<AppView> {
             };
             _navigatorKey.currentState?.push(
               MaterialPageRoute(
-                builder: (context) => AddTransactionScreen(initialType: type),
+                builder: (context) => AddTransactionScreen(
+                  initialType: type,
+                  initialCategory: uri.queryParameters['category'],
+                ),
               ),
             );
             return;
@@ -203,6 +207,19 @@ class _AppViewState extends State<AppView> {
 
           if (uri.host == 'open_home') {
             context.read<NavigationCubit>().setTab(0);
+            return;
+          }
+
+          if (uri.host == 'open_analytics') {
+            context.read<NavigationCubit>().setTab(3);
+            return;
+          }
+
+          if (uri.host == 'open_recurring') {
+            _navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                  builder: (context) => const RecurringTransactionsScreen()),
+            );
             return;
           }
 
@@ -229,6 +246,7 @@ class _AppViewState extends State<AppView> {
         BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state is AuthAuthenticated) {
+              CurrencyService().applyAccountCurrency(state.user.preferences);
               context
                   .read<TransactionBloc>()
                   .add(LoadTransactions(state.user.id));

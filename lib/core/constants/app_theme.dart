@@ -140,7 +140,7 @@ class AppColors {
 
 class AppTheme {
   // Typography
-  static const String fontFamily = 'Satoshi';
+  static const String fontFamily = 'Geist';
 
   // Shared form-control geometry
   static const double formFieldRadius = 16;
@@ -477,12 +477,39 @@ class AppTheme {
     ),
   ];
 
+  /// One switch style for the whole app: white thumb, brand-blue track when
+  /// on, a visible neutral track when off (M3's default off track is the
+  /// surface colour, which vanishes on white cards).
+  static SwitchThemeData _switchTheme(Brightness b) {
+    final dark = b == Brightness.dark;
+    return SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((s) {
+        if (s.contains(WidgetState.disabled)) {
+          return dark ? AppColors.darkBorder : AppColors.lightDivider;
+        }
+        return Colors.white;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((s) {
+        final on = s.contains(WidgetState.selected);
+        if (s.contains(WidgetState.disabled)) {
+          return (on ? AppColors.primary : (dark ? AppColors.darkDivider : AppColors.lightDivider))
+              .withValues(alpha: 0.5);
+        }
+        if (on) return AppColors.primary;
+        return dark ? AppColors.darkBorder : const Color(0xFFD5D9E0);
+      }),
+      trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+      thumbIcon: const WidgetStatePropertyAll(null),
+    );
+  }
+
   // Light theme
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
       fontFamily: fontFamily,
       brightness: Brightness.light,
+      switchTheme: _switchTheme(Brightness.light),
       scaffoldBackgroundColor: AppColors.lightBackground,
       canvasColor: AppColors.lightBackground,
       colorScheme: const ColorScheme.light(
@@ -628,13 +655,13 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
         elevation: 8,
         selectedLabelStyle: TextStyle(
-          fontSize: 12,
+          fontSize: 10.5,
           fontWeight: FontWeight.w600,
           fontFamily: fontFamily,
         ),
         unselectedLabelStyle: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.normal,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w500,
           fontFamily: fontFamily,
         ),
       ),
@@ -674,6 +701,7 @@ class AppTheme {
       useMaterial3: true,
       fontFamily: fontFamily,
       brightness: Brightness.dark,
+      switchTheme: _switchTheme(Brightness.dark),
       scaffoldBackgroundColor: AppColors.darkBackground,
       canvasColor: AppColors.darkBackground,
       colorScheme: const ColorScheme.dark(
@@ -819,13 +847,13 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
         elevation: 8,
         selectedLabelStyle: TextStyle(
-          fontSize: 12,
+          fontSize: 10.5,
           fontWeight: FontWeight.w600,
           fontFamily: fontFamily,
         ),
         unselectedLabelStyle: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.normal,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w500,
           fontFamily: fontFamily,
         ),
       ),

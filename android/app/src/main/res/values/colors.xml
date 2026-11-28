@@ -1,20 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#0079DC</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
     <color name="splash_background">#FAFBFC</color>
     <color name="splash_icon_background">#0079DC</color>
-    <color name="widget_background">#A6FAFBFC</color>
-    <color name="widget_card_bg">#A6FFFFFF</color>
-    <color name="widget_divider">#E9ECEF</color>
-    <color name="widget_text_primary">#1A1A1A</color>
-    <color name="widget_text_secondary">#6B7280</color>
-    <color name="widget_income">#00C851</color>
-    <color name="widget_expense">#DC3545</color>
-    <color name="widget_button_bg">#0079DC</color>
-    <color name="widget_button_text">#FFFFFFFF</color>
-    <color name="widget_surface_alt">#B3F3F7FB</color>
-    <color name="widget_surface_accent">#EAF3FF</color>
-    <color name="widget_goal_track">#DCE6F1</color>
-    <color name="widget_goal_progress">#0079DC</color>
-    <color name="widget_goal_progress_text">#111827</color>
+
+    <color name="fw_bg">#FFFFFF</color>
+    <color name="fw_bg2">#F2F4F7</color>
+    <color name="fw_ink">#111111</color>
+    <color name="fw_ink2">#6B7280</color>
+    <color name="fw_line">#E8E8E8</color>
+    <color name="fw_primary">#0079DC</color>
+    <color name="fw_primary_soft">#E3F0FC</color>
+    <color name="fw_accent">#E76F51</color>
+    <color name="fw_accent_soft">#FCE7E1</color>
+    <color name="fw_good">#16A34A</color>
+    <color name="fw_good_soft">#DCFCE7</color>
+    <color name="fw_warn">#D97706</color>
+    <color name="fw_warn_soft">#FEF3C7</color>
+    <color name="fw_bad">#DC2626</color>
+    <color name="fw_bad_soft">#FEE2E2</color>
 </resources>

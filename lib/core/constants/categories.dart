@@ -1,3 +1,6 @@
+import 'package:flutter/widgets.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 class AppCategories {
   // Core expense categories
   static const List<String> expenseCategories = [
@@ -32,52 +35,26 @@ class AppCategories {
         ...incomeCategories,
       ];
 
-  // Category icons mapping
-  static const Map<String, String> categoryIcons = {
-    'Food & Dining': '🍽️',
-    'Transportation': '🚗',
-    'Entertainment': '🎬',
-    'Shopping': '🛍️',
-    'Bills & Utilities': '⚡',
-    'Healthcare': '🏥',
-    'Education': '📚',
-    'Housing': '🏠',
-    'Insurance': '🛡️',
-    'Personal Care': '💄',
-    'Travel': '✈️',
-    'Gifts': '🎁',
-    'Other': '📝',
-    'Salary': '💰',
-    'Freelance': '💼',
-    'Investment': '📈',
-    'Business': '🏢',
-    'Other Income': '💵',
-  };
+  /// Line icon per category, the same set the home-screen widgets use.
+  static IconData iconFor(String category) => switch (category) {
+        'Food & Dining' => LucideIcons.utensils,
+        'Transportation' => LucideIcons.car,
+        'Entertainment' => LucideIcons.clapperboard,
+        'Shopping' => LucideIcons.shoppingBag,
+        'Bills & Utilities' => LucideIcons.zap,
+        'Healthcare' => LucideIcons.heartPulse,
+        'Education' => LucideIcons.graduationCap,
+        'Housing' => LucideIcons.house,
+        'Insurance' => LucideIcons.shield,
+        'Personal Care' => LucideIcons.sparkles,
+        'Travel' => LucideIcons.plane,
+        'Gifts' => LucideIcons.gift,
+        'Salary' => LucideIcons.wallet,
+        'Freelance' => LucideIcons.briefcase,
+        'Investment' => LucideIcons.trendingUp,
+        'Business' => LucideIcons.building2,
+        'Other Income' => LucideIcons.banknote,
+        _ => LucideIcons.tag,
+      };
 
-  // Category colors mapping
-  static const Map<String, int> categoryColors = {
-    'Food & Dining': 0xFF333333,
-    'Transportation': 0xFF444444,
-    'Entertainment': 0xFF555555,
-    'Shopping': 0xFF666666,
-    'Bills & Utilities': 0xFF777777,
-    'Healthcare': 0xFF888888,
-    'Education': 0xFF999999,
-    'Housing': 0xFFAAAAAA,
-    'Insurance': 0xFFBBBBBB,
-    'Personal Care': 0xFFCCCCCC,
-    'Travel': 0xFFDDDDDD,
-    'Gifts': 0xFF666666,
-    'Other': 0xFF888888,
-    'Salary': 0xFF555555,
-    'Freelance': 0xFF777777,
-    'Investment': 0xFF999999,
-    'Business': 0xFFBBBBBB,
-    'Other Income': 0xFF666666,
-  };
-
-  // Get color for category
-  static int getColor(String category) {
-    return categoryColors[category] ?? 0xFF888888;
-  }
 }

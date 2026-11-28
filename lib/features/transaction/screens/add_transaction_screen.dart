@@ -21,8 +21,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final TransactionType? initialType;
+  final String? initialCategory;
 
-  const AddTransactionScreen({super.key, this.initialType});
+  const AddTransactionScreen(
+      {super.key, this.initialType, this.initialCategory});
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -64,6 +66,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       _selectedType = widget.initialType!;
       _selectedCategory =
           _selectedType == TransactionType.income ? 'Salary' : 'Food & Dining';
+    }
+    if (widget.initialCategory != null) {
+      _selectedCategory = widget.initialCategory!;
     }
     // Load budgets when screen initializes
     final user = context.read<AuthBloc>().state;
@@ -202,15 +207,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                       _buildDescriptionField(),
                       const SizedBox(height: 20),
                       _buildSectionTitle('Amount',
-                          icon: LucideIcons.dollarSign),
+                          icon: LucideIcons.banknote),
                       const SizedBox(height: 8),
                       _buildAmountField(),
                       const SizedBox(height: 20),
-                      _buildSectionTitle('Category', icon: LucideIcons.tag),
+                      _buildSectionTitle('Category', icon: LucideIcons.layoutGrid),
                       const SizedBox(height: 8),
                       _buildCategorySelector(),
                       const SizedBox(height: 20),
-                      _buildSectionTitle('Budget'),
+                      _buildSectionTitle('Budget', icon: LucideIcons.wallet),
                       const SizedBox(height: 8),
                       _buildBudgetSelector(),
                       if (_selectedType == TransactionType.expense) ...[
@@ -409,9 +414,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
               child: Row(
                 children: [
                   Icon(
-                    LucideIcons.circle,
-                    size: 10,
-                    color: Color(AppCategories.getColor(category)),
+                    AppCategories.iconFor(category),
+                    size: 18,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.7),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -706,7 +714,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
         ),
         value: _isEssential,
-        activeThumbColor: AppColors.primary,
         onChanged: (value) => setState(() => _isEssential = value),
         secondary: Icon(
           _isEssential ? LucideIcons.clipboardCheck : LucideIcons.shoppingBag,
@@ -740,7 +747,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
               ),
             ),
             value: _isRecurring,
-            activeThumbColor: AppColors.primary,
             onChanged: (value) => setState(() => _isRecurring = value),
           ),
           if (_isRecurring)

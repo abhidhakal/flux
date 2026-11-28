@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/fw_bg"
+    android:orientation="vertical"
+    android:padding="16dp">
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+<LinearLayout
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:layout_weight="1">
+<TextView
+    android:id="@+id/l"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="12sp"
+    android:textColor="@color/fw_ink2"
+    android:maxLines="1"
+    android:ellipsize="end"
+    android:includeFontPadding="false"
+    android:fontFamily="sans-serif-medium"
+    android:text="This week" />
+<TextView
+    android:id="@+id/total"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="28sp"
+    android:textColor="@color/fw_ink"
+    android:maxLines="1"
+    android:ellipsize="end"
+    android:includeFontPadding="false"
+    android:fontFamily="sans-serif-black" 
+    android:text="318.00" />
+</LinearLayout>
+<TextView
+    android:id="@+id/change"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="12sp"
+    android:textColor="@color/fw_good"
+    android:maxLines="1"
+    android:ellipsize="end"
+    android:includeFontPadding="false"
+    android:fontFamily="sans-serif-black"
+    android:paddingHorizontal="8dp"
+    android:paddingVertical="4dp"
+    android:background="@drawable/fw_tile_good_soft" 
+    android:text="↓ 12% vs last" />
+</LinearLayout>
+<ImageView
+    android:id="@+id/chart"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:scaleType="fitCenter"
+    android:importantForAccessibility="no"
+    android:layout_marginTop="10dp" />
+</LinearLayout>

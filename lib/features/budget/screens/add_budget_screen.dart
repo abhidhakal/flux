@@ -120,7 +120,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                   },
                 ),
                 const SizedBox(height: 20),
-                _buildSectionTitle('Amount', icon: LucideIcons.dollarSign),
+                _buildSectionTitle('Amount', icon: LucideIcons.banknote),
                 const SizedBox(height: 8),
                 AppNumberField(
                   controller: _amountController,
@@ -165,9 +165,9 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                       child: Row(
                         children: [
                           Icon(
-                            LucideIcons.circle,
-                            size: 10,
-                            color: Color(AppCategories.getColor(category)),
+                            AppCategories.iconFor(category),
+                            size: 18,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
                           const SizedBox(width: 8),
                           Text(category),
@@ -294,7 +294,6 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
         ),
         value: _enableRollover,
         onChanged: (value) => setState(() => _enableRollover = value),
-        activeThumbColor: AppColors.primary,
       ),
     );
   }

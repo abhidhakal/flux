@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_theme.dart';
+import '../../../core/constants/categories.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/services/currency_service.dart';
 import '../../../shared/widgets/app_icon_badge.dart';
@@ -10,14 +11,14 @@ class TransactionTile extends StatelessWidget {
   final bool isSelectionMode;
   final bool isSelected;
   final VoidCallback onTap;
-  final VoidCallback onLongPress;
+  final VoidCallback? onLongPress;
   final bool showCard;
 
   const TransactionTile({
     super.key,
     required this.item,
     required this.onTap,
-    required this.onLongPress,
+    this.onLongPress,
     this.isSelectionMode = false,
     this.isSelected = false,
     this.showCard = true,
@@ -86,7 +87,7 @@ class TransactionTile extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(right: 14),
                 child: AppIconBadge(
-                  icon: isIncome ? LucideIcons.plus : LucideIcons.minus,
+                  icon: AppCategories.iconFor(item.category),
                   color: accentColor,
                   size: AppIconBadgeSize.large,
                 ),
@@ -121,6 +122,7 @@ class TransactionTile extends StatelessWidget {
               ),
             ),
 
+            const SizedBox(width: 12),
             // Amount + time
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,

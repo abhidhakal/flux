@@ -418,7 +418,6 @@ class _GoalsScreenState extends State<GoalsScreen>
   }
 
   Widget _buildGoalsOverview(List<Goal> goals, ColorScheme colorScheme) {
-    final currency = CurrencyService().symbol;
     final totalTarget = goals.fold(0.0, (sum, g) => sum + g.targetAmount);
     final totalProgress = goals.fold(0.0, (sum, g) => sum + g.currentAmount);
     final averageProgress =
@@ -443,7 +442,7 @@ class _GoalsScreenState extends State<GoalsScreen>
                   width: 1,
                   height: 40,
                   color: colorScheme.outline.withValues(alpha: 0.1)),
-              _buildOverviewStat('$currency${totalTarget.toStringAsFixed(0)}',
+              _buildOverviewStat(CurrencyService().formatAmountCompact(totalTarget),
                   'Target', colorScheme),
               Container(
                   width: 1,
@@ -488,7 +487,6 @@ class _GoalsScreenState extends State<GoalsScreen>
 
   Widget _buildCompletedGoalsTab(List<Goal> completedGoals) {
     final colorScheme = Theme.of(context).colorScheme;
-    final currency = CurrencyService().symbol;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -541,7 +539,7 @@ class _GoalsScreenState extends State<GoalsScreen>
                                         fontWeight: FontWeight.w600,
                                         color: colorScheme.onSurface)),
                                 Text(
-                                    '$currency${completedGoals.fold(0.0, (sum, g) => sum + g.targetAmount).toStringAsFixed(0)} saved',
+                                    '${CurrencyService().formatAmountCompact(completedGoals.fold(0.0, (sum, g) => sum + g.targetAmount))} saved',
                                     style: TextStyle(
                                         fontSize: 14,
                                         color: colorScheme.onSurfaceVariant)),

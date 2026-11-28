@@ -226,7 +226,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                 const SizedBox(height: 16),
 
                 // Amount
-                _buildSectionTitle('Amount', icon: LucideIcons.dollarSign),
+                _buildSectionTitle('Amount', icon: LucideIcons.banknote),
                 const SizedBox(height: 8),
                 AppNumberField(
                   controller: _amountController,
@@ -246,7 +246,7 @@ class _EditTransactionFormState extends State<_EditTransactionForm> {
                 const SizedBox(height: 16),
 
                 // Category
-                _buildSectionTitle('Category', icon: LucideIcons.tag),
+                _buildSectionTitle('Category', icon: LucideIcons.layoutGrid),
                 const SizedBox(height: 8),
                 AppDropdownField<String>(
                   value: _selectedCategory,

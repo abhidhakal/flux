@@ -454,7 +454,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen>
                 if (!value) _recurringPeriod = null;
               });
             },
-            activeThumbColor: AppColors.primary,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           ),

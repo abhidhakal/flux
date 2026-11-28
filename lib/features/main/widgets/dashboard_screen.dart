@@ -26,6 +26,7 @@ import '../../notifications/screens/notifications_screen.dart';
 import '../../notifications/notifications_bloc.dart';
 import '../../transaction/screens/add_transaction_screen.dart';
 import '../../transaction/screens/recurring_transactions_screen.dart';
+import 'transaction_tile.dart';
 import '../navigation_cubit.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -726,8 +727,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ...recent.map(
           (item) => Padding(
             padding: const EdgeInsets.only(bottom: 3),
-            child: _CompactTransactionRow(
+            child: TransactionTile(
               item: item,
+              showCard: false,
               onTap: () => context.read<NavigationCubit>().setTab(2),
             ),
           ),
@@ -757,116 +759,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
-  }
-}
-
-/// Dense single-line row for the dashboard's "recent" preview — the full
-/// TransactionTile (44px icon, bordered card, 16/14 padding) is built for
-/// browsing the full transaction list, not a quick glance.
-class _CompactTransactionRow extends StatelessWidget {
-  final Transaction item;
-  final VoidCallback onTap;
-
-  const _CompactTransactionRow({required this.item, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final isIncome = item.isIncome;
-    final accentColor = isIncome ? AppColors.success : AppColors.error;
-    final mutedColor =
-        Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.48);
-    final dayLabel = _dayLabel(item.date);
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 9),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: isIncome
-                    ? const Color(0xFFEAF8F2)
-                    : const Color(0xFFFFF1F0),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isIncome ? LucideIcons.dollarSign : LucideIcons.receipt,
-                color: accentColor,
-                size: 19,
-              ),
-            ),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '$dayLabel  •  ${_timeLabel(item.date)}',
-                    style: TextStyle(fontSize: 12, color: mutedColor),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${isIncome ? '+' : '-'}${CurrencyService().formatAmount(item.amount)}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: isIncome ? AppColors.successDark : null,
-                  ),
-                ),
-                if (!item.isActive)
-                  const Text(
-                    'Inactive',
-                    style: TextStyle(
-                      color: AppColors.error,
-                      fontSize: 11,
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static String _dayLabel(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final itemDay = DateTime(date.year, date.month, date.day);
-    final difference = today.difference(itemDay).inDays;
-
-    if (difference == 0) return 'Today';
-    if (difference == 1) return 'Yesterday';
-    if (difference >= 0 && difference < 7) return 'This week';
-    return '${date.day}/${date.month}/${date.year}';
-  }
-
-  static String _timeLabel(DateTime date) {
-    final hour =
-        date.hour == 0 ? 12 : (date.hour > 12 ? date.hour - 12 : date.hour);
-    final minute = date.minute.toString().padLeft(2, '0');
-    final period = date.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
   }
 }
 

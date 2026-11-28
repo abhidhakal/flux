@@ -688,7 +688,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                       tileColor: isSelected
                           ? colorScheme.primary.withValues(alpha: 0.06)
                           : null,
-                      leading: _buildFlag(country['country']!),
+                      leading: _buildCurrencyBadge(
+                          country['symbol'] ?? country['code']!),
                       title: Text(country['country']!),
                       subtitle: Text(country['code']!),
                       trailing: isSelected
@@ -719,30 +720,29 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildFlag(String countryName) {
-    final Map<String, String> flagByCountry = {
-      'United States': '🇺🇸',
-      'United Kingdom': '🇬🇧',
-      'European Union': '🇪🇺',
-      'Japan': '🇯🇵',
-      'Canada': '🇨🇦',
-      'Australia': '🇦🇺',
-      'India': '🇮🇳',
-      'China': '🇨🇳',
-      'Brazil': '🇧🇷',
-      'South Korea': '🇰🇷',
-      'Nepal': '🇳🇵',
-      'Mexico': '🇲🇽',
-      'Singapore': '🇸🇬',
-      'Switzerland': '🇨🇭',
-      'New Zealand': '🇳🇿',
-    };
-    final emoji = flagByCountry[countryName];
-    if (emoji != null) {
-      return Text(emoji, style: const TextStyle(fontSize: 24));
-    }
-    return const Icon(LucideIcons.flag, size: 24);
+  /// Currency symbol in a tinted square (no flag emoji).
+  Widget _buildCurrencyBadge(String symbol) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: 44,
+      height: 44,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: cs.primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        symbol,
+        maxLines: 1,
+        style: TextStyle(
+          fontSize: symbol.length > 2 ? 12 : 16,
+          fontWeight: FontWeight.w700,
+          color: cs.primary,
+        ),
+      ),
+    );
   }
+
 
   void _showAppearancePopup() {
     final colorScheme = Theme.of(context).colorScheme;

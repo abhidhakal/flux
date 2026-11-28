@@ -1,7 +1,7 @@
 name: flux
 description: A comprehensive financial wellness platform
 publish_to: "none"
-version: 2.0.1+14
+version: 2.1.0+15
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -66,46 +66,40 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
 
 flutter_icons:
+  # Source artwork lives in assets/brand/ (not bundled into the app).
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/flux_logo.png"
+  image_path: "assets/brand/flux_icon_foreground.png"
   min_sdk_android: 21
-  adaptive_icon_background: "#0079DC"
-  adaptive_icon_foreground: "assets/images/flux_logo.png"
-  adaptive_icon_monochrome: "assets/images/flux_logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/brand/flux_icon_foreground.png"
+  adaptive_icon_monochrome: "assets/brand/flux_icon_monochrome.png"
+  remove_alpha_ios: true
+  background_color_ios: "#FFFFFF"
+  web:
+    generate: true
+    image_path: "assets/brand/flux_icon_foreground.png"
+    background_color: "#FFFFFF"
+    theme_color: "#0079DC"
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/images/
-    - assets/fonts/Satoshi/
 
   fonts:
-    - family: Satoshi
+    - family: Geist
       fonts:
-        - asset: assets/fonts/Satoshi/Satoshi-Regular.ttf
+        - asset: assets/fonts/Geist/Geist-Regular.ttf
           weight: 400
-        - asset: assets/fonts/Satoshi/Satoshi-Italic.ttf
-          weight: 400
-          style: italic
-        - asset: assets/fonts/Satoshi/Satoshi-Light.ttf
-          weight: 300
-        - asset: assets/fonts/Satoshi/Satoshi-LightItalic.ttf
-          weight: 300
-          style: italic
-        - asset: assets/fonts/Satoshi/Satoshi-Medium.ttf
+        - asset: assets/fonts/Geist/Geist-Medium.ttf
           weight: 500
-        - asset: assets/fonts/Satoshi/Satoshi-MediumItalic.ttf
-          weight: 500
-          style: italic
-        - asset: assets/fonts/Satoshi/Satoshi-Bold.ttf
+        - asset: assets/fonts/Geist/Geist-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Geist/Geist-Bold.ttf
           weight: 700
-        - asset: assets/fonts/Satoshi/Satoshi-BoldItalic.ttf
-          weight: 700
-          style: italic
-        - asset: assets/fonts/Satoshi/Satoshi-Black.ttf
+        - asset: assets/fonts/Geist/Geist-Black.ttf
+          weight: 800
+        - asset: assets/fonts/Geist/Geist-UltraBlack.ttf
           weight: 900
-        - asset: assets/fonts/Satoshi/Satoshi-BlackItalic.ttf
-          weight: 900
-          style: italic

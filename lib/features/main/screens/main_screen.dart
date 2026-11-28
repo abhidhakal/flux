@@ -119,14 +119,14 @@ class _MainScreenState extends State<MainScreen> {
                           selectedLabelStyle: navTheme.selectedLabelStyle ??
                               const TextStyle(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 11,
-                                letterSpacing: 0.1,
+                                fontSize: 10.5,
+                                letterSpacing: 0,
                               ),
                           unselectedLabelStyle: navTheme.unselectedLabelStyle ??
                               const TextStyle(
                                 fontWeight: FontWeight.w500,
-                                fontSize: 11,
-                                letterSpacing: 0.1,
+                                fontSize: 10.5,
+                                letterSpacing: 0,
                               ),
                           elevation: 0,
                           items: [

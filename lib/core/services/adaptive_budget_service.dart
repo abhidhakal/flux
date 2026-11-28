@@ -25,9 +25,9 @@ class AdaptiveBudgetInsight {
   String get recommendation {
     switch (status) {
       case BudgetPaceStatus.over:
-        return 'Pause non-essential \${budget.category.toLowerCase()} spending until the next period.';
+        return 'Pause non-essential ${budget.category.toLowerCase()} spending until the next period.';
       case BudgetPaceStatus.atRisk:
-        return 'Keep \${budget.category.toLowerCase()} spending under the weekly limit to recover your pace.';
+        return 'Keep ${budget.category.toLowerCase()} spending under the weekly limit to recover your pace.';
       case BudgetPaceStatus.ahead:
         return 'You have room in this budget. Keep the surplus available for the rest of the period.';
       case BudgetPaceStatus.onTrack:

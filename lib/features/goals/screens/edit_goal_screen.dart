@@ -190,7 +190,7 @@ class _EditGoalScreenState extends State<EditGoalScreen>
 
                           // Target Amount
                           _buildSectionLabel('Target Amount',
-                              icon: LucideIcons.dollarSign),
+                              icon: LucideIcons.banknote),
                           const SizedBox(height: 8),
                           AppNumberField(
                             controller: _targetAmountController,
@@ -641,7 +641,6 @@ class _EditGoalScreenState extends State<EditGoalScreen>
                 if (!value) _recurringPeriod = null;
               });
             },
-            activeThumbColor: AppColors.primary,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           ),

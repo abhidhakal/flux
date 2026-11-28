@@ -7,6 +7,7 @@ import '../../../core/services/goal_template_service.dart';
 import '../../auth/auth_bloc.dart';
 import '../../../shared/widgets/app_snackbar.dart';
 import '../../../shared/widgets/app_form_fields.dart';
+import '../../../shared/widgets/app_icon_badge.dart';
 import '../../../shared/widgets/premium_page_hero.dart';
 import '../goals_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -14,30 +15,20 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 class GoalTemplatesScreen extends StatefulWidget {
   const GoalTemplatesScreen({super.key});
 
-  static String getTemplateEmoji(GoalTemplateCategory category) {
-    switch (category) {
-      case GoalTemplateCategory.retirement:
-        return '🏖️';
-      case GoalTemplateCategory.health:
-        return '🏥';
-      case GoalTemplateCategory.business:
-        return '💼';
-      case GoalTemplateCategory.house:
-        return '🏠';
-      case GoalTemplateCategory.vacation:
-        return '✈️';
-      case GoalTemplateCategory.emergency:
-        return '🚨';
-      case GoalTemplateCategory.car:
-        return '🚗';
-      case GoalTemplateCategory.education:
-        return '🎓';
-      case GoalTemplateCategory.wedding:
-        return '💍';
-      case GoalTemplateCategory.other:
-        return '🎯';
-    }
-  }
+  static IconData getTemplateIcon(GoalTemplateCategory category) =>
+      switch (category) {
+        GoalTemplateCategory.retirement => LucideIcons.palmtree,
+        GoalTemplateCategory.health => LucideIcons.heartPulse,
+        GoalTemplateCategory.business => LucideIcons.briefcase,
+        GoalTemplateCategory.house => LucideIcons.house,
+        GoalTemplateCategory.vacation => LucideIcons.plane,
+        GoalTemplateCategory.emergency => LucideIcons.shieldAlert,
+        GoalTemplateCategory.car => LucideIcons.car,
+        GoalTemplateCategory.education => LucideIcons.graduationCap,
+        GoalTemplateCategory.wedding => LucideIcons.gem,
+        GoalTemplateCategory.other => LucideIcons.goal,
+      };
+
 
   @override
   State<GoalTemplatesScreen> createState() => _GoalTemplatesScreenState();
@@ -241,9 +232,10 @@ class _GoalTemplatesScreenState extends State<GoalTemplatesScreen>
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: Center(
-                child: Text(
-                  GoalTemplatesScreen.getTemplateEmoji(template.category),
-                  style: const TextStyle(fontSize: 40),
+                child: AppIconBadge(
+                  icon: GoalTemplatesScreen.getTemplateIcon(template.category),
+                  color: AppColors.primary,
+                  size: AppIconBadgeSize.large,
                 ),
               ),
             ),
@@ -398,10 +390,11 @@ class _TemplateDetailsSheetState extends State<_TemplateDetailsSheet> {
                     color: AppColors.primary.withValues(alpha: 0.05),
                     shape: BoxShape.circle,
                   ),
-                  child: Text(
-                    GoalTemplatesScreen.getTemplateEmoji(
+                  child: Icon(
+                    GoalTemplatesScreen.getTemplateIcon(
                         widget.template.category),
-                    style: const TextStyle(fontSize: 32),
+                    size: 28,
+                    color: AppColors.primary,
                   ),
                 ),
               ],

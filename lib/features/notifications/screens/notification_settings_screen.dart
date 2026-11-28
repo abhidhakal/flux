@@ -214,7 +214,6 @@ class _NotificationSettingsScreenState
               Switch(
                 value: _notificationsEnabled,
                 onChanged: (value) => _toggleNotifications(),
-                activeThumbColor: AppColors.primary,
               ),
             ],
           ),
@@ -336,7 +335,6 @@ class _NotificationSettingsScreenState
         Switch(
           value: value,
           onChanged: _notificationsEnabled ? onChanged : null,
-          activeThumbColor: AppColors.primary,
         ),
       ],
     );
@@ -484,7 +482,6 @@ class _NotificationSettingsScreenState
         Switch(
           value: value,
           onChanged: _notificationsEnabled ? onChanged : null,
-          activeThumbColor: AppColors.primary,
         ),
       ],
     );

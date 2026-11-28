@@ -148,7 +148,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     bottom: Column(
                       children: [
                         _StepRow(
-                          icon: LucideIcons.receipt,
+                          icon: LucideIcons.scrollText,
                           color: AppColors.primary,
                           title: 'Log a transaction',
                           subtitle: 'Tap + on the home screen',

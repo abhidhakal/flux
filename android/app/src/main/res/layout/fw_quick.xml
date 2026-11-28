@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/fw_bg"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:gravity="center_vertical">
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+<ImageView
+    android:id="@+id/add_expense"
+    android:layout_width="0dp"
+    android:layout_height="48dp"
+    android:layout_weight="1"
+    android:layout_marginEnd="8dp"
+    android:padding="12dp"
+    android:background="@drawable/fw_tile_accent"
+    android:tint="@color/fw_bg"
+    android:scaleType="fitCenter"
+    android:src="@drawable/fw_ic_minus" />
+<ImageView
+    android:id="@+id/add_income"
+    android:layout_width="0dp"
+    android:layout_height="48dp"
+    android:layout_weight="1"
+    android:layout_marginEnd="8dp"
+    android:padding="12dp"
+    android:background="@drawable/fw_tile_good_soft"
+    android:tint="@color/fw_good"
+    android:scaleType="fitCenter"
+    android:src="@drawable/fw_ic_plus" />
+<ImageView
+    android:id="@+id/cat1"
+    android:layout_width="0dp"
+    android:layout_weight="1"
+    android:layout_height="match_parent"
+    android:layout_marginEnd="8dp"
+    android:padding="12dp"
+    android:background="@drawable/fw_tile_bg2"
+    android:tint="@color/fw_ink"
+    android:scaleType="fitCenter" 
+    android:src="@drawable/fw_ic_utensils" />
+<ImageView
+    android:id="@+id/cat2"
+    android:layout_width="0dp"
+    android:layout_weight="1"
+    android:layout_height="match_parent"
+    android:layout_marginEnd="0dp"
+    android:padding="12dp"
+    android:background="@drawable/fw_tile_bg2"
+    android:tint="@color/fw_ink"
+    android:scaleType="fitCenter" 
+    android:src="@drawable/fw_ic_car" />
+</LinearLayout>
+</LinearLayout>

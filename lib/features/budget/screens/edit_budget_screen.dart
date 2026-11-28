@@ -166,7 +166,7 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                 },
               ),
               const SizedBox(height: 20),
-              _buildSectionTitle('Amount', icon: LucideIcons.dollarSign),
+              _buildSectionTitle('Amount', icon: LucideIcons.banknote),
               const SizedBox(height: 8),
               AppNumberField(
                 controller: _amountController,
@@ -210,9 +210,9 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
                     child: Row(
                       children: [
                         Icon(
-                          LucideIcons.circle,
-                          size: 10,
-                          color: Color(AppCategories.getColor(category)),
+                          AppCategories.iconFor(category),
+                          size: 18,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                         const SizedBox(width: 8),
                         Text(category),
@@ -364,7 +364,6 @@ class _EditBudgetFormState extends State<_EditBudgetForm> {
           AppHaptics.selection();
           onChanged(v);
         },
-        activeThumbColor: AppColors.primary,
       ),
     );
   }
